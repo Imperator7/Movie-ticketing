@@ -6,6 +6,23 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev:web"],
       "port": 3000
+    },
+    {
+      "name": "db-studio",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "exec",
+        "-w",
+        "api",
+        "--",
+        "prisma",
+        "studio",
+        "--port",
+        "5555",
+        "--browser",
+        "none"
+      ],
+      "port": 5555
     }
   ]
 }
