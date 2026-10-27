@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Booking, SeatMap } from "@/api/generated/model";
-import { bangkokDayIndex, seatLayout, seededStatus, showtimesOnDay } from "./catalog";
+import { nowShowing, bangkokDayIndex, seatLayout, seededStatus, showtimesOnDay } from "./catalog";
 import { createDb, DEMO_EMAIL, DEMO_PASSWORD, type MockDb, type MockUser } from "./db";
 import * as service from "./service";
 
@@ -284,7 +284,7 @@ describe("mock server: expiry, cancel and payment", () => {
 
   it("showtimes are bookable for the next 7 days and have seat maps with an aisle", () => {
     const { db } = setup();
-    const res = service.getMovieShowtimes(db, "last-orbit", "2026-10-28", null, T0);
+    const res = service.getMovieShowtimes(db, nowShowing[0]?.slug ?? "", "2026-10-28", null, T0);
     const body = res.body as { availableDates: string[] };
     expect(body.availableDates.length).toBeGreaterThan(3);
     const map = service.getSeatMap(db, showtime.id, T0).body as SeatMap;

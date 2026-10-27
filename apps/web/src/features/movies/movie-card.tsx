@@ -7,7 +7,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "@/i18n/navigation";
 import { otherText, pickText, toLocale } from "@/lib/localized";
 
-export function MovieCard({ movie }: { movie: MovieSummary }) {
+export function MovieCard({
+  movie,
+  priority = false,
+}: {
+  movie: MovieSummary;
+  priority?: boolean;
+}) {
   const locale = toLocale(useLocale());
   return (
     <Link
@@ -22,6 +28,7 @@ export function MovieCard({ movie }: { movie: MovieSummary }) {
         durationMinutes={movie.durationMin}
         genres={movie.genres.map((g) => pickText(g.name, locale))}
         locale={locale}
+        priority={priority}
       />
     </Link>
   );
@@ -30,9 +37,10 @@ export function MovieCard({ movie }: { movie: MovieSummary }) {
 export function MovieGrid({ movies }: { movies: readonly MovieSummary[] }) {
   return (
     <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-      {movies.map((movie) => (
+      {movies.map((movie, index) => (
         <li key={movie.id}>
-          <MovieCard movie={movie} />
+          {/* The first row is above the fold: load it eagerly. */}
+          <MovieCard movie={movie} priority={index < 4} />
         </li>
       ))}
     </ul>

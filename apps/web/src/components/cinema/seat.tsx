@@ -2,6 +2,7 @@ import type { CSSProperties, Ref } from "react";
 import { cn } from "cn";
 import { formatBaht } from "@/lib/format";
 import type { SeatStatus, SeatType } from "@/lib/seat";
+import { PersonIcon } from "./person-icon";
 import { seatLabelsTh, type SeatLabels } from "./labels";
 
 export interface SeatProps {
@@ -12,6 +13,8 @@ export interface SeatProps {
   selected?: boolean;
   /** The seat was taken by someone else while selected: flashes for ~3 s. */
   justTaken?: boolean;
+  /** Our own seat while Buy is in flight: a pulsing ring on top of `selected` (static with reduced motion). */
+  pending?: boolean;
   priceBaht: number;
   onToggle?: () => void;
   labels?: SeatLabels;
@@ -31,6 +34,7 @@ export function Seat({
   status,
   selected = false,
   justTaken = false,
+  pending = false,
   priceBaht,
   onToggle,
   labels = seatLabelsTh,
@@ -49,6 +53,8 @@ export function Seat({
       aria-label={ariaLabel}
       aria-pressed={inert ? undefined : selected}
       aria-disabled={unavailable || undefined}
+      aria-busy={pending || undefined}
+      data-pending={pending || undefined}
       data-status={status}
       data-type={type}
       onClick={() => {
@@ -63,18 +69,18 @@ export function Seat({
               ? "bg-seat-premium text-foreground/80 hover:bg-seat-premium-hover"
               : "bg-seat-available text-foreground/80 hover:bg-seat-available-hover"
             : status === "HELD"
-              ? "bg-seat-held bg-[repeating-linear-gradient(135deg,transparent_0_3px,color-mix(in_oklch,var(--foreground)_28%,transparent)_3px_5px)] text-foreground/80"
+              ? "bg-seat-held bg-[repeating-linear-gradient(135deg,transparent_0_3px,color-mix(in_oklch,var(--foreground)_28%,transparent)_3px_5px)] text-foreground/70"
               : "bg-seat-booked text-muted-foreground",
         inert && "cursor-not-allowed",
         justTaken && "animate-seat-taken",
+        pending &&
+          "ring-2 ring-seat-selected-foreground/70 ring-offset-2 ring-offset-background animate-pulse motion-reduce:animate-none",
         className,
       )}
       {...rest}
     >
-      {status === "BOOKED" && !selected ? (
-        <span aria-hidden className="text-sm leading-none">
-          ✕
-        </span>
+      {unavailable && !selected ? (
+        <PersonIcon className="mt-0.5" />
       ) : (
         <span aria-hidden>{label}</span>
       )}

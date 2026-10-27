@@ -1,11 +1,10 @@
 "use client";
 
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocale, useTranslations } from "next-intl";
 import { usePathname as useFullPathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { cancelBooking, useGetActiveBooking } from "@/api/generated/endpoints/bookings/bookings";
+import { useGetActiveBooking } from "@/api/generated/endpoints/bookings/bookings";
 import { BookingBanner } from "@/components/cinema/booking-banner";
 import {
   AlertDialog,
@@ -21,6 +20,7 @@ import { useAuth } from "@/features/auth/session";
 import { useErrorMessage } from "@/features/auth/use-error-message";
 import { useRouter } from "@/i18n/navigation";
 import { pickText, toLocale } from "@/lib/localized";
+import { useCancelBookingOptimistic } from "./use-booking-mutations";
 import { useCountdown } from "./use-countdown";
 
 /**
@@ -31,7 +31,6 @@ export function ActiveBookingBanner() {
   const t = useTranslations("banner");
   const locale = toLocale(useLocale());
   const router = useRouter();
-  const queryClient = useQueryClient();
   const errorMessage = useErrorMessage();
   const fullPath = useFullPathname();
   const { ready, isAuthenticated } = useAuth();
@@ -51,17 +50,8 @@ export function ActiveBookingBanner() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [expired]);
 
-  const cancel = useMutation({
-    mutationFn: (id: string) => cancelBooking(id),
-    onSuccess: () => {
-      setConfirming(false);
-      void queryClient.invalidateQueries();
-    },
-    onError: (error) => {
-      setConfirming(false);
-      toast.error(errorMessage(error));
-    },
-  });
+  // Optimistic: the bar disappears at once and rolls back if the server refuses.
+  const cancel = useCancelBookingOptimistic();
 
   if (!booking || msLeft === null || /\/checkout(\/|$)/.test(fullPath)) return null;
 
@@ -95,10 +85,12 @@ export function ActiveBookingBanner() {
           <AlertDialogFooter>
             <AlertDialogCancel>{t("keep")}</AlertDialogCancel>
             <AlertDialogAction
-              disabled={cancel.isPending}
-              onClick={(event) => {
-                event.preventDefault();
-                cancel.mutate(booking.id);
+              onClick={() => {
+                cancel.mutate(booking, {
+                  onError: (error) => {
+                    toast.error(errorMessage(error));
+                  },
+                });
               }}
             >
               {t("confirm")}

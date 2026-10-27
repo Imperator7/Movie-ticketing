@@ -2,6 +2,7 @@ import { delay, http, HttpResponse, type PathParams, type RequestHandler } from 
 import { getHealthMock } from "@/api/generated/endpoints/health/health.msw";
 import { LoginBody, RegisterBody } from "@/api/generated/zod/auth/auth.zod";
 import { cinemas, genres, movies } from "./catalog";
+import { extraLatencyMs } from "./latency";
 import { loadDb, saveDb, type MockDb, type MockUser } from "./db";
 import * as service from "./service";
 import { fail, type MockResult } from "./service";
@@ -38,7 +39,7 @@ function route(
   handler: (ctx: Ctx) => MockResult | Promise<MockResult>,
 ): RequestHandler {
   return http[method](path, async ({ request, params }) => {
-    await delay(120);
+    await delay(120 + extraLatencyMs());
     const db = loadDb();
     const now = Date.now();
     service.sweep(db, now);

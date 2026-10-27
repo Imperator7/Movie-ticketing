@@ -17,6 +17,44 @@ import { bangkokDate, formatDuration, formatShowDate } from "@/lib/format";
 import { otherText, pickText, toLocale } from "@/lib/localized";
 import { ApiError } from "@/lib/api-client";
 import { cn } from "cn";
+import {
+  BACKDROP_SIZES,
+  BACKDROP_SIZES_ATTR,
+  POSTER_HERO_SIZES,
+  tmdbImage,
+  tmdbSrcSet,
+} from "@/lib/tmdb-image";
+
+/** Decorative hero backdrop. The box is the section itself, so a missing or failed image shifts nothing. */
+function BackdropImage({ url }: { url: string | null | undefined }) {
+  const [failedUrl, setFailedUrl] = useState<string | null>(null);
+  const src = tmdbImage(url, "w1280");
+  if (!src || failedUrl === url) return null;
+  return (
+    <>
+      {/* Static export: plain img on purpose. */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={src}
+        srcSet={tmdbSrcSet(url, BACKDROP_SIZES)}
+        sizes={BACKDROP_SIZES_ATTR}
+        alt=""
+        width={1280}
+        height={720}
+        loading="eager"
+        decoding="async"
+        onError={() => {
+          setFailedUrl(url ?? null);
+        }}
+        className="absolute inset-0 -z-20 size-full object-cover"
+      />
+      <div
+        aria-hidden
+        className="absolute inset-0 -z-10 bg-linear-to-t from-background via-background/80 to-background/40"
+      />
+    </>
+  );
+}
 
 const CHIP_FORMAT: Record<ShowtimeFormat, ChipFormat> = {
   TWO_D: "2D",
@@ -82,11 +120,14 @@ export function MovieView() {
           ← {t("back")}
         </Link>
 
-        <section className="flex flex-col gap-6 sm:flex-row">
+        <section className="relative isolate flex flex-col gap-6 overflow-hidden rounded-2xl sm:flex-row sm:p-6">
+          <BackdropImage url={movie.backdropUrl} />
           <div className="w-40 shrink-0 sm:w-56">
             <MoviePosterCard
               title={title}
               posterUrl={movie.posterUrl}
+              priority
+              sizes={POSTER_HERO_SIZES}
               rating={movie.rating}
               durationMinutes={movie.durationMin}
               genres={[]}

@@ -129,11 +129,14 @@
     "hall": "Hall {number}",
     "selectHint": "Tap the seats you want, up to {max} seats.",
     "limitReached": "You can select up to {max} seats per booking.",
-    "seatsTaken": "{count, plural, one {Seat {seats} was just taken} other {Seats {seats} were just taken}}",
+    "seatsTaken": "{count, plural, one {Sorry, seat {seats} was just taken by someone else} other {Sorry, seats {seats} were just taken by someone else}}",
     "closed": "Booking for this showtime has closed.",
     "activeBooking": "You have a booking waiting for payment. Finish or cancel it before booking again.",
     "selectedCount": "{count, plural, one {# seat selected} other {# seats selected}}",
-    "changeShowtime": "Change showtime"
+    "changeShowtime": "Change showtime",
+    "holding": "Holding your seats…",
+    "held": "Seats held for you",
+    "seatsTakenHint": "We've updated the seat map. Please pick another seat."
   },
   "auth": {
     "loginTitle": "Log in",

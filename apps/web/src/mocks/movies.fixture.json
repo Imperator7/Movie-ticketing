@@ -1,0 +1,802 @@
+{
+  "genres": [
+    {
+      "id": 1,
+      "slug": "action",
+      "name": {
+        "th": "บู๊",
+        "en": "Action"
+      }
+    },
+    {
+      "id": 2,
+      "slug": "adventure",
+      "name": {
+        "th": "ผจญ",
+        "en": "Adventure"
+      }
+    },
+    {
+      "id": 3,
+      "slug": "science-fiction",
+      "name": {
+        "th": "นิยายวิทยาศาสตร์",
+        "en": "Science Fiction"
+      }
+    },
+    {
+      "id": 4,
+      "slug": "horror",
+      "name": {
+        "th": "สยองขวัญ",
+        "en": "Horror"
+      }
+    },
+    {
+      "id": 5,
+      "slug": "thriller",
+      "name": {
+        "th": "ระทึกขวัญ",
+        "en": "Thriller"
+      }
+    },
+    {
+      "id": 6,
+      "slug": "comedy",
+      "name": {
+        "th": "ตลก",
+        "en": "Comedy"
+      }
+    },
+    {
+      "id": 7,
+      "slug": "drama",
+      "name": {
+        "th": "หนังชีวิต",
+        "en": "Drama"
+      }
+    },
+    {
+      "id": 8,
+      "slug": "fantasy",
+      "name": {
+        "th": "จินตนาการ",
+        "en": "Fantasy"
+      }
+    },
+    {
+      "id": 9,
+      "slug": "war",
+      "name": {
+        "th": "สงคราม",
+        "en": "War"
+      }
+    },
+    {
+      "id": 10,
+      "slug": "mystery",
+      "name": {
+        "th": "ลึกลับ",
+        "en": "Mystery"
+      }
+    }
+  ],
+  "movies": [
+    {
+      "id": "5a7f6a1e-0c1d-4b8e-9a31-000000000000",
+      "slug": "avengers-endgame",
+      "title": {
+        "th": "อเวนเจอร์ส: เผด็จศึก",
+        "en": "Avengers: Endgame"
+      },
+      "synopsis": {
+        "th": "เรื่องราวการปิดจักรวาลมาร์เวลเฟส 3 เหตุการณ์ภายหลังจากที่ธานอสดีดนิ้วล้างครึ่งจักรวาล เหล่าฮีโร่ที่เหลือรอดจะหาทางกอบกู้จักรวาลนี้คืนมาได้อย่างไร โดยในภาคนี้จะมีตัวเด็ดอย่างกัปตันมาร์เวลมาร่วมเสริมทัพด้วย",
+        "en": "After the devastating events of Avengers: Infinity War, the universe is in ruins due to the efforts of the Mad Titan, Thanos. With the help of remaining allies, the Avengers must assemble once more in order to undo Thanos' actions and restore order to the universe once and for all, no matter what consequences may be in store."
+      },
+      "durationMin": 181,
+      "rating": "AGE_13",
+      "originalLanguage": "en",
+      "releaseDate": "2019-04-24",
+      "posterUrl": "https://image.tmdb.org/t/p/w500/bR8ISy1O9XQxqiy0fQFw2BX72RQ.jpg",
+      "backdropUrl": "https://image.tmdb.org/t/p/w1280/7RyHsO4yDXtBv1zUU3mTpHeQ0d5.jpg",
+      "trailerUrl": "https://www.youtube.com/watch?v=L2NAh3CIdig",
+      "status": "NOW_SHOWING",
+      "genres": [
+        {
+          "id": 1,
+          "slug": "action",
+          "name": {
+            "th": "บู๊",
+            "en": "Action"
+          }
+        },
+        {
+          "id": 2,
+          "slug": "adventure",
+          "name": {
+            "th": "ผจญ",
+            "en": "Adventure"
+          }
+        },
+        {
+          "id": 3,
+          "slug": "science-fiction",
+          "name": {
+            "th": "นิยายวิทยาศาสตร์",
+            "en": "Science Fiction"
+          }
+        }
+      ]
+    },
+    {
+      "id": "5a7f6a1e-0c1d-4b8e-9a31-000000000001",
+      "slug": "clayface",
+      "title": {
+        "th": "เคลย์เฟซ",
+        "en": "Clayface"
+      },
+      "synopsis": {
+        "th": "ติดตามเรื่องราวการดำดิ่งลงไปในนรกอันน่าสะพรึงกลัวของนักแสดงฮอลลีวูดอนาคตไกล ผู้กลายมาเป็นสัตว์ประหลายที่ขับเคลื่อนด้วยการล้างแค้น สำรวจการสูญเสียตัวตนและความเป็นมนุษย์ การทำลายล้างของความรักอันเป็นพิษและด้านมืดของความทะเยอทะยานทางวิทยาศาสตร์",
+        "en": "Matt Hagen's meteoric rise from Gotham street kid to Hollywood leading man is tragically cut short when a local crime boss's actions leave him horribly disfigured. Abandoned by his team and with nothing left, Matt seeks out a cutting edge treatment that miraculously returns him to his former self… but also unexpectedly affects his grip on reality, spiraling him down a destructive path of all-consuming revenge."
+      },
+      "durationMin": 109,
+      "rating": "AGE_15",
+      "originalLanguage": "en",
+      "releaseDate": "2026-10-19",
+      "posterUrl": "https://image.tmdb.org/t/p/w500/9l1NuFjel2j89hiuiJbsxfblqjy.jpg",
+      "backdropUrl": "https://image.tmdb.org/t/p/w1280/uL4cIrNi2uaUnWIOQQ28EVnkETG.jpg",
+      "trailerUrl": "https://www.youtube.com/watch?v=f7jlCqdtwdM",
+      "status": "NOW_SHOWING",
+      "genres": [
+        {
+          "id": 4,
+          "slug": "horror",
+          "name": {
+            "th": "สยองขวัญ",
+            "en": "Horror"
+          }
+        },
+        {
+          "id": 3,
+          "slug": "science-fiction",
+          "name": {
+            "th": "นิยายวิทยาศาสตร์",
+            "en": "Science Fiction"
+          }
+        },
+        {
+          "id": 5,
+          "slug": "thriller",
+          "name": {
+            "th": "ระทึกขวัญ",
+            "en": "Thriller"
+          }
+        }
+      ]
+    },
+    {
+      "id": "5a7f6a1e-0c1d-4b8e-9a31-000000000002",
+      "slug": "crawlers",
+      "title": {
+        "th": "ฝูงขยุ้ม แมงมุมคลั่ง",
+        "en": "Crawlers"
+      },
+      "synopsis": {
+        "th": "การแพร่กระจายระดับหายนะของเหล่าแมงมุมที่มีพิษถึงตาย ได้ทำให้อพาร์ทเมนท์แห่งหนึ่งต้องถูกปิดห้ามเข้าออก ทำให้ เซเรน่า ผู้จัดการของอาคารและลูกบ้านของเธอที่ติดอยู่ในการกักกันซึ่งเป็นคำสั่งของตำรวจ ต้องต่อสู้เพื่อเอาตัวรอด ในขณะเหล่าแมงมุมทวีจำนวนขึ้นในทุกวินาที ด้วยความรู้อย่างลึงซึ้งเกี่ยวกับอาคารแห่งนี้ เซเรน่า อาจจะเป็นคนเดียวที่สามารถทำให้พวกเขารอดชีวิตไปได้ ถ้าหากว่าเธอสามารถเผชิญหน้าความกลัวจากก้นบึ้งหัวใจของเธอได้",
+        "en": "Tenants at Paradiso Palms apartments fight a deadly spider invasion while the cunning building manager might be their only hope for survival."
+      },
+      "durationMin": 80,
+      "rating": "AGE_15",
+      "originalLanguage": "en",
+      "releaseDate": "2026-09-24",
+      "posterUrl": "https://image.tmdb.org/t/p/w500/lNXeEpg4yLSRwXwOeR5lbPgwbqL.jpg",
+      "backdropUrl": "https://image.tmdb.org/t/p/w1280/ayJsUQ4bEG6yY0UB6lMboiaDfYE.jpg",
+      "trailerUrl": "https://www.youtube.com/watch?v=4DowjB87tRE",
+      "status": "COMING_SOON",
+      "genres": [
+        {
+          "id": 4,
+          "slug": "horror",
+          "name": {
+            "th": "สยองขวัญ",
+            "en": "Horror"
+          }
+        },
+        {
+          "id": 5,
+          "slug": "thriller",
+          "name": {
+            "th": "ระทึกขวัญ",
+            "en": "Thriller"
+          }
+        }
+      ]
+    },
+    {
+      "id": "5a7f6a1e-0c1d-4b8e-9a31-000000000003",
+      "slug": "digger",
+      "title": {
+        "th": "ดิกเกอร์",
+        "en": "Digger"
+      },
+      "synopsis": {
+        "th": "ชายผู้ทรงอำนาจที่สุดในโลกต้องออกเดินทางไปทำภารกิจสุดบ้าคลั่ง เพื่อที่จะพิสูจน์ว่าเขาคือคนที่จะมาช่วยเหลือมนุษย์ชาติ ก่อนที่หายนะที่เขาเป็นคนปลดปล่อยออกมาจะทำลายทุกสิ่ง",
+        "en": "The most powerful man in the world embarks on a frantic mission to prove he is humanity's savior before the disaster he's unleashed destroys everything."
+      },
+      "durationMin": 129,
+      "rating": "AGE_15",
+      "originalLanguage": "en",
+      "releaseDate": "2026-09-28",
+      "posterUrl": "https://image.tmdb.org/t/p/w500/1ATXKrIPJyKNwnJ6lcG088Sa6zi.jpg",
+      "backdropUrl": "https://image.tmdb.org/t/p/w1280/vC5IxhgO6cVmw9O4QgkraRzfHvh.jpg",
+      "trailerUrl": "https://www.youtube.com/watch?v=job8V254NAE",
+      "status": "NOW_SHOWING",
+      "genres": [
+        {
+          "id": 6,
+          "slug": "comedy",
+          "name": {
+            "th": "ตลก",
+            "en": "Comedy"
+          }
+        },
+        {
+          "id": 7,
+          "slug": "drama",
+          "name": {
+            "th": "หนังชีวิต",
+            "en": "Drama"
+          }
+        }
+      ]
+    },
+    {
+      "id": "5a7f6a1e-0c1d-4b8e-9a31-000000000004",
+      "slug": "ebenezer",
+      "title": {
+        "th": "เอเบนีเซอร์และคืนคริสต์มาส",
+        "en": "Ebenezer"
+      },
+      "synopsis": {
+        "th": "เอเบเนเซอร์ สครูจ ท่องไปในการเดินทางอัศจรรย์เหนือธรรมชาติ เพื่อที่จะเผชิญหน้ากับอดีต, ปัจจุบัน และอนาคตของเขา เพื่อที่จะลุกขึ้นสู้เพื่อโอกาสในการที่จะมีความสุขอีกครั้ง",
+        "en": "An elderly miser embarks on a supernatural journey after visits from the ghost of his former business partner and the Spirits of Christmas Past, Present, and Yet to Come force him to confront his past and fight for a second chance at happiness."
+      },
+      "durationMin": 115,
+      "rating": "AGE_13",
+      "originalLanguage": "en",
+      "releaseDate": "2026-11-11",
+      "posterUrl": "https://image.tmdb.org/t/p/w500/6H2N59jJW1hZEzn2ZdrMvJw5vNI.jpg",
+      "backdropUrl": "https://image.tmdb.org/t/p/w1280/6VlTpWnm6DjNlK1NKFv1o4eMU33.jpg",
+      "trailerUrl": "https://www.youtube.com/watch?v=l_Ozo1xUgbU",
+      "status": "COMING_SOON",
+      "genres": [
+        {
+          "id": 6,
+          "slug": "comedy",
+          "name": {
+            "th": "ตลก",
+            "en": "Comedy"
+          }
+        },
+        {
+          "id": 8,
+          "slug": "fantasy",
+          "name": {
+            "th": "จินตนาการ",
+            "en": "Fantasy"
+          }
+        }
+      ]
+    },
+    {
+      "id": "5a7f6a1e-0c1d-4b8e-9a31-000000000005",
+      "slug": "godzilla-minus-zero",
+      "title": {
+        "th": "ก็อดซิลล่า ไมนัส ซีโร่",
+        "en": "Godzilla Minus Zero"
+      },
+      "synopsis": {
+        "th": "สงครามลดทอนญี่ปุ่นให้สูญสิ้น และ ก็อตซิลล่า ก็ทำให้มันจมลงไปกลายเป็นติดลบ จนถึงในตอนนี้ เวลาได้ผ่านไปแล้วสองปี และประเทศนี้ก็ได้เผชิญกับความยากลำบากและทนทุกข์ทรมานกับพการฟื้นฟู และในที่สุดก็สามารถทวงคืนชีวิตปกติกลับมาได้ แต่ในตอนที่มนุษยชาติสามารถไขว่คว้าสันติภาพที่ได้มาอย่างยากลำบากได้ ภัยคุกคามครั้งใหม่ก็เข้าจู่โจม พังทลายความหวังในเพียบพริบตา",
+        "en": "War reduced Japan to zero, and Godzilla plunged it into minus. Two years have passed since then, and the country has faced agonizing struggles to achieve recovery and finally reclaim its daily life. Just as humanity managed to cling to a hard-won peace, a new threat strikes, crushing hope in an instant. There is no third time. Everything ends here."
+      },
+      "durationMin": 135,
+      "rating": "AGE_18",
+      "originalLanguage": "ja",
+      "releaseDate": "2026-11-03",
+      "posterUrl": "https://image.tmdb.org/t/p/w500/hSmIJluOJmTWvJs4d7kHRxjc8s8.jpg",
+      "backdropUrl": "https://image.tmdb.org/t/p/w1280/oqrYIDH4tvfEzPe1yqT4jzmAWHQ.jpg",
+      "trailerUrl": "https://www.youtube.com/watch?v=pWJjYoqVSjQ",
+      "status": "COMING_SOON",
+      "genres": [
+        {
+          "id": 1,
+          "slug": "action",
+          "name": {
+            "th": "บู๊",
+            "en": "Action"
+          }
+        },
+        {
+          "id": 4,
+          "slug": "horror",
+          "name": {
+            "th": "สยองขวัญ",
+            "en": "Horror"
+          }
+        },
+        {
+          "id": 3,
+          "slug": "science-fiction",
+          "name": {
+            "th": "นิยายวิทยาศาสตร์",
+            "en": "Science Fiction"
+          }
+        }
+      ]
+    },
+    {
+      "id": "5a7f6a1e-0c1d-4b8e-9a31-000000000006",
+      "slug": "heart-of-the-beast",
+      "title": {
+        "th": "หัวใจผจญไพร",
+        "en": "Heart of the Beast"
+      },
+      "synopsis": {
+        "th": "หลังจากเหตุเครื่องบินตกอันน่าสะพรึงกลัว เจมส์ เบลมอนต์ เจ้าหน้าที่หน่วยรบพิเศษ และ โอดิน สุนัขคู่ใจผู้ร่วมรบ ต้องติดอยู่ท่ามกลางถิ่นทุรกันดารอันเวิ้งว้างของอะแลสกา ทั้งสองจำเป็นต้องต่อสู้เพื่อเอาชีวิตรอดอย่างโหดร้ายท่ามกลางสภาพแวดล้อมอันโหดเหี้ยม",
+        "en": "After a harrowing plane crash, Special Forces officer James Belmont and his combat dog, Odin, find themselves stranded deep in the Alaskan wilderness. Together, they are forced into a brutal fight for survival against the elements."
+      },
+      "durationMin": 101,
+      "rating": "AGE_13",
+      "originalLanguage": "en",
+      "releaseDate": "2026-09-19",
+      "posterUrl": "https://image.tmdb.org/t/p/w500/1ApfSA8JTqeha3GTFEY8syV4auq.jpg",
+      "backdropUrl": "https://image.tmdb.org/t/p/w1280/bicMU6xVD5deVyKP2azpyx7xkmH.jpg",
+      "trailerUrl": "https://www.youtube.com/watch?v=UkMuGKqAux4",
+      "status": "NOW_SHOWING",
+      "genres": [
+        {
+          "id": 2,
+          "slug": "adventure",
+          "name": {
+            "th": "ผจญ",
+            "en": "Adventure"
+          }
+        },
+        {
+          "id": 5,
+          "slug": "thriller",
+          "name": {
+            "th": "ระทึกขวัญ",
+            "en": "Thriller"
+          }
+        }
+      ]
+    },
+    {
+      "id": "5a7f6a1e-0c1d-4b8e-9a31-000000000007",
+      "slug": "once-upon-a-time-in-the-middle-east",
+      "title": {
+        "th": "Once Upon a Time in the Middle East",
+        "en": "Once Upon a Time in the Middle East"
+      },
+      "synopsis": {
+        "th": "Seeking a fresh start, chef Xu Fu travels to the Middle East to support his family and repay his debts. Alongside restaurant manager Ma Junsheng, he transforms the struggling Dragon Restaurant into a thriving business. But when war engulfs the city, their hard-won success is shattered and the restaurant becomes a refuge for those caught in the conflict. As danger closes in, Xu Fu must risk everything to protect his newfound community and preserve a small beacon of hope amid the devastation.",
+        "en": "Seeking a fresh start, chef Xu Fu travels to the Middle East to support his family and repay his debts. Alongside restaurant manager Ma Junsheng, he transforms the struggling Dragon Restaurant into a thriving business. But when war engulfs the city, their hard-won success is shattered and the restaurant becomes a refuge for those caught in the conflict. As danger closes in, Xu Fu must risk everything to protect his newfound community and preserve a small beacon of hope amid the devastation."
+      },
+      "durationMin": 141,
+      "rating": "AGE_13",
+      "originalLanguage": "zh",
+      "releaseDate": "2026-08-08",
+      "posterUrl": "https://image.tmdb.org/t/p/w500/uS5RSCYHw9DJFZ0mMLJaPnuKNjA.jpg",
+      "backdropUrl": "https://image.tmdb.org/t/p/w1280/zr7om0GOLOcLo7SXMmNEG5rz6de.jpg",
+      "trailerUrl": "https://www.youtube.com/watch?v=TYKHXxCdGiU",
+      "status": "COMING_SOON",
+      "genres": [
+        {
+          "id": 7,
+          "slug": "drama",
+          "name": {
+            "th": "หนังชีวิต",
+            "en": "Drama"
+          }
+        },
+        {
+          "id": 9,
+          "slug": "war",
+          "name": {
+            "th": "สงคราม",
+            "en": "War"
+          }
+        }
+      ]
+    },
+    {
+      "id": "5a7f6a1e-0c1d-4b8e-9a31-000000000008",
+      "slug": "onslaught",
+      "title": {
+        "th": "เหนือมนุษย์หลุดนรก",
+        "en": "Onslaught"
+      },
+      "synopsis": {
+        "th": "เมื่อหน่วยทหารทดลองลับแห่งหนึ่งเกิดเหตุผิดพลาด ทำให้กลุ่มสุดยอดทหารที่ผ่านการดัดแปลงพันธุกรรมหลบหนีออกมาได้ พื้นที่ทะเลทรายซึ่งเคยเป็นสถานที่ควบคุมการทดลองจึงกลายเป็นจุดเริ่มต้นของเหตุการณ์นองเลือดที่ยากจะหยุดยั้ง",
+        "en": "When a rogue squad of genetically engineered super soldiers break loose in the desert, a badass Army sniper must unleash hell to protect her young daughter."
+      },
+      "durationMin": 92,
+      "rating": "AGE_18",
+      "originalLanguage": "en",
+      "releaseDate": "2026-09-02",
+      "posterUrl": "https://image.tmdb.org/t/p/w500/eAs7G3yFaULpfwfVdGvPo5HmFJS.jpg",
+      "backdropUrl": "https://image.tmdb.org/t/p/w1280/pmPXXniQlb4EdYY0gVZO90rf54F.jpg",
+      "trailerUrl": "https://www.youtube.com/watch?v=AMLCbpM1fRQ",
+      "status": "NOW_SHOWING",
+      "genres": [
+        {
+          "id": 1,
+          "slug": "action",
+          "name": {
+            "th": "บู๊",
+            "en": "Action"
+          }
+        },
+        {
+          "id": 4,
+          "slug": "horror",
+          "name": {
+            "th": "สยองขวัญ",
+            "en": "Horror"
+          }
+        },
+        {
+          "id": 5,
+          "slug": "thriller",
+          "name": {
+            "th": "ระทึกขวัญ",
+            "en": "Thriller"
+          }
+        }
+      ]
+    },
+    {
+      "id": "5a7f6a1e-0c1d-4b8e-9a31-000000000009",
+      "slug": "other-mommy",
+      "title": {
+        "th": "แม่...หลอน",
+        "en": "Other Mommy"
+      },
+      "synopsis": {
+        "th": "เบล่า เด็กหญิงวัยแปดขวบที่อาศัยอยู่ในบ้านที่มีปัญหาเรื่องชีวิตคู่หลายอย่าง เธอได้พบกับตัวตนอันชั่วร้ายที่ออกมาจากตู้เสื้อผ้าของเธอ โดยตัวตนดังกล่าวที่เธอเรียกว่า แม่อีกคนหนึ่ง ได้กลายมาเป็นภัยคุกคามแก่เธอและครอบครัวมากขึ้นเรื่อย ๆ",
+        "en": "Young Bela forms a relationship with a sinister entity in her home that looks uncannily like her own mother, drawing her into a terrifying and increasingly dark world."
+      },
+      "durationMin": 93,
+      "rating": "AGE_15",
+      "originalLanguage": "en",
+      "releaseDate": "2026-10-07",
+      "posterUrl": "https://image.tmdb.org/t/p/w500/fGRNCssTRrhYZxNzykGGCoMsAVq.jpg",
+      "backdropUrl": "https://image.tmdb.org/t/p/w1280/ncm7djsVTHQQMX2HEbEVxMUFchG.jpg",
+      "trailerUrl": "https://www.youtube.com/watch?v=-mnTITqqiT0",
+      "status": "NOW_SHOWING",
+      "genres": [
+        {
+          "id": 4,
+          "slug": "horror",
+          "name": {
+            "th": "สยองขวัญ",
+            "en": "Horror"
+          }
+        }
+      ]
+    },
+    {
+      "id": "5a7f6a1e-0c1d-4b8e-9a31-000000000010",
+      "slug": "ramayana-rise-of-a-legend",
+      "title": {
+        "th": "Ramayana: Rise of a Legend",
+        "en": "Ramayana: Rise of a Legend"
+      },
+      "synopsis": {
+        "th": "An ancient epic follows a young prince and princess whose marriage and subsequent exile mark the beginning of a legendary journey. Their story of love, duty and destiny sets the stage for greater challenges ahead.",
+        "en": "An ancient epic follows a young prince and princess whose marriage and subsequent exile mark the beginning of a legendary journey. Their story of love, duty and destiny sets the stage for greater challenges ahead."
+      },
+      "durationMin": 195,
+      "rating": "AGE_13",
+      "originalLanguage": "hi",
+      "releaseDate": "2026-11-04",
+      "posterUrl": "https://image.tmdb.org/t/p/w500/hz2Hv8tPToHvQ7HaxzqeLvahmcJ.jpg",
+      "backdropUrl": "https://image.tmdb.org/t/p/w1280/f5Lq2ndFETM1V5RNmFhpl2FKrHL.jpg",
+      "trailerUrl": "https://www.youtube.com/watch?v=AYkPRN874m8",
+      "status": "COMING_SOON",
+      "genres": [
+        {
+          "id": 1,
+          "slug": "action",
+          "name": {
+            "th": "บู๊",
+            "en": "Action"
+          }
+        },
+        {
+          "id": 2,
+          "slug": "adventure",
+          "name": {
+            "th": "ผจญ",
+            "en": "Adventure"
+          }
+        },
+        {
+          "id": 8,
+          "slug": "fantasy",
+          "name": {
+            "th": "จินตนาการ",
+            "en": "Fantasy"
+          }
+        }
+      ]
+    },
+    {
+      "id": "5a7f6a1e-0c1d-4b8e-9a31-000000000011",
+      "slug": "resident-evil",
+      "title": {
+        "th": "เรสซิเดนท์ อีวิล",
+        "en": "Resident Evil"
+      },
+      "synopsis": {
+        "th": "เรื่องราวของคนส่งของผู้โชคร้ายคนหนึ่ง ที่กำลังนำส่งพัสดุไปยังโรงพยาบาลอันห่างไกล ไม่นานนักเขาก็ได้พบว่า ตัวเองตกอยู่ท่ามกลางการแพร่ระบาด และต้องต่อสู้ฝ่าฟันฝูงสิ่งมีชีวิตกลายพันธุ์เพื่อเอาตัวรอด",
+        "en": "Medical courier Bryan unwittingly finds himself fighting for survival as one fateful, horrifying night collapses around him in chaos."
+      },
+      "durationMin": 95,
+      "rating": "AGE_15",
+      "originalLanguage": "en",
+      "releaseDate": "2026-09-16",
+      "posterUrl": "https://image.tmdb.org/t/p/w500/i7UyjfPio0VFHB9rBUZSFyhOoM8.jpg",
+      "backdropUrl": "https://image.tmdb.org/t/p/w1280/vqNSvCFknXObgqn7nOFrJVEeGht.jpg",
+      "trailerUrl": "https://www.youtube.com/watch?v=mNd1gb19A-c",
+      "status": "NOW_SHOWING",
+      "genres": [
+        {
+          "id": 2,
+          "slug": "adventure",
+          "name": {
+            "th": "ผจญ",
+            "en": "Adventure"
+          }
+        },
+        {
+          "id": 4,
+          "slug": "horror",
+          "name": {
+            "th": "สยองขวัญ",
+            "en": "Horror"
+          }
+        },
+        {
+          "id": 3,
+          "slug": "science-fiction",
+          "name": {
+            "th": "นิยายวิทยาศาสตร์",
+            "en": "Science Fiction"
+          }
+        }
+      ]
+    },
+    {
+      "id": "5a7f6a1e-0c1d-4b8e-9a31-000000000012",
+      "slug": "runner",
+      "title": {
+        "th": "พี่บึ้ก… โคตรคน ชนนรก",
+        "en": "Runner"
+      },
+      "synopsis": {
+        "th": "แฮงก์ มาโลน อดีตทหารฝีมือฉกาจ ต้องรับภารกิจขนส่งอวัยวะทางการแพทย์เพื่อช่วยชีวิตเด็กหญิงคนหนึ่ง แต่ภารกิจที่ควรจะเป็นเพียงการส่งของกลับกลายเป็นการไล่ล่าสุดระห่ำ เมื่อเขาและเบน บิช็อป คู่หูจำเป็นที่เข้ากันไม่ค่อยได้ กลายเป็นเป้าหมายของแก๊งค้ายาเสพติดสุดโหด ทั้งสองต้องฝ่าดงกระสุน หลบหนีการตามล่า และรับมือกับการหักหลังที่เกิดขึ้นรอบตัว ท่ามกลางเวลาที่เหลือน้อยลงทุกขณะ เพราะความผิดพลาดเพียงครั้งเดียวอาจหมายถึงชีวิตของเด็กหญิงที่กำลังรอความช่วยเหลือ",
+        "en": "A former soldier is thrown into a brutal race against time when a critical medical delivery makes him and his unlikely partner the targets of a ruthless cartel. As the mission spirals into a deadly manhunt, every detour, delay, and bullet pushes them closer to failure. With betrayal closing in from every side, they must survive the chase and deliver their cargo to save the life of a little girl."
+      },
+      "durationMin": 97,
+      "rating": "AGE_15",
+      "originalLanguage": "en",
+      "releaseDate": "2026-09-07",
+      "posterUrl": "https://image.tmdb.org/t/p/w500/vJk2TW1QZAmBiD7oj9ZF9EPTYY1.jpg",
+      "backdropUrl": "https://image.tmdb.org/t/p/w1280/npXZNWjOEYrqdMDPQ11SGBrXqAG.jpg",
+      "trailerUrl": "https://www.youtube.com/watch?v=B6Z9MM1LhEA",
+      "status": "NOW_SHOWING",
+      "genres": [
+        {
+          "id": 1,
+          "slug": "action",
+          "name": {
+            "th": "บู๊",
+            "en": "Action"
+          }
+        },
+        {
+          "id": 6,
+          "slug": "comedy",
+          "name": {
+            "th": "ตลก",
+            "en": "Comedy"
+          }
+        }
+      ]
+    },
+    {
+      "id": "5a7f6a1e-0c1d-4b8e-9a31-000000000013",
+      "slug": "street-fighter",
+      "title": {
+        "th": "Street Fighter",
+        "en": "Street Fighter"
+      },
+      "synopsis": {
+        "th": "In 1993, estranged Street Fighters Ryu and Ken Masters are thrown back into combat when the mysterious Chun-Li recruits them for the next World Warrior Tournament: a brutal clash of fists, fate, and fury. But behind this battle royale lies a deadly conspiracy that forces them to face off against each other and the demons of their past. And if they don't, it's GAME OVER!",
+        "en": "In 1993, estranged Street Fighters Ryu and Ken Masters are thrown back into combat when the mysterious Chun-Li recruits them for the next World Warrior Tournament: a brutal clash of fists, fate, and fury. But behind this battle royale lies a deadly conspiracy that forces them to face off against each other and the demons of their past. And if they don't, it's GAME OVER!"
+      },
+      "durationMin": 120,
+      "rating": "AGE_13",
+      "originalLanguage": "en",
+      "releaseDate": "2026-10-13",
+      "posterUrl": "https://image.tmdb.org/t/p/w500/ccxdepKqORLwccbzvO4eAGkN0IC.jpg",
+      "backdropUrl": "https://image.tmdb.org/t/p/w1280/qRN8eqYwG6HPSy0i3fKzuLrUOhp.jpg",
+      "trailerUrl": "https://www.youtube.com/watch?v=U6sbm1OaJb8",
+      "status": "NOW_SHOWING",
+      "genres": [
+        {
+          "id": 1,
+          "slug": "action",
+          "name": {
+            "th": "บู๊",
+            "en": "Action"
+          }
+        },
+        {
+          "id": 8,
+          "slug": "fantasy",
+          "name": {
+            "th": "จินตนาการ",
+            "en": "Fantasy"
+          }
+        }
+      ]
+    },
+    {
+      "id": "5a7f6a1e-0c1d-4b8e-9a31-000000000014",
+      "slug": "the-beast",
+      "title": {
+        "th": "The Beast",
+        "en": "The Beast"
+      },
+      "synopsis": {
+        "th": "When a militia of unidentified hostiles coordinates a coup against the United States, the president must fight back by utilizing the highly classified offensive capabilities of his armored limousine, nicknamed The Beast.",
+        "en": "When a militia of unidentified hostiles coordinates a coup against the United States, the president must fight back by utilizing the highly classified offensive capabilities of his armored limousine, nicknamed The Beast."
+      },
+      "durationMin": 99,
+      "rating": "AGE_18",
+      "originalLanguage": "en",
+      "releaseDate": "2026-10-08",
+      "posterUrl": "https://image.tmdb.org/t/p/w500/ocg5JfJP19fodcv5uQUApkmZMdI.jpg",
+      "backdropUrl": "https://image.tmdb.org/t/p/w1280/v5Wb9NoE0s1mGmC5wVeQR1OK22V.jpg",
+      "trailerUrl": "https://www.youtube.com/watch?v=5ckqV_uf8E0",
+      "status": "COMING_SOON",
+      "genres": [
+        {
+          "id": 1,
+          "slug": "action",
+          "name": {
+            "th": "บู๊",
+            "en": "Action"
+          }
+        },
+        {
+          "id": 5,
+          "slug": "thriller",
+          "name": {
+            "th": "ระทึกขวัญ",
+            "en": "Thriller"
+          }
+        }
+      ]
+    },
+    {
+      "id": "5a7f6a1e-0c1d-4b8e-9a31-000000000015",
+      "slug": "the-social-reckoning",
+      "title": {
+        "th": "เปิดโปงโซเชียล",
+        "en": "The Social Reckoning"
+      },
+      "synopsis": {
+        "th": "สำรวจเบื้องหลังการมีส่วนร่วมและเรื่องร้ายที่มีสาเหตุมาจาก เฟสบุ๊ค สังคมออนไลน์ที่ใหญ่ที่สุดของโลก",
+        "en": "Frances Haugen, a young Facebook engineer, enlists the help of Jeff Horwitz, a Wall Street Journal reporter, to go on a dangerous journey that ends up blowing the whistle on the social network's most guarded secrets."
+      },
+      "durationMin": 113,
+      "rating": "AGE_13",
+      "originalLanguage": "en",
+      "releaseDate": "2026-10-07",
+      "posterUrl": "https://image.tmdb.org/t/p/w500/7jK6NuxVg1XuEV7UdNa6KO03IgZ.jpg",
+      "backdropUrl": "https://image.tmdb.org/t/p/w1280/wXTaGcqX3jvdXSKCJAkl5jZyrKp.jpg",
+      "trailerUrl": "https://www.youtube.com/watch?v=R8ANzYpaZaY",
+      "status": "NOW_SHOWING",
+      "genres": [
+        {
+          "id": 7,
+          "slug": "drama",
+          "name": {
+            "th": "หนังชีวิต",
+            "en": "Drama"
+          }
+        },
+        {
+          "id": 5,
+          "slug": "thriller",
+          "name": {
+            "th": "ระทึกขวัญ",
+            "en": "Thriller"
+          }
+        }
+      ]
+    },
+    {
+      "id": "5a7f6a1e-0c1d-4b8e-9a31-000000000016",
+      "slug": "verity",
+      "title": {
+        "th": "เงื่อนวิปลาส",
+        "en": "Verity"
+      },
+      "synopsis": {
+        "th": "โลเวน แอชลี นักเขียนผู้กำลังตกที่นั่งลำบาก กำลังอยู่ประสบปัญหาทางการเงินอย่างหนักหน่วง ในตอนที่เธอตกลงรับงานที่สำคัญมากครั้งหนึ่งในชีวิต คือการที่เธอต้องเขียนหนังสือระทึกขวัญชุดที่ประสบความสำเร็จมากของ เวอริตี้ ครอวฟอร์ด ต่อให้เสร็จ เนื่องจากนักเขียนตัวจริงไม่สามารถทำงานต่อได้เพราะอุบัติเหตุประหลาด และเมื่อเธอเดินทางมาถึงที่อยู่อันใหญ่โตของตระกูล ครอวฟอร์ด แอชลีก็ค่อย ๆ รู้ว่ามีบางอย่างผิดปกติไปจากที่เห็น",
+        "en": "Lowen Ashleigh, hired to ghostwrite for best-selling author Verity Crawford, uncovers Verity's autobiographical notes, and becomes involved in what may prove to be a lethal conspiracy."
+      },
+      "durationMin": 114,
+      "rating": "AGE_15",
+      "originalLanguage": "en",
+      "releaseDate": "2026-09-30",
+      "posterUrl": "https://image.tmdb.org/t/p/w500/zPHfsaiMZT1HNz1ZS55iyLKZkFG.jpg",
+      "backdropUrl": "https://image.tmdb.org/t/p/w1280/9qxyrJfjk577ym5WD6HCDmunoyO.jpg",
+      "trailerUrl": "https://www.youtube.com/watch?v=xdPMKhjMSFs",
+      "status": "NOW_SHOWING",
+      "genres": [
+        {
+          "id": 10,
+          "slug": "mystery",
+          "name": {
+            "th": "ลึกลับ",
+            "en": "Mystery"
+          }
+        },
+        {
+          "id": 5,
+          "slug": "thriller",
+          "name": {
+            "th": "ระทึกขวัญ",
+            "en": "Thriller"
+          }
+        }
+      ]
+    },
+    {
+      "id": "5a7f6a1e-0c1d-4b8e-9a31-000000000017",
+      "slug": "whalefall",
+      "title": {
+        "th": "ต้องรอดจากวาฬนี้",
+        "en": "Whalefall"
+      },
+      "synopsis": {
+        "th": "เรื่องราวของนักดำนํ้าลึกคนหนึ่งที่ออกตามหาศพของพ่อของเขา ซึ่งถูกวาฬหัวทุยความยาว 60 ฟุต หนัก 60 ตัน กลืนลงไปในท้อง และมีเวลาเพียงแค่หนึ่งชั่วโมงที่จะหนีออกมาก่อนที่ออกซิเจนของเขาจะหมดลง",
+        "en": "Following the death of his father, Jay Gardiner goes diving off the central Coast of California in search of his remains, but is swallowed by a massive sperm whale. While trapped inside its belly with only one hour of oxygen left, Jay comes to realize that the hard-earned lessons his father imparted may be the key to his escape."
+      },
+      "durationMin": 106,
+      "rating": "AGE_15",
+      "originalLanguage": "en",
+      "releaseDate": "2026-10-14",
+      "posterUrl": "https://image.tmdb.org/t/p/w500/vjTYUTgh9nO88i6HZ4YPRhiFL05.jpg",
+      "backdropUrl": "https://image.tmdb.org/t/p/w1280/shW2jHkQLZVv4Fko2rJDqTGU0gx.jpg",
+      "trailerUrl": "https://www.youtube.com/watch?v=Dw-5ZGapGTQ",
+      "status": "NOW_SHOWING",
+      "genres": [
+        {
+          "id": 5,
+          "slug": "thriller",
+          "name": {
+            "th": "ระทึกขวัญ",
+            "en": "Thriller"
+          }
+        }
+      ]
+    }
+  ]
+}

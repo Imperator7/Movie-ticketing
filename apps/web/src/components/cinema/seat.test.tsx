@@ -36,4 +36,29 @@ describe("Seat", () => {
     await userEvent.click(button);
     expect(onToggle).not.toHaveBeenCalled();
   });
+
+  it.each(["BOOKED", "HELD"] as const)("shows the solid person icon for a %s seat", (status) => {
+    const { container } = render(<Seat {...base} status={status} />);
+    expect(container.querySelector('svg[data-icon="person"]')).not.toBeNull();
+    expect(container.querySelector("svg")).toHaveAttribute("fill", "currentColor");
+    expect(container.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
+    // The seat's name is still in its aria-label, not drawn on it.
+    expect(screen.getByRole("button")).toHaveAccessibleName(/A5,/);
+    expect(container).not.toHaveTextContent("A5");
+  });
+
+  it("keeps the label (no icon) for available and selected seats", () => {
+    const { container, rerender } = render(<Seat {...base} status="AVAILABLE" />);
+    expect(container.querySelector('svg[data-icon="person"]')).toBeNull();
+    expect(container).toHaveTextContent("A5");
+    rerender(<Seat {...base} status="AVAILABLE" selected />);
+    expect(container.querySelector('svg[data-icon="person"]')).toBeNull();
+    expect(container).toHaveTextContent("A5");
+  });
+
+  it("a selected seat that is held by our own pending booking keeps its label and is busy", () => {
+    const { container } = render(<Seat {...base} status="HELD" selected pending />);
+    expect(container.querySelector('svg[data-icon="person"]')).toBeNull();
+    expect(screen.getByRole("button")).toHaveAttribute("aria-busy", "true");
+  });
 });

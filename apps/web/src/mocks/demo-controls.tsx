@@ -10,6 +10,7 @@ import { dataOf } from "@/api/unwrap";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/features/auth/store";
 import { getShowtime, seatLayout } from "./catalog";
+import { isSlowNetwork, setSlowNetwork, SLOW_NETWORK_MS } from "./latency";
 import type { PayOutcome } from "./db";
 import {
   DEMO_EMAIL,
@@ -37,6 +38,7 @@ export default function DemoControls() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [outcome, setOutcome] = useState<PayOutcome>(getOutcome);
+  const [slow, setSlow] = useState(isSlowNetwork);
 
   const refresh = () => queryClient.invalidateQueries();
 
@@ -130,6 +132,23 @@ export default function DemoControls() {
       </Button>
       <Button type="button" size="sm" variant="outline" onClick={takeMySeat}>
         Someone takes my selected seat
+      </Button>
+      <Button
+        type="button"
+        size="sm"
+        variant={slow ? "default" : "outline"}
+        aria-pressed={slow}
+        onClick={() => {
+          setSlowNetwork(!slow);
+          setSlow(!slow);
+          toast.info(
+            !slow
+              ? `Slow network on: every API call takes ${(SLOW_NETWORK_MS / 1000).toString()} s longer.`
+              : "Slow network off.",
+          );
+        }}
+      >
+        Slow network (1.5 s latency): {slow ? "on" : "off"}
       </Button>
       <Button type="button" size="sm" variant="outline" onClick={fastForward}>
         Fast-forward payment to 0:10

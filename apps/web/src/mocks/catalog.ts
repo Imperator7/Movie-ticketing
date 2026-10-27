@@ -2,189 +2,56 @@ import type {
   Cinema,
   Genre,
   MovieDetail,
-  MovieRating,
   Price,
   Seat,
   SeatStatus,
   SeatType,
   ShowtimeFormat,
 } from "@/api/generated/model";
+import fixture from "./movies.fixture.json";
+import type { MoviesFixture } from "./map-movies";
 
 /**
  * Seed catalog for the mock server: movies, cinemas, halls and a deterministic showtime schedule
  * (a pure function of "today", so nothing about showtimes needs to be stored).
  */
 
-export const genres: Genre[] = [
-  { id: 1, slug: "action", name: { th: "แอ็กชัน", en: "Action" } },
-  { id: 2, slug: "drama", name: { th: "ดราม่า", en: "Drama" } },
-  { id: 3, slug: "sci-fi", name: { th: "ไซไฟ", en: "Sci-Fi" } },
-  { id: 4, slug: "family", name: { th: "ครอบครัว", en: "Family" } },
-  { id: 5, slug: "horror", name: { th: "สยองขวัญ", en: "Horror" } },
-  { id: 6, slug: "comedy", name: { th: "ตลก", en: "Comedy" } },
-  { id: 7, slug: "romance", name: { th: "โรแมนติก", en: "Romance" } },
-];
-
-function g(slug: string): Genre {
-  const found = genres.find((x) => x.slug === slug);
-  if (!found) throw new Error(`unknown genre ${slug}`);
-  return found;
+export interface Catalog {
+  genres: Genre[];
+  movies: MovieDetail[];
+  nowShowing: MovieDetail[];
 }
 
-function movie(
-  index: number,
-  slug: string,
-  title: [string, string],
-  durationMin: number,
-  rating: MovieRating,
-  releaseDate: string,
-  status: MovieDetail["status"],
-  genreSlugs: string[],
-  synopsis: [string, string],
-  originalLanguage: string,
-): MovieDetail {
+/** Builds the catalog from a fixture (generated from the API seed's movies file). */
+export function buildCatalog(source: MoviesFixture): Catalog {
+  const movies: MovieDetail[] = source.movies.map((m) => ({ ...m }));
   return {
-    id: `5a7f6a1e-0c1d-4b8e-9a31-${index.toString().padStart(12, "0")}`,
-    slug,
-    title: { th: title[0], en: title[1] },
-    durationMin,
-    rating,
-    releaseDate,
-    // No posters in the demo: the UI shows its own token-based placeholder.
-    posterUrl: null,
-    status,
-    genres: genreSlugs.map(g),
-    synopsis: { th: synopsis[0], en: synopsis[1] },
-    originalLanguage,
-    backdropUrl: null,
-    trailerUrl: null,
+    genres: source.genres.map((g) => ({ ...g })),
+    movies,
+    nowShowing: movies.filter((m) => m.status === "NOW_SHOWING"),
   };
 }
 
-export const movies: MovieDetail[] = [
-  movie(
-    0,
-    "last-orbit",
-    ["วงโคจรสุดท้าย", "The Last Orbit"],
-    148,
-    "AGE_13",
-    "2026-10-09",
-    "NOW_SHOWING",
-    ["sci-fi", "action"],
-    [
-      "ลูกเรือสถานีอวกาศต้องตัดสินใจครั้งสำคัญเมื่อเส้นทางกลับโลกถูกปิดลง",
-      "A space station crew faces an impossible choice when the way back to Earth closes.",
-    ],
-    "en",
-  ),
-  movie(
-    1,
-    "house-after-rain",
-    ["บ้านหลังฝน", "House After the Rain"],
-    98,
-    "GENERAL",
-    "2026-10-15",
-    "NOW_SHOWING",
-    ["family", "drama"],
-    [
-      "เด็กหญิงกับคุณยายซ่อมบ้านเก่าริมคลองในหน้าฝนที่ยาวนานที่สุดของปี",
-      "A girl and her grandmother repair an old canal-side house in the longest rainy season.",
-    ],
-    "th",
-  ),
-  movie(
-    2,
-    "shadow-of-night",
-    ["เงาแห่งรัตติกาล", "Shadow of the Night"],
-    126,
-    "AGE_18",
-    "2026-10-22",
-    "NOW_SHOWING",
-    ["horror"],
-    [
-      "ทีมสำรวจพบสิ่งที่ไม่ควรปลุกในโรงพยาบาลร้างกลางกรุงเทพฯ",
-      "A survey team wakes something it should not in an abandoned Bangkok hospital.",
-    ],
-    "th",
-  ),
-  movie(
-    3,
-    "noodle-wars",
-    ["ศึกก๋วยเตี๋ยวเดือด", "Noodle Wars"],
-    112,
-    "GENERAL",
-    "2026-10-02",
-    "NOW_SHOWING",
-    ["comedy", "family"],
-    [
-      "สองร้านก๋วยเตี๋ยวคู่แข่งหน้าปากซอยต้องจับมือกันเมื่อห้างใหญ่จะมาเปิด",
-      "Two rival noodle shops at the end of a soi must team up when a mall threatens to move in.",
-    ],
-    "th",
-  ),
-  movie(
-    4,
-    "midnight-in-chiang-mai",
-    ["เที่ยงคืนที่เชียงใหม่", "Midnight in Chiang Mai"],
-    119,
-    "AGE_15",
-    "2026-10-16",
-    "NOW_SHOWING",
-    ["romance", "drama"],
-    [
-      "นักเขียนหนุ่มพบหญิงปริศนาที่มาตลาดกลางคืนทุกวันศุกร์ และเรื่องราวของเธอเปลี่ยนชีวิตเขา",
-      "A young writer meets a stranger at the night market every Friday, and her story changes his life.",
-    ],
-    "th",
-  ),
-  movie(
-    5,
-    "iron-ridge",
-    ["สันเขาเหล็กกล้า", "Iron Ridge"],
-    134,
-    "AGE_15",
-    "2026-10-23",
-    "NOW_SHOWING",
-    ["action"],
-    [
-      "อดีตทหารพรานนำกลุ่มนักปีนเขาหนีจากแก๊งค้าไม้เถื่อนกลางเทือกเขาตะนาวศรี",
-      "A former ranger leads a group of climbers away from timber smugglers in the Tenasserim hills.",
-    ],
-    "en",
-  ),
-  movie(
-    6,
-    "paper-lanterns",
-    ["โคมกระดาษ", "Paper Lanterns"],
-    104,
-    "PROMOTED",
-    "2026-12-05",
-    "COMING_SOON",
-    ["drama", "family"],
-    [
-      "เรื่องราวของครอบครัวช่างทำโคมในเมืองเก่า ก่อนเทศกาลยี่เป็งที่ทุกอย่างอาจเปลี่ยนไป",
-      "A family of lantern makers in an old town, on the eve of a festival that could change everything.",
-    ],
-    "th",
-  ),
-  movie(
-    7,
-    "deep-signal",
-    ["สัญญาณใต้ทะเลลึก", "Deep Signal"],
-    141,
-    "AGE_13",
-    "2026-12-19",
-    "COMING_SOON",
-    ["sci-fi"],
-    [
-      "นักสมุทรศาสตร์จับสัญญาณประหลาดจากใต้ร่องลึกก้นทะเลอันดามัน",
-      "An oceanographer picks up a strange signal from the depths of the Andaman trench.",
-    ],
-    "en",
-  ),
-];
+/**
+ * Which movie (index into `catalog.movies`) plays in a hall slot on a day: a rotation over the
+ * now-showing movies, whatever their number. -1 when nothing is showing.
+ */
+export function rotationMovieIndex(
+  catalog: Catalog,
+  hall: number,
+  slot: number,
+  dayIndex: number,
+): number {
+  if (catalog.nowShowing.length === 0) return -1;
+  const rotation = (hall * SLOT_TIMES.length + slot + dayIndex) % catalog.nowShowing.length;
+  const target = catalog.nowShowing[rotation];
+  return target ? catalog.movies.indexOf(target) : -1;
+}
 
-export const nowShowing = movies.filter((m) => m.status === "NOW_SHOWING");
+// The same movies as the database: apps/web/src/mocks/movies.fixture.json is generated by
+// `npm run mocks:sync-movies -w web` from the API seed's movies.json (or movies.sample.json).
+const catalog = buildCatalog(fixture as MoviesFixture);
+export const { genres, movies, nowShowing } = catalog;
 
 export const cinemas: Cinema[] = [
   {
@@ -255,7 +122,8 @@ export const halls: HallDef[] = [
   },
 ];
 
-export const SLOT_TIMES = ["10:30", "13:00", "15:45", "18:30", "21:15"] as const;
+/** Start times per hall. 3.5 h apart, so even the longest movies (about 3 h 15 m) finish before the next one. */
+export const SLOT_TIMES = ["10:00", "13:30", "17:00", "20:30"] as const;
 const DAY_MS = 86_400_000;
 const EPOCH_2020 = Date.UTC(2020, 0, 1);
 
@@ -317,9 +185,7 @@ export function showtimeIdOfSeat(seatId: string): string | undefined {
 
 /** Which movie plays in a hall slot on a day: a rotation over the now-showing movies. */
 function movieIndexAt(hall: number, slot: number, dayIndex: number): number {
-  const rotation = (hall * SLOT_TIMES.length + slot + dayIndex) % nowShowing.length;
-  const target = nowShowing[rotation];
-  return target ? movies.indexOf(target) : 0;
+  return rotationMovieIndex(catalog, hall, slot, dayIndex);
 }
 
 export function resolveShowtime(key: ShowtimeKey): ShowtimeInfo | undefined {
