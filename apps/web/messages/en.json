@@ -1,0 +1,72 @@
+{
+  "common": {
+    "appName": "Movie Ticketing",
+    "tagline": "Book your seats in a minute",
+    "loading": "Loading…",
+    "retry": "Try again",
+    "close": "Close",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "back": "Back",
+    "save": "Save"
+  },
+  "nav": {
+    "movies": "Movies",
+    "myBookings": "My bookings",
+    "login": "Log in",
+    "mainNavigation": "Main navigation",
+    "skipToContent": "Skip to content"
+  },
+  "language": {
+    "label": "Language",
+    "th": "ไทย",
+    "en": "English"
+  },
+  "theme": {
+    "label": "Theme",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
+  },
+  "footer": {
+    "tmdb": "This product uses the TMDB API but is not endorsed or certified by TMDB.",
+    "copyright": "© Movie Ticketing"
+  },
+  "home": {
+    "title": "Book your seats in a minute",
+    "subtitle": "Pick a movie, a showtime and your seats, then pay by card or PromptPay.",
+    "nowShowing": "Now showing",
+    "empty": "There are no movies to show yet. Please check back soon."
+  },
+  "states": {
+    "errorTitle": "Something went wrong",
+    "errorDescription": "Sorry, something broke on our side. Please try again.",
+    "notFoundTitle": "Page not found",
+    "notFoundDescription": "This page may have been moved or removed.",
+    "backHome": "Back to home"
+  },
+  "errors": {
+    "VALIDATION_FAILED": "Some of the information you entered is not valid. Please check and try again.",
+    "UNAUTHORIZED": "Please log in to continue.",
+    "FORBIDDEN": "You do not have permission to do that.",
+    "NOT_FOUND": "We could not find what you were looking for.",
+    "RATE_LIMITED": "Too many attempts. Please wait a moment and try again.",
+    "INTERNAL_ERROR": "Something went wrong on our side. Please try again later.",
+    "EMAIL_ALREADY_USED": "This email is already registered.",
+    "INVALID_CREDENTIALS": "Incorrect email or password.",
+    "REFRESH_TOKEN_INVALID": "Your session has expired. Please log in again.",
+    "LINE_LOGIN_FAILED": "Could not log in with LINE. Please try again.",
+    "SHOWTIME_NOT_FOUND": "This showtime could not be found.",
+    "SEAT_NOT_FOUND": "One of the selected seats could not be found.",
+    "BOOKING_CLOSED": "Booking for this showtime has closed.",
+    "TOO_MANY_SEATS": "You can book up to 4 seats at a time.",
+    "SEAT_TAKEN": "A seat you chose has just been taken. Please pick another.",
+    "ACTIVE_BOOKING_EXISTS": "You already have a booking waiting for payment. Pay for it or cancel it before booking again.",
+    "BOOKING_NOT_PENDING": "This booking is no longer waiting for payment.",
+    "PAYMENT_IN_PROGRESS": "Your payment is being processed. Please wait a moment.",
+    "PAYMENT_WINDOW_CLOSED": "The payment time has run out. Please choose your seats again.",
+    "WEBHOOK_SIGNATURE_INVALID": "We could not verify the payment notification.",
+    "IDEMPOTENCY_KEY_REUSED": "This request was already sent with different details. Please try again.",
+    "IDEMPOTENCY_KEY_MISSING": "The request was incomplete. Please try again."
+  }
+}

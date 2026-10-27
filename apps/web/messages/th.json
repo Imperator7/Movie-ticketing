@@ -1,0 +1,72 @@
+{
+  "common": {
+    "appName": "Movie Ticketing",
+    "tagline": "จองตั๋วหนังง่าย ๆ ใน 1 นาที",
+    "loading": "กำลังโหลด…",
+    "retry": "ลองอีกครั้ง",
+    "close": "ปิด",
+    "cancel": "ยกเลิก",
+    "confirm": "ยืนยัน",
+    "back": "ย้อนกลับ",
+    "save": "บันทึก"
+  },
+  "nav": {
+    "movies": "ภาพยนตร์",
+    "myBookings": "การจองของฉัน",
+    "login": "เข้าสู่ระบบ",
+    "mainNavigation": "เมนูหลัก",
+    "skipToContent": "ข้ามไปยังเนื้อหา"
+  },
+  "language": {
+    "label": "ภาษา",
+    "th": "ไทย",
+    "en": "English"
+  },
+  "theme": {
+    "label": "ธีม",
+    "light": "สว่าง",
+    "dark": "มืด",
+    "system": "ตามระบบ"
+  },
+  "footer": {
+    "tmdb": "This product uses the TMDB API but is not endorsed or certified by TMDB.",
+    "copyright": "© Movie Ticketing"
+  },
+  "home": {
+    "title": "จองตั๋วหนังง่าย ๆ ใน 1 นาที",
+    "subtitle": "เลือกหนัง เลือกรอบ เลือกที่นั่ง แล้วชำระเงินด้วยบัตรหรือ PromptPay",
+    "nowShowing": "กำลังฉาย",
+    "empty": "ยังไม่มีภาพยนตร์ให้แสดง โปรดกลับมาใหม่เร็ว ๆ นี้"
+  },
+  "states": {
+    "errorTitle": "เกิดข้อผิดพลาดบางอย่าง",
+    "errorDescription": "ขออภัย ระบบขัดข้องชั่วคราว กรุณาลองใหม่อีกครั้ง",
+    "notFoundTitle": "ไม่พบหน้าที่ต้องการ",
+    "notFoundDescription": "หน้านี้อาจถูกย้ายหรือลบไปแล้ว",
+    "backHome": "กลับหน้าแรก"
+  },
+  "errors": {
+    "VALIDATION_FAILED": "ข้อมูลที่กรอกไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง",
+    "UNAUTHORIZED": "กรุณาเข้าสู่ระบบก่อนดำเนินการต่อ",
+    "FORBIDDEN": "คุณไม่มีสิทธิ์ทำรายการนี้",
+    "NOT_FOUND": "ไม่พบข้อมูลที่ต้องการ",
+    "RATE_LIMITED": "ทำรายการถี่เกินไป กรุณารอสักครู่แล้วลองใหม่",
+    "INTERNAL_ERROR": "ระบบขัดข้อง กรุณาลองใหม่อีกครั้งภายหลัง",
+    "EMAIL_ALREADY_USED": "อีเมลนี้ถูกใช้สมัครสมาชิกแล้ว",
+    "INVALID_CREDENTIALS": "อีเมลหรือรหัสผ่านไม่ถูกต้อง",
+    "REFRESH_TOKEN_INVALID": "เซสชันหมดอายุ กรุณาเข้าสู่ระบบอีกครั้ง",
+    "LINE_LOGIN_FAILED": "เข้าสู่ระบบด้วย LINE ไม่สำเร็จ กรุณาลองใหม่",
+    "SHOWTIME_NOT_FOUND": "ไม่พบรอบฉายนี้",
+    "SEAT_NOT_FOUND": "ไม่พบที่นั่งที่เลือก",
+    "BOOKING_CLOSED": "รอบฉายนี้ปิดรับจองแล้ว",
+    "TOO_MANY_SEATS": "เลือกที่นั่งได้สูงสุด 4 ที่ต่อการจอง",
+    "SEAT_TAKEN": "ที่นั่งที่เลือกมีคนจองไปแล้ว กรุณาเลือกที่นั่งใหม่",
+    "ACTIVE_BOOKING_EXISTS": "คุณมีการจองที่รอชำระเงินอยู่ กรุณาชำระเงินหรือยกเลิกก่อนจองใหม่",
+    "BOOKING_NOT_PENDING": "การจองนี้ไม่ได้อยู่ในสถานะรอชำระเงิน",
+    "PAYMENT_IN_PROGRESS": "กำลังดำเนินการชำระเงิน กรุณารอสักครู่",
+    "PAYMENT_WINDOW_CLOSED": "หมดเวลาชำระเงินแล้ว กรุณาเลือกที่นั่งใหม่",
+    "WEBHOOK_SIGNATURE_INVALID": "ไม่สามารถยืนยันข้อมูลการชำระเงินได้",
+    "IDEMPOTENCY_KEY_REUSED": "คำขอนี้ถูกส่งไปแล้วด้วยข้อมูลที่ต่างกัน กรุณาลองใหม่",
+    "IDEMPOTENCY_KEY_MISSING": "คำขอไม่สมบูรณ์ กรุณาลองใหม่อีกครั้ง"
+  }
+}
