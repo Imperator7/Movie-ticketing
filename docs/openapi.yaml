@@ -823,7 +823,10 @@ components:
         durationMin: { type: integer, examples: [166] }
         rating: { $ref: "#/components/schemas/MovieRating" }
         releaseDate: { type: string, format: date }
-        posterUrl: { type: string, format: uri }
+        posterUrl:
+          type: [string, "null"]
+          format: uri
+          description: TMDB image URL. null → the web shows its own placeholder (no third-party image hosts).
         status: { $ref: "#/components/schemas/MovieStatus" }
         genres:
           type: array
@@ -1041,7 +1044,7 @@ components:
               properties:
                 slug: { type: string }
                 title: { $ref: "#/components/schemas/LocalizedText" }
-                posterUrl: { type: string, format: uri }
+                posterUrl: { type: [string, "null"], format: uri }
                 rating: { $ref: "#/components/schemas/MovieRating" }
                 durationMin: { type: integer }
             cinema: { $ref: "#/components/schemas/Cinema" }

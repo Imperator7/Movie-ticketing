@@ -12,9 +12,6 @@ import { CINEMAS } from "./venues.js";
 /** Days of showtimes generated, counting today (today .. today + 30). */
 export const SCHEDULE_DAYS = 31;
 
-/** `poster_url` is NOT NULL in the database (and required by the API contract), so movies without a poster get this. */
-export const PLACEHOLDER_POSTER_URL = "https://placehold.co/500x750/1a1a1a/f5f5f5/png?text=Poster";
-
 const SEED_DIR = fileURLToPath(new URL(".", import.meta.url));
 
 export interface LoadedMovies {
@@ -93,7 +90,8 @@ export async function runSeed(
       rating: movie.rating,
       originalLanguage: movie.originalLanguage,
       releaseDate: new Date(`${movie.releaseDate}T00:00:00Z`),
-      posterUrl: movie.posterUrl ?? PLACEHOLDER_POSTER_URL,
+      // null is fine: the web renders its own placeholder (no third-party image hosts, see WEB-2).
+      posterUrl: movie.posterUrl,
       backdropUrl: movie.backdropUrl,
       trailerUrl: movie.trailerUrl,
       status: movie.status,

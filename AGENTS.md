@@ -14,15 +14,15 @@ work, as long as it genuinely helps.
 
 Update this table when an item is merged. Details live in `plan.md` §4.
 
-| Area            | State                                                                                                                                                                                                                                                                       |
-| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Phase 0: Design | ✅ Done: ER diagram, DB design, OpenAPI contract, security doc, grilling decisions                                                                                                                                                                                          |
-| Repo / DevOps   | ✅ Turborepo, shared TS + ESLint configs, Prettier, Husky, commitlint, CI workflow (not yet pushed to GitHub), Dependabot                                                                                                                                                   |
-| Design system   | ✅ "Marquee" theme + cinema components, **approved** (`/design-system`)                                                                                                                                                                                                     |
-| Database        | ✅ Prisma schema, hand-written constraints, roles (`migrator` / `app_user`), 26/26 constraint checks pass. ⏳ Seed (needs a TMDB API key)                                                                                                                                   |
-| API foundation  | ✅ Config (validated env), PrismaService (app_user, pool), pino + request id + redaction, contract error filter, nestjs-zod strict validation, Swagger (dev), helmet/CORS/limits, health live/ready + graceful drain, Testcontainers harness. 67 unit + 3 integration tests |
-| Web foundation  | ✅ next-intl `/th` `/en` (typed messages, all error codes), React Query, api-client (bearer, request id, single-flight refresh), Zustand session, orval client + Zod + MSW mocks (committed), app shell, dev pages excluded from prod. 115 web tests                        |
-| Next up         | 🔄 Frontend: clickable demo screens (full customer flow on mocks). 🔄 Backend: seed data. Then Phase 2 auth                                                                                                                                                                 |
+| Area            | State                                                                                                                                                                                                                                                                             |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Phase 0: Design | ✅ Done: ER diagram, DB design, OpenAPI contract, security doc, grilling decisions                                                                                                                                                                                                |
+| Repo / DevOps   | ✅ Turborepo, shared TS + ESLint configs, Prettier, Husky, commitlint, CI workflow (not yet pushed to GitHub), Dependabot                                                                                                                                                         |
+| Design system   | ✅ "Marquee" theme + cinema components, **approved** (`/design-system`)                                                                                                                                                                                                           |
+| Database        | ✅ Prisma schema, hand-written constraints, roles (`migrator` / `app_user`), 26/26 constraint checks. ✅ Idempotent seed (2 cinemas, 6 halls, 992 seats, 31 days of showtimes) from `movies.sample.json`. ⏳ Real movies need `TMDB_API_KEY` → `npm run seed:fetch-movies -w api` |
+| API foundation  | ✅ Config (validated env), PrismaService (app_user, pool), pino + request id + redaction, contract error filter, nestjs-zod strict validation, Swagger (dev), helmet/CORS/limits, health live/ready + graceful drain, Testcontainers harness. 67 unit + 3 integration tests       |
+| Web foundation  | ✅ next-intl `/th` `/en` (typed messages, all error codes), React Query, api-client (bearer, request id, single-flight refresh), Zustand session, orval client + Zod + MSW mocks (committed), app shell, dev pages excluded from prod. 115 web tests                              |
+| Next up         | 🔄 Frontend: clickable demo screens (full customer flow on mocks). Backend: Phase 2 auth (awaiting go-ahead)                                                                                                                                                                      |
 
 ## 3. Source of truth
 
@@ -163,6 +163,8 @@ Conventional Commits (`feat|fix|build|docs|chore|test|refactor(scope): …`; `me
   Turbo runs `db:generate` before api `lint`/`typecheck`/`test`/`build`.
 - Validation errors: `details.fields` is `{ "<field.path>": ["<zod issue code>"] }`, `_root` for whole-body errors,
   `unrecognized_key` for unknown keys. The web maps it straight onto React Hook Form's `setError`.
+- `movies.poster_url` is **nullable**: no poster → the web's own placeholder. Never use third-party placeholder
+  image hosts (CSP allows only self + `image.tmdb.org`).
 - **Merging two branches that both touched `package-lock.json`**: never hand-merge it. `git checkout --ours
 package-lock.json && npm install` (rebuilds from the merged package.json files), then `npm run check`.
 - Peer deps must be declared explicitly (e.g. `@testing-library/dom` for Testing Library React). A rebuilt lockfile

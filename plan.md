@@ -68,7 +68,8 @@ Each phase lists **DB**, **API** and **WEB** work. Security ids refer to `docs/s
 - [x] Prisma schema per ER diagram (all enums, relations, `@@map` to snake_case)
 - [x] Raw SQL migrations: partial uniques (seat lock, one pending booking, email), CHECK constraints, showtime exclusion (`btree_gist`), indexes (DB-1)
 - [x] Grants: `app_user` DML only (DB-2)
-- [ ] `seed:fetch-movies` (TMDB → `movies.json`, committed), `seed` (2 cinemas × 3 halls with seat layouts, showtimes today → +30 days, prices). Deterministic and re-runnable
+- [x] `seed` (2 cinemas × 3 halls with seat layouts, showtimes today → +30 days, prices). Deterministic and idempotent. Uses `movies.sample.json` until `movies.json` exists
+- [ ] `seed:fetch-movies` built. **Run it once `TMDB_API_KEY` is in `.env`**, then commit `movies.json`
 
 **API**
 

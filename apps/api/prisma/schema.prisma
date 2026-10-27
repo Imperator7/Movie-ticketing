@@ -192,7 +192,7 @@ model Movie {
   rating           MovieRating
   originalLanguage String      @map("original_language")
   releaseDate      DateTime    @map("release_date") @db.Date
-  posterUrl        String      @map("poster_url")
+  posterUrl        String?     @map("poster_url")
   backdropUrl      String?     @map("backdrop_url")
   trailerUrl       String?     @map("trailer_url")
   status           MovieStatus
