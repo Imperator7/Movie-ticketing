@@ -1,9 +1,13 @@
-import "dotenv/config";
+import { config as loadEnv } from "dotenv";
 import { writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { format } from "prettier";
 import { moviesFileSchema } from "./schema.js";
 import { TmdbClient, fetchSeedMovies } from "./tmdb.js";
+
+// apps/api/.env first, then the repo-root .env (where the TMDB key usually lives). Existing values win.
+loadEnv({ quiet: true });
+loadEnv({ path: fileURLToPath(new URL("../../../../.env", import.meta.url)), quiet: true });
 
 /**
  * `npm run seed:fetch-movies -w api`: snapshots Thailand's now playing + upcoming movies from TMDB into

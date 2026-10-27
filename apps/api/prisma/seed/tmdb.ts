@@ -132,6 +132,19 @@ function nonEmpty(value: string | null | undefined): string | undefined {
 }
 
 /**
+ * Text usable on the Thai site: Thai script, or Latin (many Thai releases keep the English title).
+ * TMDB falls back to the original title when no Thai translation exists (e.g. Chinese or Hindi script),
+ * which a Thai reader can't use, so those count as missing.
+ */
+export function readableForThai(value: string | null | undefined): string | undefined {
+  const text = nonEmpty(value);
+  if (text === undefined) return undefined;
+  const letters = text.replace(/[\s\d\p{P}\p{S}]/gu, "");
+  if (letters === "") return text;
+  return /^[\p{Script=Thai}\p{Script=Latin}]+$/u.test(letters) ? text : undefined;
+}
+
+/**
  * Combines the th-TH and en-US details of one movie. Thai text falls back to English when TMDB has no
  * Thai translation (and vice versa), so every movie always has both languages filled in.
  * Returns null when the movie lacks data we cannot invent (runtime, release date, English title).
@@ -146,9 +159,9 @@ export function mapTmdbMovie(
   const releaseDate = nonEmpty(en.release_date) ?? nonEmpty(th.release_date);
   if (!titleEn || runtime <= 0 || !releaseDate) return null;
 
-  const titleTh = nonEmpty(th.title) ?? titleEn;
+  const titleTh = readableForThai(th.title) ?? titleEn;
   const synopsisEn = nonEmpty(en.overview) ?? nonEmpty(th.overview) ?? titleEn;
-  const synopsisTh = nonEmpty(th.overview) ?? synopsisEn;
+  const synopsisTh = readableForThai(th.overview) ?? synopsisEn;
 
   const thaiNames = new Map(th.genres.map((genre) => [genre.id, genre.name]));
   const genres: SeedGenre[] = en.genres
