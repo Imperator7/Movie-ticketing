@@ -1,0 +1,159 @@
+{
+  "movies": [
+    {
+      "tmdbId": null,
+      "slug": "bangkok-after-midnight",
+      "titleTh": "กรุงเทพหลังเที่ยงคืน",
+      "titleEn": "Bangkok After Midnight",
+      "synopsisTh": "คนขับแท็กซี่กะดึกต้องพาผู้โดยสารปริศนาไปให้ครบสิบจุดก่อนฟ้าสาง โดยไม่รู้ว่าทุกจุดคือบทพิสูจน์ของตัวเอง",
+      "synopsisEn": "A night-shift taxi driver must deliver a mysterious passenger to ten stops before dawn, never guessing that every stop is a test of his own past.",
+      "durationMin": 118,
+      "rating": "AGE_15",
+      "originalLanguage": "th",
+      "releaseDate": "2026-10-09",
+      "posterUrl": null,
+      "backdropUrl": null,
+      "trailerUrl": null,
+      "status": "NOW_SHOWING",
+      "genres": [
+        { "tmdbId": 53, "slug": "thriller", "nameTh": "ระทึกขวัญ", "nameEn": "Thriller" },
+        { "tmdbId": 18, "slug": "drama", "nameTh": "ดราม่า", "nameEn": "Drama" }
+      ]
+    },
+    {
+      "tmdbId": null,
+      "slug": "captain-kapi-and-the-lost-island",
+      "titleTh": "กัปตันกะปิกับเกาะที่หายไป",
+      "titleEn": "Captain Kapi and the Lost Island",
+      "synopsisTh": "ลิงแสมตัวน้อยผู้ใฝ่ฝันอยากเป็นกัปตัน ออกเรือตามหาเกาะลึกลับที่ปรากฏบนแผนที่ในวันที่ฟ้าครึ้มเท่านั้น",
+      "synopsisEn": "A young macaque who dreams of being a captain sets sail to find a mysterious island that only shows up on the map on cloudy days.",
+      "durationMin": 92,
+      "rating": "PROMOTED",
+      "originalLanguage": "th",
+      "releaseDate": "2026-10-02",
+      "posterUrl": null,
+      "backdropUrl": null,
+      "trailerUrl": null,
+      "status": "NOW_SHOWING",
+      "genres": [
+        { "tmdbId": 16, "slug": "animation", "nameTh": "แอนิเมชัน", "nameEn": "Animation" },
+        { "tmdbId": 12, "slug": "adventure", "nameTh": "ผจญภัย", "nameEn": "Adventure" },
+        { "tmdbId": 10751, "slug": "family", "nameTh": "ครอบครัว", "nameEn": "Family" }
+      ]
+    },
+    {
+      "tmdbId": null,
+      "slug": "last-train-to-aurora",
+      "titleTh": "ขบวนสุดท้ายสู่ออโรร่า",
+      "titleEn": "Last Train to Aurora",
+      "synopsisTh": "ในอนาคตที่โลกเหลือรถไฟเพียงขบวนเดียวที่วิ่งผ่านแสงเหนือ วิศวกรหญิงต้องตัดสินใจว่าจะช่วยใครไว้บนขบวนนั้น",
+      "synopsisEn": "In a future where one train still runs beneath the northern lights, an engineer must decide who she can afford to save.",
+      "durationMin": 148,
+      "rating": "AGE_13",
+      "originalLanguage": "en",
+      "releaseDate": "2026-09-25",
+      "posterUrl": null,
+      "backdropUrl": null,
+      "trailerUrl": null,
+      "status": "NOW_SHOWING",
+      "genres": [
+        { "tmdbId": 878, "slug": "science-fiction", "nameTh": "ไซไฟ", "nameEn": "Science Fiction" },
+        { "tmdbId": 12, "slug": "adventure", "nameTh": "ผจญภัย", "nameEn": "Adventure" }
+      ]
+    },
+    {
+      "tmdbId": null,
+      "slug": "love-in-the-rainy-season",
+      "titleTh": "รักในหน้าฝน",
+      "titleEn": "Love in the Rainy Season",
+      "synopsisTh": "ช่างซ่อมร่มกับนักเขียนนิยายที่ไม่เคยเจอกัน ผูกพันกันผ่านร่มคันเดียวที่ถูกส่งต่อกันไปมาตลอดฤดูฝน",
+      "synopsisEn": "An umbrella repairman and a novelist who never meet grow close through a single umbrella that keeps getting passed between them all rainy season.",
+      "durationMin": 105,
+      "rating": "GENERAL",
+      "originalLanguage": "th",
+      "releaseDate": "2026-10-16",
+      "posterUrl": null,
+      "backdropUrl": null,
+      "trailerUrl": null,
+      "status": "NOW_SHOWING",
+      "genres": [
+        { "tmdbId": 10749, "slug": "romance", "nameTh": "โรแมนติก", "nameEn": "Romance" },
+        { "tmdbId": 35, "slug": "comedy", "nameTh": "ตลก", "nameEn": "Comedy" }
+      ]
+    },
+    {
+      "tmdbId": null,
+      "slug": "shadow-of-the-iron-crown",
+      "titleTh": "เงาแห่งมงกุฎเหล็ก",
+      "titleEn": "Shadow of the Iron Crown",
+      "synopsisTh": "อัศวินผู้ถูกขับไล่กลับมายังอาณาจักรที่เคยทรยศเขา เพื่อทวงคืนมงกุฎที่ถูกสาปให้กลืนกินผู้สวมใส่",
+      "synopsisEn": "An exiled knight returns to the kingdom that betrayed him to reclaim a crown cursed to consume whoever wears it.",
+      "durationMin": 165,
+      "rating": "AGE_18",
+      "originalLanguage": "en",
+      "releaseDate": "2026-10-23",
+      "posterUrl": null,
+      "backdropUrl": null,
+      "trailerUrl": null,
+      "status": "NOW_SHOWING",
+      "genres": [
+        { "tmdbId": 14, "slug": "fantasy", "nameTh": "แฟนตาซี", "nameEn": "Fantasy" },
+        { "tmdbId": 28, "slug": "action", "nameTh": "แอ็กชัน", "nameEn": "Action" }
+      ]
+    },
+    {
+      "tmdbId": null,
+      "slug": "the-quiet-house-on-soi-9",
+      "titleTh": "บ้านเงียบในซอย 9",
+      "titleEn": "The Quiet House on Soi 9",
+      "synopsisTh": "ครอบครัวหนุ่มสาวย้ายเข้าบ้านหลังงามในราคาถูกผิดปกติ และพบว่าความเงียบของมันไม่ได้มาจากความว่างเปล่า",
+      "synopsisEn": "A young family moves into a lovely house at a suspiciously low price and learns that its silence is not the silence of an empty home.",
+      "durationMin": 96,
+      "rating": "AGE_20",
+      "originalLanguage": "th",
+      "releaseDate": "2026-10-30",
+      "posterUrl": null,
+      "backdropUrl": null,
+      "trailerUrl": null,
+      "status": "COMING_SOON",
+      "genres": [{ "tmdbId": 27, "slug": "horror", "nameTh": "สยองขวัญ", "nameEn": "Horror" }]
+    },
+    {
+      "tmdbId": null,
+      "slug": "tokyo-ramen-detectives",
+      "titleTh": "นักสืบราเมนแห่งโตเกียว",
+      "titleEn": "Tokyo Ramen Detectives",
+      "synopsisTh": "สองพี่น้องเจ้าของร้านราเมนเล็กๆ ไขคดีลึกลับของลูกค้าประจำ ด้วยรสชาติของน้ำซุปเป็นเบาะแสเดียว",
+      "synopsisEn": "Two siblings who run a tiny ramen shop solve their regulars' mysteries, with the taste of the broth as their only clue.",
+      "durationMin": 109,
+      "rating": "AGE_13",
+      "originalLanguage": "ja",
+      "releaseDate": "2026-11-12",
+      "posterUrl": null,
+      "backdropUrl": null,
+      "trailerUrl": null,
+      "status": "COMING_SOON",
+      "genres": [
+        { "tmdbId": 9648, "slug": "mystery", "nameTh": "ลึกลับ", "nameEn": "Mystery" },
+        { "tmdbId": 35, "slug": "comedy", "nameTh": "ตลก", "nameEn": "Comedy" }
+      ]
+    },
+    {
+      "tmdbId": null,
+      "slug": "winter-sonata-reunion",
+      "titleTh": "รวมรุ่นฤดูหนาว",
+      "titleEn": "Winter Sonata Reunion",
+      "synopsisTh": "เพื่อนสมัยมัธยมนัดเจอกันอีกครั้งที่โซลหลังผ่านไปยี่สิบปี และความลับที่ทุกคนเก็บไว้ก็เริ่มเปิดเผย",
+      "synopsisEn": "Old high-school friends meet again in Seoul after twenty years, and the secrets they each kept begin to surface.",
+      "durationMin": 126,
+      "rating": "AGE_15",
+      "originalLanguage": "ko",
+      "releaseDate": "2026-07-17",
+      "posterUrl": null,
+      "backdropUrl": null,
+      "trailerUrl": null,
+      "status": "ENDED",
+      "genres": [{ "tmdbId": 18, "slug": "drama", "nameTh": "ดราม่า", "nameEn": "Drama" }]
+    }
+  ]
+}
