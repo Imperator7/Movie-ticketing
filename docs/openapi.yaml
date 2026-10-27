@@ -14,6 +14,12 @@ info:
     - **Errors** always use the `Error` schema. The web translates `code`, and `message` is English for logs.
     - Auth: `Authorization: Bearer <accessToken>` (15 min). The refresh token is an httpOnly cookie `rt`
       (`Path=/api/v1/auth`, `SameSite=Strict`, `Secure`), valid 7 days and rotated on every refresh.
+      Reusing an already-rotated refresh token revokes the whole session family.
+    - Cookie-authenticated endpoints (`/auth/refresh`, `/auth/logout`) reject requests whose `Origin` header is not
+      the web origin (`403 FORBIDDEN`), as CSRF defence in depth on top of `SameSite=Strict`.
+    - Every response carries `X-Request-Id` (echoed if the client sent a valid one). Error reports quote it.
+    - Rate-limited endpoints return `RateLimit-*` headers and `Retry-After` on `429`.
+    - Request bodies are strict: unknown fields are rejected with `VALIDATION_FAILED`.
 
     ## Business rules
     | Rule | Value |
@@ -45,25 +51,37 @@ tags:
     description: Stripe PaymentIntents (card + PromptPay) and webhooks.
 
 paths:
-  /health:
+  /health/live:
     get:
       tags: [Health]
-      operationId: getHealth
-      summary: Liveness and DB check (used by the ALB)
+      operationId: getLiveness
+      summary: Liveness (the process is up). Used by the container health check
       security: []
       responses:
         "200":
-          description: Healthy
+          description: Alive
           content:
             application/json:
-              schema:
-                type: object
-                required: [status, db]
-                properties:
-                  status: { type: string, const: ok }
-                  db: { type: string, const: up }
+              schema: { $ref: "#/components/schemas/HealthStatus" }
+
+  /health/ready:
+    get:
+      tags: [Health]
+      operationId: getReadiness
+      summary: Readiness (DB reachable, not shutting down). Used by the ALB target group
+      description: Returns `503` while the app is draining after SIGTERM, so the ALB stops sending traffic first.
+      security: []
+      responses:
+        "200":
+          description: Ready
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HealthStatus" }
         "503":
-          $ref: "#/components/responses/Error"
+          description: Not ready
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HealthStatus" }
 
   # ---------------------------------------------------------------- Auth
   /auth/register:
@@ -367,6 +385,9 @@ paths:
         4. Inserts the booking and booking_seats. The partial unique index decides who wins a race.
 
         Sets `paymentExpiresAt = now + 5 min` and `holdExpiresAt = now + 6 min`.
+        Prices and the total are computed on the server. The client only sends seat ids.
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
       requestBody:
         required: true
         content:
@@ -374,7 +395,7 @@ paths:
             schema: { $ref: "#/components/schemas/CreateBookingRequest" }
       responses:
         "201":
-          description: Seats locked
+          description: "Seats locked (or the stored response replayed for a repeated Idempotency-Key, with header `Idempotent-Replayed: true`)"
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Booking" }
@@ -405,7 +426,7 @@ paths:
                     message: You already have a booking in progress
                     details: { bookingId: "3f1c2d4e-5a6b-4c7d-8e9f-0a1b2c3d4e5f" }
         "422":
-          description: "`VALIDATION_FAILED`, `TOO_MANY_SEATS` or `BOOKING_CLOSED`"
+          description: "`VALIDATION_FAILED`, `TOO_MANY_SEATS`, `BOOKING_CLOSED` or `IDEMPOTENCY_KEY_REUSED` (same key, different body)"
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
@@ -545,7 +566,7 @@ paths:
 
         | Event | Effect |
         |---|---|
-        | `payment_intent.succeeded` | payment SUCCEEDED, booking CONFIRMED (guarded update). If the booking is already CANCELLED: automatic refund, payment REFUNDED, cancel reason LATE_PAYMENT_REFUNDED |
+        | `payment_intent.succeeded` | Amount and currency must match the booking (mismatch → logged as an alert, not confirmed). Then payment SUCCEEDED, booking CONFIRMED (guarded update). If the booking is already CANCELLED: automatic refund, payment REFUNDED, cancel reason LATE_PAYMENT_REFUNDED |
         | `payment_intent.payment_failed` | payment FAILED, booking stays PENDING_PAYMENT (user may retry inside the window) |
         | `payment_intent.canceled` | payment CANCELLED |
       security: []
@@ -587,6 +608,12 @@ components:
       schema: { type: string }
 
   parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      description: Client-generated UUID, one per user action (e.g. one Buy click). Retries reuse it. Kept 24 h.
+      schema: { type: string, format: uuid }
     Page:
       name: page
       in: query
@@ -616,11 +643,6 @@ components:
       schema: { type: string, format: uuid }
 
   responses:
-    Error:
-      description: Error
-      content:
-        application/json:
-          schema: { $ref: "#/components/schemas/Error" }
     ValidationError:
       description: "`VALIDATION_FAILED`: `details.fields` maps field → message keys"
       content:
@@ -687,6 +709,18 @@ components:
         - PAYMENT_IN_PROGRESS
         - PAYMENT_WINDOW_CLOSED
         - WEBHOOK_SIGNATURE_INVALID
+        - IDEMPOTENCY_KEY_REUSED
+        - IDEMPOTENCY_KEY_MISSING
+
+    HealthStatus:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string, enum: [ok, error, shutting_down] }
+        checks:
+          type: object
+          additionalProperties: { type: string, enum: [up, down] }
+          examples: [{ database: up }]
 
     PageMeta:
       type: object

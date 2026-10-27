@@ -24,9 +24,12 @@ erDiagram
     REFRESH_TOKENS {
         uuid id PK
         uuid user_id FK
+        uuid family_id "all rotations of one login share it; reuse of a revoked token revokes the family"
         text token_hash UK "sha256 of the token, never the raw token"
         timestamptz expires_at
-        timestamptz revoked_at "nullable, set on logout / rotation"
+        timestamptz revoked_at "nullable, set on logout / rotation / reuse detection"
+        text user_agent "nullable, for a future 'active sessions' page"
+        inet ip "nullable"
         timestamptz created_at
     }
 
@@ -143,6 +146,25 @@ erDiagram
         timestamptz released_at "nullable = seat locked; set = seat unlocked"
     }
 
+    BOOKING_EVENTS {
+        bigint id PK
+        uuid booking_id FK
+        booking_event_type type "CREATED, PAYMENT_STARTED, PAYMENT_FAILED, CONFIRMED, CANCELLED, REFUNDED"
+        event_actor actor "USER, SYSTEM, STRIPE"
+        jsonb data "e.g. cancel reason, stripe ids, seat ids"
+        timestamptz created_at
+    }
+
+    IDEMPOTENCY_KEYS {
+        uuid user_id PK, FK
+        text key PK "Idempotency-Key header (client UUID)"
+        text request_hash "sha256 of method + path + body"
+        int response_status "nullable while in progress"
+        jsonb response_body "nullable while in progress"
+        timestamptz created_at
+        timestamptz expires_at "created_at + 24 h"
+    }
+
     %% ===== Payment (Stripe) =====
     PAYMENTS {
         uuid id PK
@@ -191,3 +213,5 @@ erDiagram
     SEATS          ||--o{ BOOKING_SEATS    : "reserved as"
 
     BOOKINGS       ||--o{ PAYMENTS         : "paid by (retries allowed)"
+    BOOKINGS       ||--|{ BOOKING_EVENTS   : "audit trail"
+    USERS          ||--o{ IDEMPOTENCY_KEYS : "replays"

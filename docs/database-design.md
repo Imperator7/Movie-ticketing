@@ -160,6 +160,52 @@ transaction, so an expired booking that the job hasn't cleaned up yet never bloc
 that JSON (offline, CI-safe) and generates showtimes from **today to +30 days**. Posters are TMDB image URLs, with
 TMDB attribution in the footer.
 
+### 14. Refresh token families (stolen-token detection)
+Every login starts a new `family_id`. Each refresh revokes the presented token and issues a new one in the same family.
+If an **already-revoked** token is presented again, someone else has a copy, so **every token in the family is
+revoked** and the user must log in again. Done in one transaction with `SELECT … FOR UPDATE` on the token row, so two
+tabs refreshing at the same moment don't trigger a false alarm. The web also makes refresh single-flight.
+
+### 15. Booking audit trail
+Every state change writes a `booking_events` row in the **same transaction** as the change. This answers
+"what happened to booking MT-7KQ2XP?" when debugging payments, and costs one insert.
+
+### 16. Idempotency keys
+`POST /bookings` requires an `Idempotency-Key` header (a UUID the web generates once per Buy click). The first request
+stores its response. A retry with the same key and the same body replays the stored response, so a double click or a
+network retry never shows a confusing `ACTIVE_BOOKING_EXISTS`. The same key with a different body → `422
+IDEMPOTENCY_KEY_REUSED`. Rows expire after 24 h (cleaned by the job).
+
+### 17. CHECK constraints (the DB rejects impossible data)
+```sql
+ALTER TABLE showtime_prices ADD CHECK (price_baht > 0);
+ALTER TABLE booking_seats   ADD CHECK (price_baht > 0);
+ALTER TABLE bookings        ADD CHECK (total_baht > 0);
+ALTER TABLE bookings        ADD CHECK (payment_expires_at < hold_expires_at);
+ALTER TABLE bookings        ADD CHECK ((status = 'CANCELLED') = (cancel_reason IS NOT NULL));
+ALTER TABLE bookings        ADD CHECK ((status = 'CONFIRMED') = (confirmed_at IS NOT NULL));
+ALTER TABLE payments        ADD CHECK (amount_baht > 0);
+ALTER TABLE showtimes       ADD CHECK (ends_at > starts_at);
+ALTER TABLE movies          ADD CHECK (duration_min > 0);
+ALTER TABLE users           ADD CHECK (email IS NULL OR email = lower(email));
+```
+Application bugs then fail loudly at the database instead of silently corrupting data.
+
+### 18. Background jobs run safely on many containers
+Production runs 2+ API containers, and each one runs the scheduler. Each job run first takes
+`pg_try_advisory_xact_lock(<job id>)`. Only the container that gets the lock works, and the others skip that tick.
+The guarded updates (`WHERE status = 'PENDING_PAYMENT'`) make a double run harmless anyway.
+
+### 19. Time
+All timestamps are `timestamptz` (stored in UTC). "A day" is converted to a Bangkok-time range in one helper
+(`bangkokDayRange(date)`), which is the only place that knows the timezone. Edge cases (23:30 shows, the cut-off
+crossing midnight) have tests.
+
+### 20. Personal data (PDPA)
+Personal data: `users.email`, `display_name`, `phone`, `refresh_tokens.ip/user_agent`. Collected minimally, never
+logged (pino redaction), and never sent to Stripe beyond what payment needs. Account deletion (anonymise the user, keep
+bookings for accounting) is in the backlog.
+
 ## Indexes (besides PK/UK)
 
 | Table | Index | For |
@@ -174,6 +220,9 @@ TMDB attribution in the footer.
 | booking_seats | partial unique `(showtime_id, seat_id) WHERE released_at IS NULL` | seat lock |
 | payments | `(booking_id)` | payments of a booking |
 | refresh_tokens | `(user_id)` | revoke all sessions |
+| refresh_tokens | `(family_id)` | revoke a family on reuse |
+| booking_events | `(booking_id, created_at)` | audit trail of a booking |
+| idempotency_keys | `(expires_at)` | cleanup |
 | auth_identities | unique `(provider, provider_user_id)` | find user by LINE id |
 | users | partial unique `(email) WHERE email IS NOT NULL` | email login |
 | bookings | partial unique `(user_id) WHERE status = 'PENDING_PAYMENT'` | one active booking |
@@ -193,3 +242,5 @@ TMDB attribution in the footer.
 | cancel_reason | PAYMENT_TIMEOUT, USER_CANCELLED, LATE_PAYMENT_REFUNDED |
 | payment_method | CARD, PROMPTPAY |
 | payment_status | PENDING, SUCCEEDED, FAILED, CANCELLED, REFUNDED |
+| booking_event_type | CREATED, PAYMENT_STARTED, PAYMENT_FAILED, CONFIRMED, CANCELLED, REFUNDED |
+| event_actor | USER, SYSTEM, STRIPE |

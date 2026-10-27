@@ -1,6 +1,7 @@
 # Movie Ticketing — Plan
 
-A full-stack movie ticketing app (Next.js + NestJS), built production-ready to learn AWS, DevOps and AI-assisted development.
+A full-stack movie ticketing app (Next.js + NestJS), built production-grade to learn backend, AWS, DevOps and
+AI-assisted development.
 
 ## 1. MVP
 
@@ -8,93 +9,151 @@ A customer can, in **Thai (default) or English**: browse movies → pick a showt
 log in → pay within 5 min by **card (Mastercard/Visa)** or **PromptPay QR** (Stripe test mode, THB) → get a **ticket QR**
 → see "My bookings". There is no admin UI. Data comes from a seed script.
 
-**Done when:** the full stack runs with `docker compose up`, a ticket can be bought end to end, and unit, integration
-and e2e tests pass. AWS comes after the MVP.
+**Done when:** the full stack runs with `docker compose up`, a ticket can be bought end to end, CI is green, and unit,
+integration and e2e tests pass. AWS comes after the MVP.
 
 ## 2. Design docs (source of truth)
 
 | What | File | Review at |
 |---|---|---|
 | Database: ER diagram | `docs/er-diagram.mmd` | `/er-diagram` |
-| Database: rules, seat locks, booking lifecycle | `docs/database-design.md` | `/er-diagram` (below the diagram) |
-| API contract: every endpoint, schema and error code | `docs/openapi.yaml` (`npm run lint:openapi`) | `/openapi` |
+| Database: rules, locks, lifecycle, constraints | `docs/database-design.md` | `/er-diagram` |
+| API contract | `docs/openapi.yaml` (`npm run lint:openapi`) | `/openapi` |
+| Security controls (WEB-*, API-*, DB-*, OPS-*) | `docs/security.md` | – |
 
 ## 3. Stack
 
 | Area | Choice |
 |---|---|
-| Repo | npm workspaces: `apps/web`, `apps/api` |
-| Web | Next.js 16 static export, Tailwind v4, shadcn/ui, next-intl (`/th`, `/en`) |
+| Repo | npm workspaces + **Turborepo** (cached builds). Node 24 (`.nvmrc`), TypeScript strict everywhere |
+| Quality | ESLint (typed rules), Prettier, Husky + lint-staged, commitlint (Conventional Commits), gitleaks |
+| Web | Next.js 16 static export, Tailwind v4, shadcn/ui, next-intl (`/th`, `/en`), Storybook (UI components, seat map) |
 | Web state | TanStack Query (server state), Zustand (session only), React Hook Form + Zod (forms), URL (filters, date, `?seats=`) |
-| API client | orval → typed fetchers, Query hooks and Zod schemas from OpenAPI |
-| API | NestJS, Prisma, PostgreSQL, Swagger, pino |
-| Auth | Email + password first, **LINE Login (OAuth 2.0)** later. JWT 15 min + rotating httpOnly refresh cookie (7 days) |
+| API client | orval → typed fetchers, Query hooks, Zod schemas and **MSW mocks** from OpenAPI |
+| API | NestJS 11, **nestjs-zod** (Zod DTOs → OpenAPI), Prisma, PostgreSQL 17, pino, helmet, throttler, `@nestjs/schedule` |
+| Auth | Email + password first, **LINE Login (OAuth 2.0)** later. JWT 15 min + rotating refresh cookie with family revocation |
 | Payments | Stripe PaymentIntents + Payment Element (`card`, `promptpay`), webhooks |
-| Tests | Jest (api unit + integration), Vitest + Testing Library (web), Playwright (e2e) |
-| Run | Docker Compose: postgres, api, web (nginx + `/api` forwarding), stripe-cli |
-| Later | GitHub Actions, AWS (S3 + CloudFront, ALB + ECS Fargate, RDS), Terraform |
+| Observability | Request ids end to end, pino JSON logs, Sentry (web + api) |
+| Tests | Vitest (web unit), Jest (api unit), **Testcontainers** Postgres (api integration), Playwright (e2e) |
+| Run | Docker Compose: postgres, api, web (nginx + `/api` forwarding + security headers), stripe-cli |
+| CI | GitHub Actions from Phase 1: lint, typecheck, spec lint, tests, build, audit, gitleaks |
+| Later | AWS (S3 + CloudFront, ALB + ECS Fargate, RDS), Terraform, GitHub OIDC deploys |
 
 ## 4. Work checklist
+
+Each phase lists **DB**, **API** and **WEB** work. Security ids refer to `docs/security.md`.
 
 ### Phase 0: Design ✅
 - [x] Monorepo + Next.js scaffold (static export)
 - [x] ER diagram, database design, booking lifecycle (`/er-diagram`)
-- [x] OpenAPI contract (`/openapi`)
+- [x] OpenAPI contract (`/openapi`), security doc
 - [x] Grilling rounds 1–3 (decisions log §7)
 
 ### Phase 1: Foundation
-- [ ] `apps/api` NestJS: config with env validation, pino logs + request id, global error filter → `Error` schema, Swagger at `/api/docs`
-- [ ] `docker-compose.yml` with postgres (dev). `.env.example` files
-- [ ] Prisma schema per ER diagram + raw SQL migrations: seat-lock partial unique, one-pending-booking partial unique, email partial unique, showtime no-overlap (`btree_gist`)
-- [ ] `booking.config.ts` (MAX_SEATS 4, PAYMENT_WINDOW 5 min, SEAT_HOLD 6 min, CUTOFF +30 min)
-- [ ] `seed:fetch-movies` (TMDB → `movies.json`, committed) and `seed` (2 cinemas × 3 halls, showtimes today → +30 days)
-- [ ] `getHealth`
-- [ ] Web: next-intl (`/th` default, `/en`, `messages/*.json`, `/` → `/th`), shadcn/ui, QueryClientProvider, `api-client.ts`, orval config + `npm run api:generate`
-- [ ] Web: app shell (header, language switcher, footer with TMDB attribution, error and loading states)
+**Repo / DevOps**
+- [ ] Turborepo pipeline (`build`, `lint`, `typecheck`, `test`), `.nvmrc`, `.editorconfig`
+- [ ] Shared configs: `packages/tsconfig`, `packages/eslint-config` (typed rules, import order, no floating promises)
+- [ ] Prettier, Husky + lint-staged, commitlint, gitleaks pre-commit (OPS-3)
+- [ ] GitHub Actions CI: lint, typecheck, `lint:openapi`, build, `npm audit`, gitleaks (OPS-1, OPS-4). Dependabot
+- [ ] `docker-compose.yml` (dev): postgres 17 with `app_user` + `migrator` roles (DB-2)
+
+**DB**
+- [ ] Prisma schema per ER diagram (all enums, relations, `@@map` to snake_case)
+- [ ] Raw SQL migrations: partial uniques (seat lock, one pending booking, email), CHECK constraints, showtime exclusion (`btree_gist`), indexes (DB-1)
+- [ ] Grants: `app_user` DML only (DB-2)
+- [ ] `seed:fetch-movies` (TMDB → `movies.json`, committed), `seed` (2 cinemas × 3 halls with seat layouts, showtimes today → +30 days, prices). Deterministic and re-runnable
+
+**API**
+- [ ] NestJS app with modules: `config`, `prisma`, `health`, `common` (filters, interceptors, decorators)
+- [ ] Config: Zod-validated env, refuses weak secrets (API-13)
+- [ ] pino logs + request id (`X-Request-Id`) + redaction (API-8)
+- [ ] Global error filter → `Error` schema, Prisma error mapping, `ErrorCode` enum shared with the contract (API-7)
+- [ ] `nestjs-zod` validation pipe (strict) + Swagger at `/api/docs` (API-2)
+- [ ] helmet, CORS (dev only), body limits, `trust proxy` (API-9, API-14)
+- [ ] `getLiveness`, `getReadiness`, graceful shutdown (API-15)
+- [ ] `booking.config.ts` (MAX_SEATS 4, PAYMENT_WINDOW 5 min, SEAT_HOLD 6 min, CUTOFF +30 min), `bangkokDayRange()`
+- [ ] Jest + Testcontainers harness ready (tests themselves come in Phase 7)
+
+**WEB**
+- [ ] next-intl: `app/[locale]`, `messages/th.json` + `en.json` (incl. all `errors.*` codes), `/` → `/th`
+- [ ] shadcn/ui init, theme tokens (light/dark), fonts with Thai support (e.g. Noto Sans Thai / IBM Plex Sans Thai)
+- [ ] Providers: QueryClient (no retry on 4xx, sensible staleTime), Toaster
+- [ ] `lib/api-client.ts` (base URL, bearer, request id, 401 → single-flight refresh → retry), orval config (`npm run api:generate`) generating client, hooks, Zod and MSW mocks
+- [ ] MSW in development so pages can be built before endpoints exist
+- [ ] App shell: header, language switcher, footer (TMDB attribution), error boundary, not-found, loading skeletons
+- [ ] Dev pages excluded from production build (WEB-1)
+- [ ] Storybook + Vitest set up
 
 ### Phase 2: Auth (email + password)
-- [ ] API: `register`, `login`, `refresh` (rotation), `logout`, `getMe`, argon2id, rate limit on `/auth/*`
-- [ ] Web: `useAuthStore` (memory), session restore on load, 401 → refresh → retry (single flight)
-- [ ] Web: `/login?next=`, `/register?next=` (RHF + Zod, server errors mapped to fields)
+**DB**
+- [ ] `users`, `refresh_tokens` (family), `auth_identities` in use
+**API**
+- [ ] `register`, `login`, `refresh`, `logout`, `getMe` (API-4)
+- [ ] argon2id, dummy hash for unknown emails (equal timing)
+- [ ] Refresh rotation + family revocation in a transaction (`SELECT … FOR UPDATE`)
+- [ ] `JwtAuthGuard`, `@CurrentUser()`, `@Public()` (global guard, routes opt out)
+- [ ] Origin check on cookie endpoints (API-5), rate limits (API-6)
+**WEB**
+- [ ] `useAuthStore` (memory), session restore on load, single-flight refresh (WEB-4)
+- [ ] `/login?next=`, `/register?next=` (RHF + Zod from orval, server errors mapped to fields), safe `next` (WEB-5)
+- [ ] Header user menu, logout, `RequireAuth` wrapper
 
 ### Phase 3: Catalog
-- [ ] API: `listGenres`, `listCinemas`, `listMovies`, `getMovie`, `listMovieShowtimes`
-- [ ] Web: home, `/movies` (genre + search in URL), `/movie?slug=` (date picker from `availableDates`)
+**API**
+- [ ] `listGenres`, `listCinemas`, `listMovies` (filters, search across TH/EN, pagination), `getMovie`, `listMovieShowtimes` (Bangkok-day grouping, `availableDates`, `seatsLeft`)
+- [ ] `Cache-Control` for public catalog responses (short max-age), so CloudFront can cache later
+**WEB**
+- [ ] Home (now showing / coming soon), `/movies` (genre + search in URL), `/movie?slug=` (date picker, showtimes by cinema)
+- [ ] Localized dates (Thai Buddhist calendar on `/th`), ฿ formatting, poster images with sizes and placeholders
 
 ### Phase 4: Seats and booking
-- [ ] API: `getShowtime`, `getSeatMap` (status computed at request time, `no-store`)
-- [ ] API: `createBooking` (one transaction, error codes per the contract), `getActiveBooking`, `getBooking`, `cancelBooking`, `listMyBookings`
-- [ ] API: expiry job every 30 s (cancel PaymentIntent → `PAYMENT_TIMEOUT` + unlock; refused → wait until the hold ends)
-- [ ] Web: `/showtime?id=&seats=` seat map, polling every 10 s, "seat just taken" UX (§6)
-- [ ] Web: "Buy" → login if needed → `createBooking` → `/checkout`
-- [ ] Web: active-booking banner + blocked paths (§6)
+**DB**
+- [ ] `booking_events`, `idempotency_keys` in use
+**API**
+- [ ] `getShowtime`, `getSeatMap` (status at request time, `no-store`)
+- [ ] `createBooking`: Idempotency-Key, one transaction, stale-hold cleanup, server-side pricing, events (API-3, API-11)
+- [ ] `getActiveBooking`, `getBooking`, `listMyBookings`, `cancelBooking`, all scoped by user (API-1)
+- [ ] Expiry job every 30 s with an advisory lock: cancel PaymentIntent → `PAYMENT_TIMEOUT` + unlock. Also cleans idempotency keys
+**WEB**
+- [ ] Seat map component (Storybook stories for every state), keyboard navigation + aria labels, mobile pinch/zoom
+- [ ] `/showtime?id=&seats=`: 10 s polling while visible, "seat just taken" UX (§6), price summary
+- [ ] Buy → login if needed → `createBooking` (Idempotency-Key per click) → `/checkout`
+- [ ] Active-booking banner, blocked back navigation (§6)
 
 ### Phase 5: Payment
-- [ ] API: `createPaymentIntent` (idempotent, `toStripeAmount = baht × 100`), `stripeWebhook` (raw body, signature, `stripe_events` idempotency, late payment → auto refund)
-- [ ] Web: `/checkout?bookingId=` Payment Element (Card + PromptPay QR), 5:00 countdown, "Time's up" dialog (§6)
-- [ ] Web: `/checkout/complete` polls `getBooking` until CONFIRMED / CANCELLED
-- [ ] Verify with Stripe CLI: test Mastercard `5555 5555 5555 4444`, PromptPay test authorize / fail
+**API**
+- [ ] `createPaymentIntent` (idempotent, Stripe idempotency key, `toStripeAmount`) (API-10)
+- [ ] `stripeWebhook`: raw body, signature, `stripe_events`, amount check, guarded confirm, late payment → refund, events
+**WEB**
+- [ ] `/checkout?bookingId=`: Payment Element (Card + PromptPay QR), 5:00 countdown synced to server time, "Time's up" dialog (WEB-8)
+- [ ] `/checkout/complete`: polls `getBooking` until CONFIRMED / CANCELLED, handles the late-refund case
+- [ ] Verify with Stripe CLI: test Mastercard `5555 5555 5555 4444`, decline cards, PromptPay authorize / fail
 
 ### Phase 6: Tickets
-- [ ] API: signed `ticketQr` (`bookingCode.hmac`) on CONFIRMED bookings
-- [ ] Web: `/bookings` (upcoming / past), `/booking?id=` ticket with QR
+**API**
+- [ ] Signed `ticketQr` (HMAC, own secret, constant-time compare) (API-12)
+**WEB**
+- [ ] `/bookings` (upcoming / past tabs), `/booking?id=` ticket with QR, add-to-calendar (`.ics`)
 
 ### Phase 7: Tests
-- [ ] Unit: booking rules, pricing, `toStripeAmount`, QR signing, auth token rotation
-- [ ] Integration (real test Postgres): concurrent same-seat booking → one wins, one-active-booking, payment timeout, late payment refund, webhook signature + duplicates
-- [ ] e2e (Playwright): guest browse → seats → login → pay with test Mastercard → ticket; PromptPay via Stripe's test authorize page; seat-taken UX
-- [ ] Rule: every row in the business-rules table (`docs/database-design.md`) has a test. No coverage % target
+- [ ] **Unit:** booking rules, pricing, `toStripeAmount`, `bangkokDayRange`, QR signing, token rotation, error mapping. Web: hooks, seat-selection logic, forms
+- [ ] **Integration (Testcontainers):** concurrent same-seat booking → one wins, one active booking, idempotent replay, payment timeout, late refund, webhook signature + duplicates, refresh reuse → family revoked, **IDOR on every user endpoint**
+- [ ] **e2e (Playwright, both locales):** guest browse → seats → login → test Mastercard → ticket; PromptPay; seat taken; time's up; back-navigation block
+- [ ] Every row in the business-rules table and every security control has a test. Tests run in CI
 
 ### Phase 8: Full stack on Docker Compose = MVP done
-- [ ] Dockerfiles: api (multi-stage), web (build → nginx serving `out/`, `/api` forwarded to the api, like CloudFront)
-- [ ] Compose: postgres, api (runs migrations on start), web, stripe-cli (forwards webhooks)
-- [ ] README: one-command setup, test card numbers
+- [ ] Dockerfiles: api (multi-stage, non-root, pinned base), web (build → nginx with CSP and security headers, `/api` forwarding) (OPS-2, WEB-2, WEB-3)
+- [ ] Compose: postgres, migrate (one-off, as `migrator`), api, web, stripe-cli
+- [ ] Sentry wired (web + api) with request ids
+- [ ] README: one-command setup, env reference, test cards, architecture diagram
 
 ### After the MVP
-- [ ] **LINE Login** (`startLineLogin`, `lineLoginCallback`, already in the contract and schema). Then Google
-- [ ] Email verification, password reset (needs email: AWS SES)
-- [ ] CI (GitHub Actions): lint, typecheck, `lint:openapi`, tests, build. Contract check: NestJS spec matches `docs/openapi.yaml`
-- [ ] AWS: manual first (VPC, RDS, ECR, ECS Fargate, ALB, S3 + CloudFront + OAC, Route 53, ACM, budget alarm), then Terraform + deploys through GitHub OIDC
+- [ ] **LINE Login** (`startLineLogin`, `lineLoginCallback`), then Google
+- [ ] Email (AWS SES): verification, password reset, e-ticket email
+- [ ] Contract check in CI: NestJS-generated spec vs `docs/openapi.yaml`
+- [ ] AWS: manual first (VPC, RDS, ECR, ECS Fargate, ALB, S3 + CloudFront + OAC, Route 53, ACM, WAF, budget alarm), then Terraform + GitHub OIDC deploys (OPS-5, DB-7)
+- [ ] OpenTelemetry tracing, CloudWatch dashboards and alarms
+- [ ] Account deletion (PDPA), active-sessions page
 - [ ] Admin UI, couple seats, real-time seats (WebSocket), Redis, door check-in scanner
 
 ## 5. Frontend rules
@@ -113,20 +172,20 @@ flashes red for about 3 s, a toast says "Seat A5 was just taken" (one toast per 
 Buy is disabled if nothing is left. The rest of the selection is kept.
 
 **One active booking:**
-- A global banner on every page when `getActiveBooking` returns one: "Booking in progress · 3:12 [Continue payment] [Cancel]". It is checked on load and on window focus, so it greets users who closed the app and came back.
-- Checkout blocks going back: the back button or link → dialog "Going back will cancel this booking" → confirm → `cancelBooking` → seat map with the same `?seats=`.
-- The seat map's Buy is replaced with "Continue your booking" while one is active. `409 ACTIVE_BOOKING_EXISTS` → go to that booking.
+- A global banner on every page when `getActiveBooking` returns one: "Booking in progress · 3:12 [Continue payment] [Cancel]". It is checked on load and on window focus.
+- Checkout blocks going back: back button or link → dialog "Going back will cancel this booking" → confirm → `cancelBooking` → seat map with the same `?seats=`.
+- The seat map's Buy becomes "Continue your booking" while one is active. `409 ACTIVE_BOOKING_EXISTS` → go to that booking.
 
 **Time's up** (countdown hits 0): dialog, payment disabled, button → seat map with the same `?seats=`.
 
-**Checkout complete:** spinner "Confirming payment…" while polling → ticket. If `CANCELLED (LATE_PAYMENT_REFUNDED)`:
+**Checkout complete:** "Confirming payment…" while polling → ticket. If `CANCELLED (LATE_PAYMENT_REFUNDED)`:
 "Payment arrived after the time limit and has been refunded."
 
 ## 7. Decisions log
 
 | # | Decision |
 |---|---|
-| D1 | Types: OpenAPI → orval (fetchers, Query hooks, Zod) |
+| D1 | Types: OpenAPI → orval (fetchers, Query hooks, Zod, MSW mocks) |
 | D2 | Tokens: access in memory, refresh in httpOnly cookie |
 | D3 | Zustand: session only. Seat selection lives in the URL |
 | D4 | UI: shadcn/ui |
@@ -135,10 +194,13 @@ Buy is disabled if nothing is left. The rest of the selection is kept.
 | G3 | Guests browse and pick seats. Login only to buy |
 | G4 | Payment window 5 min, seat hold 6 min, locks only in the DB. Unpaid → `CANCELLED (PAYMENT_TIMEOUT)`. Late payment → auto refund |
 | G5 | Max 4 seats. Booking open until start + 30 min. No refunds or cancellation after payment. Couple seats → backlog |
-| G6 | Seed from TMDB snapshot JSON. Posters as TMDB URLs (not downloaded). Showtimes today → +30 days |
+| G6 | Seed from TMDB snapshot JSON. Posters as TMDB URLs. Showtimes today → +30 days |
 | G7 | Thai default + English: `*_th` / `*_en` columns, next-intl, `/th` `/en` routes |
 | G8 | Git, commit at checkpoints |
-| R1 | Auth: email + password first, LINE Login (OAuth 2.0) later. Schema ready now (`auth_identities`) |
+| R1 | Auth: email + password first, LINE Login later. Schema ready now (`auth_identities`) |
 | R2 | Seat map polls every 10 s, with "seat just taken" UX |
-| R3 | One active booking, **blocked** (not auto-cancelled), global banner, blocked back navigation |
-| R4–R7 | Time's-up dialog · translated error codes · full Compose stack with nginx + stripe-cli · test plan per Phase 7 |
+| R3 | One active booking, blocked (not auto-cancelled), global banner, blocked back navigation |
+| R4–R7 | Time's-up dialog · translated error codes · full Compose stack · test plan per Phase 7 |
+| S1 | Backend validation with **nestjs-zod** (Zod everywhere) |
+| S2 | Refresh token families, Origin check, booking audit trail, idempotency keys, CHECK constraints, advisory-locked jobs, split DB roles |
+| S3 | Production-grade tooling from Phase 1: Turborepo, strict lint, CI, gitleaks, MSW, Storybook, Testcontainers, Sentry |
