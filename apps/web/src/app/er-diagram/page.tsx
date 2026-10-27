@@ -1,7 +1,8 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
+import type { Element } from "hast";
 import type { Metadata } from "next";
-import Markdown from "react-markdown";
+import Markdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { MermaidDiagram } from "@/components/mermaid-diagram";
 
@@ -11,6 +12,30 @@ export const metadata: Metadata = {
 };
 
 const docsDir = path.join(process.cwd(), "..", "..", "docs");
+
+/** Returns the source of a ```mermaid fenced block, or null for any other <pre>. */
+function mermaidSource(pre: Element | undefined): string | null {
+  const code = pre?.children[0];
+  if (code?.type !== "element" || code.tagName !== "code") return null;
+  const classes = code.properties.className;
+  if (!Array.isArray(classes) || !classes.includes("language-mermaid")) return null;
+  return code.children.map((child) => (child.type === "text" ? child.value : "")).join("");
+}
+
+const markdownComponents: Components = {
+  // Render ```mermaid blocks in the design notes as diagrams instead of code.
+  pre({ node, children, ...props }) {
+    const chart = mermaidSource(node);
+    if (chart) {
+      return (
+        <div className="not-prose my-6">
+          <MermaidDiagram chart={chart} />
+        </div>
+      );
+    }
+    return <pre {...props}>{children}</pre>;
+  },
+};
 
 export default function ErDiagramPage() {
   // Read inside the component: once at `next build` for the static export, on every request in `next dev`.
@@ -32,7 +57,9 @@ export default function ErDiagramPage() {
       <MermaidDiagram chart={erDiagram} />
 
       <article className="prose prose-neutral mt-12 max-w-none dark:prose-invert">
-        <Markdown remarkPlugins={[remarkGfm]}>{designNotes}</Markdown>
+        <Markdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+          {designNotes}
+        </Markdown>
       </article>
     </main>
   );

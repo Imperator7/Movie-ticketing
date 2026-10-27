@@ -47,6 +47,7 @@ export function MermaidDiagram({ chart }: Props) {
           startOnLoad: false,
           theme: media.matches ? "dark" : "default",
           er: { useMaxWidth: false },
+          state: { useMaxWidth: false },
         });
         const result = await mermaid.render(`er-${id}`, chart);
         if (!cancelled) {
@@ -119,7 +120,7 @@ export function MermaidDiagram({ chart }: Props) {
         </button>
       </div>
 
-      <div ref={viewportRef} className="h-[75vh] overflow-auto bg-white p-4 dark:bg-neutral-950">
+      <div ref={viewportRef} className="max-h-[75vh] overflow-auto bg-white p-4 dark:bg-neutral-950">
         {svg ? (
           <div
             className="[&>svg]:h-auto [&>svg]:w-full [&>svg]:max-w-none"

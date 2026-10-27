@@ -9,13 +9,13 @@ and AI-assisted development.
 
 ## 1. MVP Scope
 
-A customer can:
+A customer can, in **Thai (default) or English**:
 
-1. Sign up / log in
-2. Browse movies (now showing, coming soon) and filter by genre
-3. Open a movie and see showtimes by date and cinema
-4. Pick seats on a seat map
-5. Pay with **card (Mastercard / Visa)** or **PromptPay QR** through Stripe (test mode, THB)
+1. Browse movies (now showing, coming soon) and filter by genre, as a guest
+2. Open a movie and see showtimes by date and cinema
+3. Pick up to 4 seats on a seat map, as a guest
+4. Log in / sign up **only when buying** (selected seats survive the login redirect)
+5. Pay within 5 minutes with **card (Mastercard / Visa)** or **PromptPay QR** through Stripe (test mode, THB)
 6. Get a confirmed booking with a **ticket QR code**
 7. See "My bookings"
 
@@ -38,6 +38,7 @@ There is no admin UI in the MVP. Movies, cinemas, halls, seats and showtimes com
 | Server state | **TanStack Query** |
 | Client state | **Zustand** |
 | Forms | **React Hook Form + Zod** (`@hookform/resolvers/zod`) |
+| i18n | **next-intl**, locale-prefixed routes `/th/...` (default), `/en/...` |
 | Backend | NestJS + TypeScript |
 | ORM / DB | Prisma + PostgreSQL |
 | Auth | JWT access token + rotating refresh token (HTTP-only cookie) |
@@ -62,8 +63,10 @@ Stripe ──── webhook ─────────────────�
 
 - **Static export** means no SSR, Server Actions, middleware, or cookies on the Next.js side. All data
   is fetched in the browser from NestJS.
-- **Dynamic pages use query params** (`/movie?slug=dune`, `/booking?id=...`), because static export can't
-  generate `/movies/[slug]` for data that doesn't exist at build time.
+- **Dynamic pages use query params** (`/th/movie?slug=dune`, `/th/booking?id=...`), because static export can't
+  generate `/movies/[slug]` for data that doesn't exist at build time. Only `[locale]` is a path segment
+  (`generateStaticParams` → `th`, `en`).
+- `/` redirects to `/th` with a tiny client page for now. Later a CloudFront Function redirects by `Accept-Language`.
 - One domain for both parts means no CORS issues in production, and the refresh cookie can be `SameSite=Strict`.
 
 ---
@@ -73,13 +76,16 @@ Stripe ──── webhook ─────────────────�
 Full design: [`docs/database-design.md`](docs/database-design.md). Diagram: `/er-diagram`.
 
 - [x] ER diagram drafted (`docs/er-diagram.mmd`)
-- [ ] **Review the ER diagram and answer its open questions** ← *you are here*
+- [x] Grilling rounds 1–2 applied (seat lock model, booking lifecycle, bilingual columns, TMDB fields)
+- [ ] **Final review after grilling round 3** ← *you are here*
 - [ ] Prisma schema (`apps/api/prisma/schema.prisma`) matching the diagram
-- [ ] Enums: rating, movie status, hall type, seat type, showtime format/status, booking status, payment method/status
+- [ ] Enums: rating, movie status, hall type, seat type, showtime format/status, booking status, cancel reason, payment method/status
+- [ ] `booking.config.ts`: MAX_SEATS=4, PAYMENT_WINDOW_MIN=5, SEAT_HOLD_MIN=6, BOOKING_CUTOFF_AFTER_START_MIN=30
 - [ ] Raw SQL migration: partial unique index `booking_seats (showtime_id, seat_id) WHERE released_at IS NULL`
 - [ ] Raw SQL migration: showtime overlap exclusion constraint (`btree_gist`)
 - [ ] Secondary indexes (see design doc)
-- [ ] Seed script: ~10 movies, genres, 2 cinemas, 3 halls each with seat layouts, 7 days of showtimes and prices
+- [ ] `seed:fetch-movies`: TMDB now playing + upcoming (region TH, `th-TH` + `en-US`) → committed `movies.json` (needs `TMDB_API_KEY`)
+- [ ] `seed`: reads `movies.json`, plus 2 cinemas, 3 halls each with seat layouts, showtimes **today → +30 days**, prices
 - [ ] Test: two concurrent bookings for the same seat → exactly one succeeds
 
 ---
@@ -108,20 +114,24 @@ Full design: [`docs/database-design.md`](docs/database-design.md). Diagram: `/er
 - [ ] `GET /showtimes/:id/seats` — seat map with each seat's status: `AVAILABLE | HELD | BOOKED`
 
 ### Bookings (auth required)
-- [ ] `POST /bookings` — `{ showtimeId, seatIds[] }` → `PENDING_PAYMENT` booking (10-minute hold), `409` if a seat was taken
+- [ ] `POST /bookings` — `{ showtimeId, seatIds[1..4] }` → `PENDING_PAYMENT` booking (5-min payment window, 6-min seat hold)
+  - `409 SEAT_TAKEN` if a seat is locked, `422 BOOKING_CLOSED` after starts_at + 30 min, `422 TOO_MANY_SEATS`
 - [ ] `GET /bookings/me` — my bookings (upcoming / past)
 - [ ] `GET /bookings/:id` — detail. Includes `ticketQr` (signed payload) once `CONFIRMED`
-- [ ] `POST /bookings/:id/cancel` — release the hold early (only while `PENDING_PAYMENT`)
+- [ ] `POST /bookings/:id/cancel` — user gives up before paying → `CANCELLED (USER_CANCELLED)`, seats unlocked, PaymentIntent cancelled. Not allowed after payment (no refunds)
 
 ### Payments
-- [ ] `POST /bookings/:id/payment-intent` — creates or reuses a Stripe PaymentIntent → `{ clientSecret }` (auth)
+- [ ] `POST /bookings/:id/payment-intent` — creates or reuses a Stripe PaymentIntent → `{ clientSecret, paymentExpiresAt }` (auth). `422 PAYMENT_WINDOW_CLOSED` after `payment_expires_at`
   - Amounts are whole baht in the DB. Convert with `toStripeAmount(baht) = baht * 100` only here (Stripe wants satang)
 - [ ] `POST /payments/webhook` — Stripe signature verified, raw body, idempotent through `stripe_events`
-  - `payment_intent.succeeded` → payment `SUCCEEDED`, booking `CONFIRMED`
-  - `payment_intent.payment_failed` → payment `FAILED` (the booking stays on hold until it expires)
+  - `payment_intent.succeeded` → payment `SUCCEEDED`, booking `CONFIRMED` (guarded update)
+  - `payment_intent.succeeded` for a `CANCELLED` booking → automatic refund, `LATE_PAYMENT_REFUNDED`
+  - `payment_intent.payment_failed` → payment `FAILED` (user may retry inside the window)
 
 ### Background jobs
-- [ ] Every minute: expire `PENDING_PAYMENT` bookings past `expires_at`, release their seats, cancel their PaymentIntents
+- [ ] Every 30 s: for `PENDING_PAYMENT` bookings past `payment_expires_at`, cancel the PaymentIntent. If the cancel succeeds →
+  `CANCELLED (PAYMENT_TIMEOUT)` + unlock seats. If refused (already processing), leave it until `hold_expires_at`, then cancel and unlock
+- [ ] Availability never depends on the job: checks use `hold_expires_at > now()`. See the lifecycle in the design doc §3
 
 ### Cross-cutting
 - [ ] Config module with env validation (fail fast)
@@ -137,20 +147,25 @@ Full design: [`docs/database-design.md`](docs/database-design.md). Diagram: `/er
 
 | Route | Page | Auth |
 |---|---|---|
+All routes below are under `/[locale]` (`/th`, `/en`), except `/er-diagram`.
+
+| Route | Page | Auth |
+|---|---|---|
 | `/` | Home: now showing and coming soon | – |
 | `/movies?genre=&q=` | Movie list with filters | – |
 | `/movie?slug=` | Movie detail, date picker, showtimes | – |
-| `/showtime?id=` | Seat map, seat selection, price summary | login needed to continue |
-| `/checkout?bookingId=` | Countdown timer, Stripe Payment Element (Card / PromptPay QR) | ✓ |
-| `/checkout/complete` | Stripe `return_url`. Polls the booking until `CONFIRMED` / failed | ✓ |
+| `/showtime?id=&seats=A5,A6` | Seat map, select ≤ 4 seats (kept in the URL), price summary | "Buy" → login if needed, returns with seats |
+| `/checkout?bookingId=` | 5:00 countdown, Stripe Payment Element (Card / PromptPay QR), cancel button | ✓ |
+| `/checkout/complete` | Stripe `return_url`. Polls the booking until `CONFIRMED` / `CANCELLED` | ✓ |
 | `/bookings` | My bookings | ✓ |
 | `/booking?id=` | Ticket with QR code | ✓ |
-| `/login`, `/register` | Auth forms | – |
+| `/login?next=`, `/register?next=` | Auth forms | – |
 | `/er-diagram` | Dev page: database review | – |
 
 - [x] Next.js app scaffolded, static export working
 - [x] `/er-diagram` page
-- [ ] App shell: header, auth menu, layout, error and loading states
+- [ ] next-intl setup: `messages/th.json`, `messages/en.json`, language switcher, Thai date and ฿ formatting
+- [ ] App shell: header, auth menu, layout, error and loading states, TMDB attribution footer
 - [ ] Each page in the table above
 - [ ] Route guard (client-side): redirect to `/login?next=...`
 - [ ] Responsive (mobile first). Seat map usable on a phone
@@ -165,9 +180,9 @@ Full design: [`docs/database-design.md`](docs/database-design.md). Diagram: `/er
 |---|---|---|
 | **Server state**: data that lives in the DB | **TanStack Query** | movies, showtimes, seat map, my bookings, current user |
 | **Client state**: global, UI-only, never in the DB | **Zustand** | `useAuthStore`: access token + user (memory only, not persisted) |
-| **Local UI state**: one feature only | `useState` / `useReducer` | selected seats (owned by the seat-picker page component, passed to map and summary) |
+| **Local UI state**: one feature only | `useState` / `useReducer` | open dialogs, hover states |
 | **Form state** | **React Hook Form** | login and register inputs |
-| **URL state** | search params | genre filter, selected date, movie slug |
+| **URL state** | search params | genre filter, selected date, movie slug, selected seats (`?seats=`) |
 
 Rules:
 - Never copy server data into Zustand. If it comes from the API, it lives in the Query cache.
@@ -204,7 +219,7 @@ components/ui/          # shared presentational components
 - [x] **D2 Auth: access token in memory + refresh token in an httpOnly cookie.** On app load, `POST /auth/refresh`
   restores the session. The api-client attaches `Authorization: Bearer`, and on a `401` it refreshes once and retries
   (concurrent 401s share one refresh request).
-- [x] **D3 Zustand: session only.** Seat selection is local state in the seat-picker page.
+- [x] **D3 Zustand: session only.** Seat selection lives in the URL (`?seats=`), so it survives the login redirect (G3).
 - [x] **D4 UI: shadcn/ui** (Radix + Tailwind), including its `Form` components wired to React Hook Form.
 
 ---
@@ -234,6 +249,7 @@ components/ui/          # shared presentational components
 ## 9. After the MVP (backlog)
 
 - Admin UI: CRUD for movies, cinemas, halls, showtimes, and seat layout editor
+- Couple seats (seat type `COUPLE`, counts as 2 of the 4-seat limit)
 - Real-time seat updates (WebSocket / SSE)
 - Redis for seat holds and caching
 - Email tickets (AWS SES)
@@ -271,8 +287,8 @@ components/ui/          # shared presentational components
 | G1 | MVP done | Runs locally on Docker Compose, all unit / integration / e2e tests pass. Tests are written after features |
 | G2 | Stripe | Thai Stripe account, so card + PromptPay are both available |
 | G3 | Login gate | Browse and pick seats as a guest. Login is required only when buying |
-| G4 | Hold / payment TTL | *Discussing:* payment window 5 min, seat hold ≤ 6 min, no payment accepted after the window |
-| G5 | Limits | Max **4 seats** per booking. **No refunds or cancellation after payment.** Booking cut-off: *confirming* |
-| G6 | Seed data | Dev dataset of real current and next-month movies. *Source and posters: discussing* |
-| G7 | Language | **Thai default**, English second. *Approach: discussing* |
+| G4 | Hold / payment TTL | Payment window **5 min** (PaymentIntent cancelled after), seat hold **6 min**. Locks live **only in the DB**. Unpaid → `CANCELLED (PAYMENT_TIMEOUT)`. Late success → auto refund |
+| G5 | Limits | Max **4 seats**. Booking open until **30 min after start**. **No refunds or cancellation after payment.** Couple seats → backlog |
+| G6 | Seed data | **TMDB** snapshot to committed JSON, posters as TMDB URLs (not downloaded), showtimes today → +30 days |
+| G7 | Language | **Thai default** + English. Content in `*_th` / `*_en` columns. UI with **next-intl**, `/th` `/en` routes |
 | G8 | Git | Git now, commit at meaningful checkpoints |

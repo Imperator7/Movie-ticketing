@@ -22,14 +22,17 @@ erDiagram
     %% ===== Catalog =====
     MOVIES {
         uuid id PK
-        text slug UK "url-friendly, e.g. dune-part-two"
-        text title
-        text synopsis
+        int tmdb_id UK "nullable, source id from TMDB"
+        text slug UK "from English title, e.g. dune-part-two"
+        text title_th
+        text title_en
+        text synopsis_th
+        text synopsis_en
         int duration_min
         movie_rating rating "G, PG, PG13, R18, R20"
         text original_language
         date release_date
-        text poster_url
+        text poster_url "TMDB image URL, not stored in the repo"
         text backdrop_url "nullable"
         text trailer_url "nullable"
         movie_status status "COMING_SOON, NOW_SHOWING, ENDED"
@@ -39,8 +42,10 @@ erDiagram
 
     GENRES {
         int id PK
-        text name UK
+        int tmdb_id UK "nullable"
         text slug UK
+        text name_th
+        text name_en
     }
 
     MOVIE_GENRES {
@@ -51,17 +56,18 @@ erDiagram
     %% ===== Venue =====
     CINEMAS {
         uuid id PK
-        text name
-        text address
+        text name_th
+        text name_en
+        text address_th
+        text address_en
         text city
-        text timezone "e.g. Asia/Bangkok"
         timestamptz created_at
     }
 
     HALLS {
         uuid id PK
         uuid cinema_id FK
-        text name "e.g. Hall 3"
+        int number "UK with cinema_id, shown as Hall 3 / โรง 3"
         hall_type type "STANDARD, IMAX, FOUR_DX"
         int total_rows "for drawing the seat map"
         int total_cols
@@ -74,7 +80,7 @@ erDiagram
         int seat_number "1, 2, 3 ... (label shown to user)"
         int grid_row "position on the map, allows aisles / gaps"
         int grid_col
-        seat_type type "STANDARD, PREMIUM, COUPLE"
+        seat_type type "STANDARD, PREMIUM"
         bool is_active "false = broken / removed seat"
     }
 
@@ -83,7 +89,7 @@ erDiagram
         uuid id PK
         uuid movie_id FK
         uuid hall_id FK
-        timestamptz starts_at
+        timestamptz starts_at "booking closes at starts_at + 30 min"
         timestamptz ends_at "starts_at + duration + cleaning buffer"
         text audio_language "e.g. EN, TH"
         text subtitle_language "nullable"
@@ -94,7 +100,7 @@ erDiagram
 
     SHOWTIME_PRICES {
         uuid showtime_id PK, FK
-        seat_type seat_type PK "STANDARD, PREMIUM, COUPLE"
+        seat_type seat_type PK "STANDARD, PREMIUM"
         int price_baht "whole baht, e.g. 220 = 220 THB"
     }
 
@@ -104,11 +110,14 @@ erDiagram
         text booking_code UK "short human code, e.g. MT-7KQ2XP, encoded in ticket QR"
         uuid user_id FK
         uuid showtime_id FK
-        booking_status status "PENDING_PAYMENT, CONFIRMED, EXPIRED, CANCELLED"
+        booking_status status "PENDING_PAYMENT, CONFIRMED, CANCELLED"
+        cancel_reason cancel_reason "nullable: PAYMENT_TIMEOUT, USER_CANCELLED, LATE_PAYMENT_REFUNDED"
         int total_baht
         text currency "THB"
-        timestamptz expires_at "seat hold deadline, now + 10 min"
+        timestamptz payment_expires_at "created_at + 5 min, Stripe PaymentIntent cancelled after"
+        timestamptz hold_expires_at "created_at + 6 min, seats unlock after"
         timestamptz confirmed_at "nullable"
+        timestamptz cancelled_at "nullable"
         timestamptz checked_in_at "nullable, scanned at the door"
         timestamptz created_at
         timestamptz updated_at
@@ -120,7 +129,7 @@ erDiagram
         uuid showtime_id FK "denormalized for the uniqueness rule"
         uuid seat_id FK
         int price_baht "price snapshot at booking time"
-        timestamptz released_at "nullable, set when booking expires or is cancelled"
+        timestamptz released_at "nullable = seat locked; set = seat unlocked"
     }
 
     %% ===== Payment (Stripe) =====
@@ -129,7 +138,7 @@ erDiagram
         uuid booking_id FK
         text stripe_payment_intent_id UK
         payment_method method "CARD, PROMPTPAY"
-        payment_status status "PENDING, SUCCEEDED, FAILED, CANCELLED"
+        payment_status status "PENDING, SUCCEEDED, FAILED, CANCELLED, REFUNDED"
         int amount_baht "x 100 only when sent to Stripe"
         text currency "THB"
         text card_brand "nullable, e.g. mastercard"
@@ -137,6 +146,7 @@ erDiagram
         text failure_code "nullable"
         text failure_message "nullable"
         timestamptz paid_at "nullable"
+        timestamptz refunded_at "nullable, only for late payments"
         timestamptz created_at
         timestamptz updated_at
     }
