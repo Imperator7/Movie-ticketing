@@ -49,8 +49,13 @@ describe("toErrorBody", () => {
 
     expect(body.statusCode).toBe(422);
     expect(body.code).toBe("VALIDATION_FAILED");
-    const fields = (body.details as { fields: { path: string }[] }).fields.map((f) => f.path);
-    expect(fields).toEqual(expect.arrayContaining(["email", "seats", ""]));
+    expect(body.details).toEqual({
+      fields: {
+        email: ["invalid_format"],
+        seats: ["too_small"],
+        extra: ["unrecognized_key"],
+      },
+    });
     expect(unexpected).toBe(false);
   });
 

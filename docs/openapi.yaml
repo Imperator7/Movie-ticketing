@@ -644,7 +644,7 @@ components:
 
   responses:
     ValidationError:
-      description: "`VALIDATION_FAILED`: `details.fields` maps field → message keys"
+      description: "`VALIDATION_FAILED`: `details.fields` maps each field path to Zod issue codes (`_root` = whole body, unknown keys = `unrecognized_key`)"
       content:
         application/json:
           schema: { $ref: "#/components/schemas/Error" }
@@ -652,7 +652,7 @@ components:
             statusCode: 422
             code: VALIDATION_FAILED
             message: Validation failed
-            details: { fields: { email: ["invalid_email"] } }
+            details: { fields: { email: ["invalid_format"], extra: ["unrecognized_key"] } }
     Unauthorized:
       description: "`UNAUTHORIZED` (missing or expired access token). The web refreshes once and retries."
       content:

@@ -30,14 +30,30 @@ export function codeForStatus(status: number): ErrorCode {
   }
 }
 
-function zodFields(error: ZodError): Record<string, unknown> {
-  return {
-    fields: error.issues.map((issue) => ({
-      path: issue.path.map(String).join("."),
-      code: issue.code,
-      message: issue.message,
-    })),
+/** Key for errors on the request body as a whole (no field path). */
+export const ROOT_FIELD = "_root";
+
+/**
+ * Contract shape (`docs/openapi.yaml`, ValidationError): `{ fields: { "<dot.path>": ["<issue code>", ...] } }`.
+ * The web maps each field straight onto React Hook Form's `setError` and translates the codes.
+ * Unknown keys (strict DTOs) are reported under their own name as `unrecognized_key`.
+ */
+export function zodFields(error: ZodError): { fields: Record<string, string[]> } {
+  const fields: Record<string, string[]> = {};
+  const add = (path: string, code: string) => {
+    const key = path === "" ? ROOT_FIELD : path;
+    const codes = (fields[key] ??= []);
+    if (!codes.includes(code)) codes.push(code);
   };
+  for (const issue of error.issues) {
+    const path = issue.path.map(String).join(".");
+    if (issue.code === "unrecognized_keys") {
+      for (const key of issue.keys) add(path ? `${path}.${key}` : key, "unrecognized_key");
+    } else {
+      add(path, issue.code);
+    }
+  }
+  return { fields };
 }
 
 function messageOf(response: string | object, fallback: string): string {

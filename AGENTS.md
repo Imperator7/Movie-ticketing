@@ -14,15 +14,15 @@ work, as long as it genuinely helps.
 
 Update this table when an item is merged. Details live in `plan.md` §4.
 
-| Area            | State                                                                                                                                     |
-| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| Phase 0: Design | ✅ Done: ER diagram, DB design, OpenAPI contract, security doc, grilling decisions                                                        |
-| Repo / DevOps   | ✅ Turborepo, shared TS + ESLint configs, Prettier, Husky, commitlint, CI workflow (not yet pushed to GitHub), Dependabot                 |
-| Design system   | ✅ "Marquee" theme + cinema components, **approved** (`/design-system`)                                                                   |
-| Database        | ✅ Prisma schema, hand-written constraints, roles (`migrator` / `app_user`), 26/26 constraint checks pass. ⏳ Seed (needs a TMDB API key) |
-| API foundation  | 🔄 In progress (backend agent): config, Prisma service, logging, errors, validation, health, Testcontainers                               |
-| Web foundation  | 🔄 In progress (frontend agent): next-intl `/th` `/en`, React Query, api-client, orval + MSW, app shell                                   |
-| Next up         | Frontend: clickable demo screens (full customer flow on mock data). Backend: seed + Phase 2 auth                                          |
+| Area            | State                                                                                                                                                                                                                                                                       |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Phase 0: Design | ✅ Done: ER diagram, DB design, OpenAPI contract, security doc, grilling decisions                                                                                                                                                                                          |
+| Repo / DevOps   | ✅ Turborepo, shared TS + ESLint configs, Prettier, Husky, commitlint, CI workflow (not yet pushed to GitHub), Dependabot                                                                                                                                                   |
+| Design system   | ✅ "Marquee" theme + cinema components, **approved** (`/design-system`)                                                                                                                                                                                                     |
+| Database        | ✅ Prisma schema, hand-written constraints, roles (`migrator` / `app_user`), 26/26 constraint checks pass. ⏳ Seed (needs a TMDB API key)                                                                                                                                   |
+| API foundation  | ✅ Config (validated env), PrismaService (app_user, pool), pino + request id + redaction, contract error filter, nestjs-zod strict validation, Swagger (dev), helmet/CORS/limits, health live/ready + graceful drain, Testcontainers harness. 67 unit + 3 integration tests |
+| Web foundation  | 🔄 In progress (frontend agent): next-intl `/th` `/en`, React Query, api-client, orval + MSW, app shell                                                                                                                                                                     |
+| Next up         | Frontend: web foundation (in review next), then demo screens. Backend: seed (needs TMDB key) and Phase 2 auth                                                                                                                                                               |
 
 ## 3. Source of truth
 
@@ -155,4 +155,12 @@ Conventional Commits (`feat|fix|build|docs|chore|test|refactor(scope): …`; `me
   `docker compose down -v` unless the lead asks.
 - `.turbo/`, `.claude/worktrees/` and `apps/api/src/generated/` are git- and Prettier-ignored. Never commit them.
 - `gitleaks` may not be installed locally. The pre-commit hook skips it with a warning, and CI still scans.
+- **nestjs-zod 5.5** declares a NestJS 10–11 peer but works on NestJS 12. If `npm install -w api …` fails with
+  ERESOLVE on it, re-run that one command with `--legacy-peer-deps`. Do **not** add a global `.npmrc`
+  (`legacy-peer-deps=true` would hide real conflicts). Drop this once upstream supports NestJS 12.
+- Vitest in the API uses **SWC** (`unplugin-swc`) because Nest DI needs decorator metadata, which esbuild doesn't emit.
+- `prisma generate` works without a database or `.env`. Migrate commands need `MIGRATION_DATABASE_URL`.
+  Turbo runs `db:generate` before api `lint`/`typecheck`/`test`/`build`.
+- Validation errors: `details.fields` is `{ "<field.path>": ["<zod issue code>"] }`, `_root` for whole-body errors,
+  `unrecognized_key` for unknown keys. The web maps it straight onto React Hook Form's `setError`.
 - shadcn's CLI asks for a preset interactively. Pass `-p nova -b radix` and close stdin.

@@ -72,15 +72,15 @@ Each phase lists **DB**, **API** and **WEB** work. Security ids refer to `docs/s
 
 **API**
 
-- [ ] NestJS app with modules: `config`, `prisma`, `health`, `common` (filters, interceptors, decorators)
-- [ ] Config: Zod-validated env, refuses weak secrets (API-13)
-- [ ] pino logs + request id (`X-Request-Id`) + redaction (API-8)
-- [ ] Global error filter → `Error` schema, Prisma error mapping, `ErrorCode` enum shared with the contract (API-7)
-- [ ] `nestjs-zod` validation pipe (strict) + Swagger at `/api/docs` (API-2)
-- [ ] helmet, CORS (dev only), body limits, `trust proxy` (API-9, API-14)
-- [ ] `getLiveness`, `getReadiness`, graceful shutdown (API-15)
-- [ ] `booking.config.ts` (MAX_SEATS 4, PAYMENT_WINDOW 5 min, SEAT_HOLD 6 min, CUTOFF +30 min), `bangkokDayRange()`
-- [ ] Vitest + Testcontainers harness ready (unit tests ship with each item; integration suites grow per phase)
+- [x] NestJS app with modules: `config`, `prisma`, `health`, `common` (filters, interceptors, decorators)
+- [x] Config: Zod-validated env, refuses weak secrets (API-13)
+- [x] pino logs + request id (`X-Request-Id`) + redaction (API-8)
+- [x] Global error filter → `Error` schema, Prisma error mapping, `ErrorCode` enum shared with the contract (API-7)
+- [x] `nestjs-zod` validation pipe (strict) + Swagger at `/api/docs` (API-2)
+- [x] helmet, CORS (dev only), body limits, `trust proxy` (API-9, API-14)
+- [x] `getLiveness`, `getReadiness`, graceful shutdown (API-15)
+- [x] `booking.config.ts` (MAX_SEATS 4, PAYMENT_WINDOW 5 min, SEAT_HOLD 6 min, CUTOFF +30 min), `bangkokDayRange()`
+- [x] Vitest + Testcontainers harness ready (unit tests ship with each item; integration suites grow per phase)
 
 **WEB**
 
