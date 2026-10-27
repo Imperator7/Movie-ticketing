@@ -22,24 +22,21 @@ improvements inside a task are applied without asking, but **summarize and ask b
 | API foundation     | ✅ Validated env, PrismaService (app_user, pool), pino + request id + redaction, contract error filter, strict nestjs-zod validation, Swagger (dev), helmet/CORS/limits, health live/ready + graceful drain, Testcontainers harness                                        |
 | Auth API (Phase 2) | ✅ register / login / refresh / logout / me, argon2id, JWT (jose, HS256 pinned), rotating refresh cookie + family revocation (10 s racing-tab grace), Origin guard, rate limits                                                                                            |
 | Clickable demo     | ✅ Every customer screen on a stateful, contract-faithful **mock API** (TH/EN): browse → seats → login → checkout (demo card / PromptPay) → ticket QR → my bookings, active-booking banner, back-block, time's up, seat taken, cross-tab refresh lock, Demo controls panel |
-| Tests              | 202 api unit · 32 api integration (real Postgres) · 205 web unit · 26 DB checks. All green                                                                                                                                                                                 |
+| Tests              | 202 api unit · 32 api integration (real Postgres) · 264 web unit · 26 DB checks. All green                                                                                                                                                                                 |
 
-**In flight (frontend agent, one run, two commits):**
-
-1. _Posters + one movie source:_ `apps/web/scripts/sync-mock-movies.mjs` → `src/mocks/movies.fixture.json` built from
-   `apps/api/prisma/seed/movies.json`, so the demo shows the same 18 real movies with **TMDB posters**
-   (`tmdbImage`/`tmdbSrcSet`, lazy loading, backdrop hero, `onError` → placeholder). Root script `movies:fetch`.
-2. _Optimistic seat map:_ Buy previews seats as "held for you" (polling paused, checkout cache primed), cancel releases
-   instantly. On `SEAT_TAKEN`, roll back, show an **apology toast** ("ขออภัย ที่นั่ง A5 มีผู้จองไปแล้ว" /
-   "Sorry, seat A5 was just taken by someone else"), and immediately show those seats as occupied. **Occupied seats
-   (BOOKED and HELD) use a plain filled person icon** (decision S8). Demo control "Slow network (1.5 s)".
+**Phase 1 + 2 wrapped up (2026-10-28).** Last merge added real TMDB posters in the demo (one movie source:
+`movies.json` → `npm run mocks:sync-movies -w web` → `src/mocks/movies.fixture.json`; root `npm run movies:fetch`
+does fetch + sync + seed) and the **optimistic seat map** (`features/bookings/use-booking-mutations.ts`,
+`features/showtimes/seat-cache.ts`): Buy previews seats as held, rollback + apology toast on `SEAT_TAKEN`, occupied
+seats use the person icon (S8), Demo control "Slow network (1.5 s)". The product owner may come back to revise these
+phases.
 
 **Next (needs product-owner go-ahead):** Phase 3 catalog API (`listGenres`, `listCinemas`, `listMovies`,
 `getMovie`, `listMovieShowtimes`) + the **contract test** (Nest OpenAPI vs `docs/openapi.yaml`) + a **CI integration
 job**, then switch the catalog screens from mocks to the real API. Then Phase 4 (booking API), 5 (Stripe), 6 (tickets).
 
-**Open questions for the product owner:** drop Storybook (`/design-system` already is the component catalog)? ·
-when to push to a private GitHub repo (so CI runs).
+**Open questions for the product owner:** when to push to a private GitHub repo (so CI runs). Storybook was
+dropped (S9).
 
 ## 3. Source of truth
 
