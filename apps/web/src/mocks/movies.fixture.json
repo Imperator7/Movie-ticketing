@@ -1,0 +1,398 @@
+{
+  "genres": [
+    {
+      "id": 1,
+      "slug": "thriller",
+      "name": {
+        "th": "ระทึกขวัญ",
+        "en": "Thriller"
+      }
+    },
+    {
+      "id": 2,
+      "slug": "drama",
+      "name": {
+        "th": "ดราม่า",
+        "en": "Drama"
+      }
+    },
+    {
+      "id": 3,
+      "slug": "animation",
+      "name": {
+        "th": "แอนิเมชัน",
+        "en": "Animation"
+      }
+    },
+    {
+      "id": 4,
+      "slug": "adventure",
+      "name": {
+        "th": "ผจญภัย",
+        "en": "Adventure"
+      }
+    },
+    {
+      "id": 5,
+      "slug": "family",
+      "name": {
+        "th": "ครอบครัว",
+        "en": "Family"
+      }
+    },
+    {
+      "id": 6,
+      "slug": "science-fiction",
+      "name": {
+        "th": "ไซไฟ",
+        "en": "Science Fiction"
+      }
+    },
+    {
+      "id": 7,
+      "slug": "romance",
+      "name": {
+        "th": "โรแมนติก",
+        "en": "Romance"
+      }
+    },
+    {
+      "id": 8,
+      "slug": "comedy",
+      "name": {
+        "th": "ตลก",
+        "en": "Comedy"
+      }
+    },
+    {
+      "id": 9,
+      "slug": "fantasy",
+      "name": {
+        "th": "แฟนตาซี",
+        "en": "Fantasy"
+      }
+    },
+    {
+      "id": 10,
+      "slug": "action",
+      "name": {
+        "th": "แอ็กชัน",
+        "en": "Action"
+      }
+    },
+    {
+      "id": 11,
+      "slug": "horror",
+      "name": {
+        "th": "สยองขวัญ",
+        "en": "Horror"
+      }
+    },
+    {
+      "id": 12,
+      "slug": "mystery",
+      "name": {
+        "th": "ลึกลับ",
+        "en": "Mystery"
+      }
+    }
+  ],
+  "movies": [
+    {
+      "id": "5a7f6a1e-0c1d-4b8e-9a31-000000000000",
+      "slug": "bangkok-after-midnight",
+      "title": {
+        "th": "กรุงเทพหลังเที่ยงคืน",
+        "en": "Bangkok After Midnight"
+      },
+      "synopsis": {
+        "th": "คนขับแท็กซี่กะดึกต้องพาผู้โดยสารปริศนาไปให้ครบสิบจุดก่อนฟ้าสาง โดยไม่รู้ว่าทุกจุดคือบทพิสูจน์ของตัวเอง",
+        "en": "A night-shift taxi driver must deliver a mysterious passenger to ten stops before dawn, never guessing that every stop is a test of his own past."
+      },
+      "durationMin": 118,
+      "rating": "AGE_15",
+      "originalLanguage": "th",
+      "releaseDate": "2026-10-09",
+      "posterUrl": null,
+      "backdropUrl": null,
+      "trailerUrl": null,
+      "status": "NOW_SHOWING",
+      "genres": [
+        {
+          "id": 1,
+          "slug": "thriller",
+          "name": {
+            "th": "ระทึกขวัญ",
+            "en": "Thriller"
+          }
+        },
+        {
+          "id": 2,
+          "slug": "drama",
+          "name": {
+            "th": "ดราม่า",
+            "en": "Drama"
+          }
+        }
+      ]
+    },
+    {
+      "id": "5a7f6a1e-0c1d-4b8e-9a31-000000000001",
+      "slug": "captain-kapi-and-the-lost-island",
+      "title": {
+        "th": "กัปตันกะปิกับเกาะที่หายไป",
+        "en": "Captain Kapi and the Lost Island"
+      },
+      "synopsis": {
+        "th": "ลิงแสมตัวน้อยผู้ใฝ่ฝันอยากเป็นกัปตัน ออกเรือตามหาเกาะลึกลับที่ปรากฏบนแผนที่ในวันที่ฟ้าครึ้มเท่านั้น",
+        "en": "A young macaque who dreams of being a captain sets sail to find a mysterious island that only shows up on the map on cloudy days."
+      },
+      "durationMin": 92,
+      "rating": "PROMOTED",
+      "originalLanguage": "th",
+      "releaseDate": "2026-10-02",
+      "posterUrl": null,
+      "backdropUrl": null,
+      "trailerUrl": null,
+      "status": "NOW_SHOWING",
+      "genres": [
+        {
+          "id": 3,
+          "slug": "animation",
+          "name": {
+            "th": "แอนิเมชัน",
+            "en": "Animation"
+          }
+        },
+        {
+          "id": 4,
+          "slug": "adventure",
+          "name": {
+            "th": "ผจญภัย",
+            "en": "Adventure"
+          }
+        },
+        {
+          "id": 5,
+          "slug": "family",
+          "name": {
+            "th": "ครอบครัว",
+            "en": "Family"
+          }
+        }
+      ]
+    },
+    {
+      "id": "5a7f6a1e-0c1d-4b8e-9a31-000000000002",
+      "slug": "last-train-to-aurora",
+      "title": {
+        "th": "ขบวนสุดท้ายสู่ออโรร่า",
+        "en": "Last Train to Aurora"
+      },
+      "synopsis": {
+        "th": "ในอนาคตที่โลกเหลือรถไฟเพียงขบวนเดียวที่วิ่งผ่านแสงเหนือ วิศวกรหญิงต้องตัดสินใจว่าจะช่วยใครไว้บนขบวนนั้น",
+        "en": "In a future where one train still runs beneath the northern lights, an engineer must decide who she can afford to save."
+      },
+      "durationMin": 148,
+      "rating": "AGE_13",
+      "originalLanguage": "en",
+      "releaseDate": "2026-09-25",
+      "posterUrl": null,
+      "backdropUrl": null,
+      "trailerUrl": null,
+      "status": "NOW_SHOWING",
+      "genres": [
+        {
+          "id": 6,
+          "slug": "science-fiction",
+          "name": {
+            "th": "ไซไฟ",
+            "en": "Science Fiction"
+          }
+        },
+        {
+          "id": 4,
+          "slug": "adventure",
+          "name": {
+            "th": "ผจญภัย",
+            "en": "Adventure"
+          }
+        }
+      ]
+    },
+    {
+      "id": "5a7f6a1e-0c1d-4b8e-9a31-000000000003",
+      "slug": "love-in-the-rainy-season",
+      "title": {
+        "th": "รักในหน้าฝน",
+        "en": "Love in the Rainy Season"
+      },
+      "synopsis": {
+        "th": "ช่างซ่อมร่มกับนักเขียนนิยายที่ไม่เคยเจอกัน ผูกพันกันผ่านร่มคันเดียวที่ถูกส่งต่อกันไปมาตลอดฤดูฝน",
+        "en": "An umbrella repairman and a novelist who never meet grow close through a single umbrella that keeps getting passed between them all rainy season."
+      },
+      "durationMin": 105,
+      "rating": "GENERAL",
+      "originalLanguage": "th",
+      "releaseDate": "2026-10-16",
+      "posterUrl": null,
+      "backdropUrl": null,
+      "trailerUrl": null,
+      "status": "NOW_SHOWING",
+      "genres": [
+        {
+          "id": 7,
+          "slug": "romance",
+          "name": {
+            "th": "โรแมนติก",
+            "en": "Romance"
+          }
+        },
+        {
+          "id": 8,
+          "slug": "comedy",
+          "name": {
+            "th": "ตลก",
+            "en": "Comedy"
+          }
+        }
+      ]
+    },
+    {
+      "id": "5a7f6a1e-0c1d-4b8e-9a31-000000000004",
+      "slug": "shadow-of-the-iron-crown",
+      "title": {
+        "th": "เงาแห่งมงกุฎเหล็ก",
+        "en": "Shadow of the Iron Crown"
+      },
+      "synopsis": {
+        "th": "อัศวินผู้ถูกขับไล่กลับมายังอาณาจักรที่เคยทรยศเขา เพื่อทวงคืนมงกุฎที่ถูกสาปให้กลืนกินผู้สวมใส่",
+        "en": "An exiled knight returns to the kingdom that betrayed him to reclaim a crown cursed to consume whoever wears it."
+      },
+      "durationMin": 165,
+      "rating": "AGE_18",
+      "originalLanguage": "en",
+      "releaseDate": "2026-10-23",
+      "posterUrl": null,
+      "backdropUrl": null,
+      "trailerUrl": null,
+      "status": "NOW_SHOWING",
+      "genres": [
+        {
+          "id": 9,
+          "slug": "fantasy",
+          "name": {
+            "th": "แฟนตาซี",
+            "en": "Fantasy"
+          }
+        },
+        {
+          "id": 10,
+          "slug": "action",
+          "name": {
+            "th": "แอ็กชัน",
+            "en": "Action"
+          }
+        }
+      ]
+    },
+    {
+      "id": "5a7f6a1e-0c1d-4b8e-9a31-000000000005",
+      "slug": "the-quiet-house-on-soi-9",
+      "title": {
+        "th": "บ้านเงียบในซอย 9",
+        "en": "The Quiet House on Soi 9"
+      },
+      "synopsis": {
+        "th": "ครอบครัวหนุ่มสาวย้ายเข้าบ้านหลังงามในราคาถูกผิดปกติ และพบว่าความเงียบของมันไม่ได้มาจากความว่างเปล่า",
+        "en": "A young family moves into a lovely house at a suspiciously low price and learns that its silence is not the silence of an empty home."
+      },
+      "durationMin": 96,
+      "rating": "AGE_20",
+      "originalLanguage": "th",
+      "releaseDate": "2026-10-30",
+      "posterUrl": null,
+      "backdropUrl": null,
+      "trailerUrl": null,
+      "status": "COMING_SOON",
+      "genres": [
+        {
+          "id": 11,
+          "slug": "horror",
+          "name": {
+            "th": "สยองขวัญ",
+            "en": "Horror"
+          }
+        }
+      ]
+    },
+    {
+      "id": "5a7f6a1e-0c1d-4b8e-9a31-000000000006",
+      "slug": "tokyo-ramen-detectives",
+      "title": {
+        "th": "นักสืบราเมนแห่งโตเกียว",
+        "en": "Tokyo Ramen Detectives"
+      },
+      "synopsis": {
+        "th": "สองพี่น้องเจ้าของร้านราเมนเล็กๆ ไขคดีลึกลับของลูกค้าประจำ ด้วยรสชาติของน้ำซุปเป็นเบาะแสเดียว",
+        "en": "Two siblings who run a tiny ramen shop solve their regulars' mysteries, with the taste of the broth as their only clue."
+      },
+      "durationMin": 109,
+      "rating": "AGE_13",
+      "originalLanguage": "ja",
+      "releaseDate": "2026-11-12",
+      "posterUrl": null,
+      "backdropUrl": null,
+      "trailerUrl": null,
+      "status": "COMING_SOON",
+      "genres": [
+        {
+          "id": 12,
+          "slug": "mystery",
+          "name": {
+            "th": "ลึกลับ",
+            "en": "Mystery"
+          }
+        },
+        {
+          "id": 8,
+          "slug": "comedy",
+          "name": {
+            "th": "ตลก",
+            "en": "Comedy"
+          }
+        }
+      ]
+    },
+    {
+      "id": "5a7f6a1e-0c1d-4b8e-9a31-000000000007",
+      "slug": "winter-sonata-reunion",
+      "title": {
+        "th": "รวมรุ่นฤดูหนาว",
+        "en": "Winter Sonata Reunion"
+      },
+      "synopsis": {
+        "th": "เพื่อนสมัยมัธยมนัดเจอกันอีกครั้งที่โซลหลังผ่านไปยี่สิบปี และความลับที่ทุกคนเก็บไว้ก็เริ่มเปิดเผย",
+        "en": "Old high-school friends meet again in Seoul after twenty years, and the secrets they each kept begin to surface."
+      },
+      "durationMin": 126,
+      "rating": "AGE_15",
+      "originalLanguage": "ko",
+      "releaseDate": "2026-07-17",
+      "posterUrl": null,
+      "backdropUrl": null,
+      "trailerUrl": null,
+      "status": "ENDED",
+      "genres": [
+        {
+          "id": 2,
+          "slug": "drama",
+          "name": {
+            "th": "ดราม่า",
+            "en": "Drama"
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -11,7 +11,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "api:generate": "orval",
-    "dev:mock": "NEXT_PUBLIC_API_MOCKING=enabled INCLUDE_DEV_PAGES=1 next dev"
+    "dev:mock": "NEXT_PUBLIC_API_MOCKING=enabled INCLUDE_DEV_PAGES=1 next dev",
+    "mocks:sync-movies": "node scripts/sync-mock-movies.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^6.0.1",
