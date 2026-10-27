@@ -1,0 +1,171 @@
+erDiagram
+    %% ===== Identity =====
+    USERS {
+        uuid id PK
+        text email UK "lowercased, unique"
+        text password_hash "argon2id"
+        text full_name
+        text phone "nullable"
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    REFRESH_TOKENS {
+        uuid id PK
+        uuid user_id FK
+        text token_hash UK "sha256 of the token, never the raw token"
+        timestamptz expires_at
+        timestamptz revoked_at "nullable, set on logout / rotation"
+        timestamptz created_at
+    }
+
+    %% ===== Catalog =====
+    MOVIES {
+        uuid id PK
+        text slug UK "url-friendly, e.g. dune-part-two"
+        text title
+        text synopsis
+        int duration_min
+        movie_rating rating "G, PG, PG13, R18, R20"
+        text original_language
+        date release_date
+        text poster_url
+        text backdrop_url "nullable"
+        text trailer_url "nullable"
+        movie_status status "COMING_SOON, NOW_SHOWING, ENDED"
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    GENRES {
+        int id PK
+        text name UK
+        text slug UK
+    }
+
+    MOVIE_GENRES {
+        uuid movie_id PK, FK
+        int genre_id PK, FK
+    }
+
+    %% ===== Venue =====
+    CINEMAS {
+        uuid id PK
+        text name
+        text address
+        text city
+        text timezone "e.g. Asia/Bangkok"
+        timestamptz created_at
+    }
+
+    HALLS {
+        uuid id PK
+        uuid cinema_id FK
+        text name "e.g. Hall 3"
+        hall_type type "STANDARD, IMAX, FOUR_DX"
+        int total_rows "for drawing the seat map"
+        int total_cols
+    }
+
+    SEATS {
+        uuid id PK
+        uuid hall_id FK
+        text row_label "A, B, C ..."
+        int seat_number "1, 2, 3 ... (label shown to user)"
+        int grid_row "position on the map, allows aisles / gaps"
+        int grid_col
+        seat_type type "STANDARD, PREMIUM, COUPLE"
+        bool is_active "false = broken / removed seat"
+    }
+
+    %% ===== Scheduling =====
+    SHOWTIMES {
+        uuid id PK
+        uuid movie_id FK
+        uuid hall_id FK
+        timestamptz starts_at
+        timestamptz ends_at "starts_at + duration + cleaning buffer"
+        text audio_language "e.g. EN, TH"
+        text subtitle_language "nullable"
+        showtime_format format "TWO_D, THREE_D, IMAX"
+        showtime_status status "SCHEDULED, CANCELLED"
+        timestamptz created_at
+    }
+
+    SHOWTIME_PRICES {
+        uuid showtime_id PK, FK
+        seat_type seat_type PK "STANDARD, PREMIUM, COUPLE"
+        int price_baht "whole baht, e.g. 220 = 220 THB"
+    }
+
+    %% ===== Booking =====
+    BOOKINGS {
+        uuid id PK
+        text booking_code UK "short human code, e.g. MT-7KQ2XP, encoded in ticket QR"
+        uuid user_id FK
+        uuid showtime_id FK
+        booking_status status "PENDING_PAYMENT, CONFIRMED, EXPIRED, CANCELLED"
+        int total_baht
+        text currency "THB"
+        timestamptz expires_at "seat hold deadline, now + 10 min"
+        timestamptz confirmed_at "nullable"
+        timestamptz checked_in_at "nullable, scanned at the door"
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    BOOKING_SEATS {
+        uuid id PK
+        uuid booking_id FK
+        uuid showtime_id FK "denormalized for the uniqueness rule"
+        uuid seat_id FK
+        int price_baht "price snapshot at booking time"
+        timestamptz released_at "nullable, set when booking expires or is cancelled"
+    }
+
+    %% ===== Payment (Stripe) =====
+    PAYMENTS {
+        uuid id PK
+        uuid booking_id FK
+        text stripe_payment_intent_id UK
+        payment_method method "CARD, PROMPTPAY"
+        payment_status status "PENDING, SUCCEEDED, FAILED, CANCELLED"
+        int amount_baht "x 100 only when sent to Stripe"
+        text currency "THB"
+        text card_brand "nullable, e.g. mastercard"
+        text card_last4 "nullable"
+        text failure_code "nullable"
+        text failure_message "nullable"
+        timestamptz paid_at "nullable"
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    STRIPE_EVENTS {
+        text id PK "Stripe event id evt_..., makes webhooks idempotent"
+        text type "e.g. payment_intent.succeeded"
+        jsonb payload
+        timestamptz received_at
+        timestamptz processed_at "nullable"
+    }
+
+    %% ===== Relationships =====
+    USERS          ||--o{ REFRESH_TOKENS   : "has sessions"
+    USERS          ||--o{ BOOKINGS         : "makes"
+
+    MOVIES         ||--o{ MOVIE_GENRES     : "tagged with"
+    GENRES         ||--o{ MOVIE_GENRES     : "applies to"
+    MOVIES         ||--o{ SHOWTIMES        : "screened in"
+
+    CINEMAS        ||--|{ HALLS            : "contains"
+    HALLS          ||--|{ SEATS            : "has"
+    HALLS          ||--o{ SHOWTIMES        : "hosts"
+
+    SHOWTIMES      ||--|{ SHOWTIME_PRICES  : "priced by seat type"
+    SHOWTIMES      ||--o{ BOOKINGS         : "booked for"
+    SHOWTIMES      ||--o{ BOOKING_SEATS    : "occupies"
+
+    BOOKINGS       ||--|{ BOOKING_SEATS    : "reserves"
+    SEATS          ||--o{ BOOKING_SEATS    : "reserved as"
+
+    BOOKINGS       ||--o{ PAYMENTS         : "paid by (retries allowed)"
