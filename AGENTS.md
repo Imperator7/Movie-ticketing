@@ -1,182 +1,190 @@
 # AGENTS.md — onboarding for humans and AI agents
 
-Read this file first. It explains how the project works, how agents coordinate, and the rules every change must follow.
-`plan.md` holds the detailed checklist and the decisions log, and wins if the two ever disagree.
+Read this file first. It explains what's built, what's in flight, what's next, how agents coordinate, and the rules
+every change must follow. `plan.md` holds the full checklist and the decisions log, and wins if the two disagree.
 
 ## 1. The project in one paragraph
 
 A production-grade movie ticketing web app for Thailand. Customers browse movies in **Thai (default) or English**,
 pick 1–4 seats, log in, pay within 5 minutes by **card or PromptPay QR** (Stripe test mode, THB), and get a ticket QR.
 It's a learning project for backend, AWS and DevOps, so we choose the production-grade option even when it's more
-work, as long as it genuinely helps.
+work, as long as it genuinely helps. The product owner (the user) owns product/UX decisions; engineering quality
+improvements inside a task are applied without asking, but **summarize and ask before starting a new phase**.
 
-## 2. Current status
+## 2. Current status (update when an item is merged)
 
-Update this table when an item is merged. Details live in `plan.md` §4.
+| Area               | State                                                                                                                                                                                                                                                                      |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Phase 0: Design    | ✅ ER diagram, DB design, OpenAPI contract, security doc, decisions log                                                                                                                                                                                                    |
+| Repo / DevOps      | ✅ Turborepo, shared TS + ESLint configs, Prettier, Husky, commitlint, CI workflow + Dependabot (**written, never run: repo not on GitHub yet**)                                                                                                                           |
+| Design system      | ✅ "Marquee" theme + cinema components, **approved** (`/design-system`)                                                                                                                                                                                                    |
+| Database           | ✅ Prisma schema, hand-written constraints, roles (`migrator` / `app_user`) with **grants in a migration**, 26/26 constraint checks. ✅ Seeded with **18 real TMDB movies** (`movies.json`), 2 cinemas, 6 halls, 992 seats, 913 showtimes (31 days), demo user             |
+| API foundation     | ✅ Validated env, PrismaService (app_user, pool), pino + request id + redaction, contract error filter, strict nestjs-zod validation, Swagger (dev), helmet/CORS/limits, health live/ready + graceful drain, Testcontainers harness                                        |
+| Auth API (Phase 2) | ✅ register / login / refresh / logout / me, argon2id, JWT (jose, HS256 pinned), rotating refresh cookie + family revocation (10 s racing-tab grace), Origin guard, rate limits                                                                                            |
+| Clickable demo     | ✅ Every customer screen on a stateful, contract-faithful **mock API** (TH/EN): browse → seats → login → checkout (demo card / PromptPay) → ticket QR → my bookings, active-booking banner, back-block, time's up, seat taken, cross-tab refresh lock, Demo controls panel |
+| Tests              | 202 api unit · 32 api integration (real Postgres) · 205 web unit · 26 DB checks. All green                                                                                                                                                                                 |
 
-| Area               | State                                                                                                                                                                                                                                                                                       |
-| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Phase 0: Design    | ✅ Done: ER diagram, DB design, OpenAPI contract, security doc, grilling decisions                                                                                                                                                                                                          |
-| Repo / DevOps      | ✅ Turborepo, shared TS + ESLint configs, Prettier, Husky, commitlint, CI workflow (not yet pushed to GitHub), Dependabot                                                                                                                                                                   |
-| Design system      | ✅ "Marquee" theme + cinema components, **approved** (`/design-system`)                                                                                                                                                                                                                     |
-| Database           | ✅ Prisma schema, hand-written constraints, roles (`migrator` / `app_user`), 26/26 constraint checks. ✅ Idempotent seed (2 cinemas, 6 halls, 992 seats, 31 days of showtimes) from `movies.sample.json`. ⏳ Real movies need `TMDB_API_KEY` → `npm run seed:fetch-movies -w api`           |
-| API foundation     | ✅ Config (validated env), PrismaService (app_user, pool), pino + request id + redaction, contract error filter, nestjs-zod strict validation, Swagger (dev), helmet/CORS/limits, health live/ready + graceful drain, Testcontainers harness. 67 unit + 3 integration tests                 |
-| Web foundation     | ✅ next-intl `/th` `/en` (typed messages, all error codes), React Query, api-client (bearer, request id, single-flight refresh), Zustand session, orval client + Zod + MSW mocks (committed), app shell, dev pages excluded from prod. 115 web tests                                        |
-| Auth (Phase 2 API) | ✅ register/login/refresh/logout/me, argon2id, JWT (jose, HS256 pinned), rotating refresh cookie + family revocation (10 s racing-tab grace), Origin guard, rate limits, demo user seed. 202 unit + 32 integration tests                                                                    |
-| Clickable demo     | ✅ All customer screens on a stateful mock API (TH/EN): browse → seats → login → checkout (demo card / PromptPay) → ticket QR → my bookings, active-booking banner, back-block, time's up, seat taken, cross-tab refresh lock, demo controls. 205 web tests. Run: `npm run dev:mock -w web` |
-| Next up            | Phase 3 catalog API (awaiting go-ahead), then switch the web from mocks to the real API screen by screen                                                                                                                                                                                    |
+**In flight (frontend agent, one run, two commits):**
+
+1. _Posters + one movie source:_ `apps/web/scripts/sync-mock-movies.mjs` → `src/mocks/movies.fixture.json` built from
+   `apps/api/prisma/seed/movies.json`, so the demo shows the same 18 real movies with **TMDB posters**
+   (`tmdbImage`/`tmdbSrcSet`, lazy loading, backdrop hero, `onError` → placeholder). Root script `movies:fetch`.
+2. _Optimistic seat map:_ Buy previews seats as "held for you" (polling paused, checkout cache primed), cancel releases
+   instantly. On `SEAT_TAKEN`, roll back, show an **apology toast** ("ขออภัย ที่นั่ง A5 มีผู้จองไปแล้ว" /
+   "Sorry, seat A5 was just taken by someone else"), and immediately show those seats as occupied. **Occupied seats
+   (BOOKED and HELD) use a plain filled person icon** (decision S8). Demo control "Slow network (1.5 s)".
+
+**Next (needs product-owner go-ahead):** Phase 3 catalog API (`listGenres`, `listCinemas`, `listMovies`,
+`getMovie`, `listMovieShowtimes`) + the **contract test** (Nest OpenAPI vs `docs/openapi.yaml`) + a **CI integration
+job**, then switch the catalog screens from mocks to the real API. Then Phase 4 (booking API), 5 (Stripe), 6 (tickets).
+
+**Open questions for the product owner:** drop Storybook (`/design-system` already is the component catalog)? ·
+when to push to a private GitHub repo (so CI runs).
 
 ## 3. Source of truth
 
-| Topic                                                | File                                                    | Rendered (dev only) |
-| ---------------------------------------------------- | ------------------------------------------------------- | ------------------- |
-| Plan, phase checklists, decisions log                | `plan.md`                                               | –                   |
-| Database schema                                      | `docs/er-diagram.mmd` → `apps/api/prisma/schema.prisma` | `/er-diagram`       |
-| DB rules: seat locks, booking lifecycle, constraints | `docs/database-design.md`                               | `/er-diagram`       |
-| API contract (endpoints, schemas, `ErrorCode`)       | `docs/openapi.yaml`                                     | `/openapi`          |
-| Security controls (WEB-\*, API-\*, DB-\*, OPS-\*)    | `docs/security.md`                                      | –                   |
-| Design tokens                                        | `apps/web/src/app/globals.css`                          | `/design-system`    |
+| Topic                                                                | File                                                     | Rendered (dev only) |
+| -------------------------------------------------------------------- | -------------------------------------------------------- | ------------------- |
+| Plan, phase checklists (`🧪` = built on mocks), decisions log        | `plan.md`                                                | –                   |
+| Database schema                                                      | `docs/er-diagram.mmd` → `apps/api/prisma/schema.prisma`  | `/er-diagram`       |
+| DB rules: seat locks, booking lifecycle, constraints, token families | `docs/database-design.md`                                | `/er-diagram`       |
+| API contract (endpoints, schemas, `ErrorCode`)                       | `docs/openapi.yaml`                                      | `/openapi`          |
+| Security controls (WEB-\*, API-\*, DB-\*, OPS-\*)                    | `docs/security.md`                                       | –                   |
+| Design tokens + components                                           | `apps/web/src/app/globals.css`, `src/components/cinema/` | `/design-system`    |
 
-**Contract first:** if code and docs disagree, the docs are right, unless you can show they're wrong. Then report
-it (see §5). Don't silently diverge.
+**Contract first:** if code and docs disagree, the docs win unless you can show they're wrong. Then report it.
 
 ## 4. Repo map
 
 ```
-apps/web        Next.js 16 (App Router, output: "export" → static files for S3 + CloudFront)
-  src/app            routes (thin). Dev review pages: er-diagram, openapi, design-system
-  src/components/ui  shadcn/ui (vendored, Radix). Relaxed lint
-  src/components/cinema  seat, seat map, screen, rating badge, showtime chip, countdown, banner, cards
-  src/lib            pure helpers (format, seat rules, diagram) + their *.test.ts
-apps/api        NestJS 12 (ESM, nodenext, Vitest)
-  prisma/            schema.prisma, migrations/ (init + hand-written db_constraints), verify-constraints.sql
-  prisma.config.ts   Prisma 7 config (CLI connects as migrator)
-  src/generated/     Prisma client output (git-ignored, run db:generate)
-packages/tsconfig      shared tsconfig bases (base, nestjs, nextjs)
-packages/eslint-config shared flat configs (base, nest, next): strict, type-aware
-docs/           design docs (see §3)
-docker/         Postgres init script (roles and databases)
+apps/web                Next.js 16 (App Router, output: "export" → static files for S3 + CloudFront)
+  src/app/[locale]/     thin routes: home, movies, movie, showtime, login, register, checkout(+/complete), bookings, booking
+  src/app/(dev)/        page.dev.tsx review pages (er-diagram, openapi, design-system), only with INCLUDE_DEV_PAGES=1
+  src/features/         auth, movies, showtimes, bookings, payments (components, hooks, schemas, tests)
+  src/components/       ui/ (shadcn, vendored) · cinema/ (seat, seat map, ratings, countdown, banner, cards) · shell/
+  src/lib/              api-client (+ transport, session refresh, server clock), format, seat rules, safe redirect
+  src/mocks/            stateful mock API (catalog, db in sessionStorage, service rules, handlers, demo controls)
+  src/api/generated/    orval output from docs/openapi.yaml (committed, never edited)
+  messages/             th.json, en.json (typed; every ErrorCode translated)
+  scripts/finalize-build.mjs  fails the build if dev pages or mock code reach out/
+apps/api                NestJS 12 (ESM, nodenext, Vitest + SWC)
+  src/                  config, prisma, common (errors, logging, validation, time, rate-limit), health, auth, booking/booking.config.ts
+  prisma/schema.prisma  + migrations/ (init, db_constraints, movie_poster_nullable, app_user_grants)
+  prisma/seed/          movies.json (TMDB snapshot), movies.sample.json, fetch-movies, run-seed, schedule, pricing, layout
+  test/                 Testcontainers integration specs (health, seed, auth)
+packages/tsconfig, packages/eslint-config   shared strict configs
+docs/                   design docs (see §3) · docker/  Postgres init (roles + databases)
 ```
 
 ## 5. Multi-agent workflow
 
-**Roles**
-
-- **Lead / reviewer** (the main Claude session): plans items, writes the briefs, reviews, merges into `main`, owns
-  `docs/`, `plan.md` and this file, and talks to the product owner.
-- **Frontend agent:** `apps/web/**` only.
-- **Backend agent:** `apps/api/**`, `docker/**`, `docker-compose.yml`, `.env.example` files.
+**Roles.** **Lead / reviewer** (main session): briefs, reviews, merges into `main`, owns `docs/`, `plan.md`, this
+file, and talks to the product owner. **Frontend agent:** `apps/web/**`. **Backend agent:** `apps/api/**`,
+`docker/**`, `docker-compose.yml`, `.env.example` files. Each agent runs in its own git worktree
+(`.claude/worktrees/…`, git-ignored).
 
 **Rules**
 
-1. **One plan item at a time.** Do exactly the brief, commit once, report, then **stop**. Don't start the next item.
-2. **Work in your own git worktree.** Before starting an item, run `git merge main` and `npm ci`.
-3. **File ownership is strict.** Shared files (root `package.json`, `package-lock.json`, `turbo.json`, `.gitignore`,
-   `.github/**`) may be changed only when the brief says so, and you must list them in your report. `docs/`, `plan.md`
-   and `AGENTS.md` belong to the lead.
-4. **Found a doc mismatch or a better idea?** Note it in the report under "Deviations", don't edit docs. The lead decides.
-5. **Product decisions** (business rules, UX, scope) belong to the product owner. Raise them, don't decide them.
-6. **Never** use `--no-verify`, never force-push, never commit secrets. Leave shared running services
-   (Postgres container) running.
+1. **One plan item at a time.** Do exactly the brief, commit, report, then **stop**.
+2. Before starting: `git merge main`, `npm ci`, and for api work `npm run db:generate -w api`.
+3. **File ownership is strict.** Shared files (root `package.json`, lockfile, `turbo.json`, `.gitignore`,
+   `.github/**`) only when the brief says so, and list them in the report. Docs belong to the lead.
+4. Doc mismatch or better idea → report it under "Deviations", don't edit docs.
+5. Product decisions (business rules, UX, scope) → raise them, don't decide them.
+6. Never `--no-verify`, never force-push, never commit secrets. Leave the shared Postgres container running.
 
-**Definition of done for an item**
+**Definition of done:** matches the brief and docs · **unit tests ship with the code** (no placeholders) ·
+`npm run check` passes · DB/API work ran `npm run db:verify` / `npm run test:int -w api` · UI work checked in a browser
+incl. 375px · one Conventional Commit with the session's co-author trailer.
 
-- [ ] Matches the brief and the source-of-truth docs
-- [ ] **Unit tests ship with the code** (web: Vitest + Testing Library, api: Vitest). No placeholder tests
-- [ ] `npm run check` passes from the repo root
-- [ ] For DB or API work, the relevant DB/integration checks were run (`npm run db:verify`, `npm run test:int -w api`)
-- [ ] For UI work, it was looked at in a browser, including at 375px wide
-- [ ] One Conventional Commit, ending with the co-author trailer the session tells you to use
+**Report template:** branch + hash · what changed · public APIs · tests added + results · deviations · shared files
+touched · what to look at closely.
 
-**Report template** (keep it short)
-
-```
-Branch + commit hash
-What changed (files / modules)
-Public APIs (component props, endpoints, scripts)
-Tests added (count) + check results
-Deviations from the brief and why
-Shared files touched
-Things the reviewer should look at closely
-```
+**Lead review checklist:** read the risky code (not just the report) · merge with `chore: merge …` · after a merge run
+`npm install`, `npm run db:generate -w api`, `npm run check`, and `npm run test:int -w api` when api changed ·
+look at UI in the browser pane · fix small issues on `main`, send bigger ones back · update §2 and `plan.md`.
 
 ## 6. Commands
 
 ```bash
-npm ci                       # install (Node 24, see .nvmrc)
-npm run check                # format + spec lint + lint + typecheck + test + build (all workspaces)
-npm run dev:web              # web on :3000 (agents: npm run dev -w web -- -p 3100)
-npm run db:up                # start Postgres (127.0.0.1:5433) and wait until healthy
-npm run db:migrate           # prisma migrate dev (as migrator)
-npm run db:verify            # run the 26 constraint and privilege checks (rolled back)
-npm run db:generate -w api   # generate the Prisma client
-npm run lint:openapi         # lint docs/openapi.yaml
-npm run test -w web          # web unit tests
+npm ci                         # install (Node 24, see .nvmrc)
+npm run check                  # format + spec lint + lint + typecheck + test + build (all workspaces)
+npm run dev:mock -w web        # web on :3000 with the mock API (what the product owner looks at)
+npm run dev:web                # web on :3000 without mocks (agents: append -- -p 3100)
+npm run db:up                  # Postgres on 127.0.0.1:5433, waits until healthy
+npm run db:migrate             # prisma migrate dev (as migrator)
+npm run db:seed                # idempotent seed (only adds; never changes/deletes showtimes)
+npm run db:verify              # 26 constraint + privilege checks, rolled back
+npm run db:studio              # Prisma Studio (launch config "db-studio" on :5555)
+npm run seed:fetch-movies -w api  # TMDB → prisma/seed/movies.json (needs TMDB_API_KEY in root .env)
+npm run test:int -w api        # integration tests (Docker; not part of check)
+npm run api:generate -w web    # regenerate the orval client after docs/openapi.yaml changes
+npm run lint:openapi           # lint the contract
 ```
 
-Ports: web 3000 (lead preview) / 3100 (agents), api 4000, Postgres 5433.
+Ports: web 3000 (lead preview) / 3100 (agents), api 4000, Postgres 5433, Prisma Studio 5555.
+Env: copy `.env.example` → `.env` (root) and `apps/api/.env.example` → `apps/api/.env`. `TMDB_API_KEY` lives in the root `.env`.
 
-## 7. Engineering rules (short version: details in plan.md §5 and docs/security.md)
+## 7. Engineering rules (details: plan.md §5, docs/security.md)
 
-**Everywhere:** strict TypeScript, type-aware ESLint, no `any`, no unhandled promises, Prettier (100 cols).
-Conventional Commits (`feat|fix|build|docs|chore|test|refactor(scope): …`; `merge:` is not a valid type, use `chore:`).
+**Everywhere:** strict TypeScript, type-aware ESLint, no `any`, no unhandled promises, Prettier (100 cols),
+Conventional Commits (`feat|fix|build|docs|chore|test|refactor(scope): …`).
 
-**Frontend**
+**Frontend:** static export (no SSR / Server Actions / middleware / `cookies()`) · server state only in TanStack Query
+(optimistic updates via `onMutate` snapshot + rollback), Zustand = session only, URL = filters/date/`?seats=` · forms =
+React Hook Form + `zodResolver` (extend orval Zod) · semantic tokens only, no raw palette colors or hex · Thai default,
+all copy via next-intl, errors via `t("errors.<CODE>")` · accessibility: real buttons, aria, keyboard, focus,
+`prefers-reduced-motion`.
 
-- Static export: no SSR, no Server Actions, no middleware, no `cookies()`. Data is fetched in the browser.
-- **Server state lives only in TanStack Query. Zustand holds the session only. The URL holds filters, date and
-  `?seats=`.** Forms use React Hook Form + `zodResolver`.
-- **Semantic design tokens only.** No raw Tailwind palette colors (`red-500`) and no hex codes in components.
-- Thai is the default. All user-facing copy goes through next-intl. Errors show `t("errors.<CODE>")`, never the
-  API's English message.
-- Accessibility: real buttons, aria labels, keyboard support, visible focus, `prefers-reduced-motion` respected.
-
-**Backend**
-
-- **Authorization in every query** (`WHERE user_id = currentUser`). Another user's resource → 404 (API-1).
-- **The server computes prices, totals, statuses and deadlines.** Clients only send ids (API-3).
-- Strict Zod DTOs (unknown keys rejected). Every error uses the `Error` schema and `ErrorCode` from the contract.
-- **Money = whole baht integers** (`*_baht`). Only the Stripe adapter converts (`baht × 100`).
-- **Time** is stored as `timestamptz` (UTC). Bangkok-day logic lives only in `bangkokDayRange()`.
-- State changes use guarded updates (`WHERE status = 'PENDING_PAYMENT'`), write `booking_events` in the same
-  transaction, and jobs take an advisory lock.
-- The app connects as `app_user` (DML only). Migrations run as `migrator`. Anything Prisma can't express (partial
-  indexes, CHECKs, exclusion constraints) goes in hand-written SQL migrations.
+**Backend:** authorization in every query (another user's resource → 404) · server computes prices, totals, statuses,
+deadlines · strict Zod DTOs, every error uses the contract's `Error` + `ErrorCode` · money = whole baht integers
+(Stripe adapter converts ×100) · time = `timestamptz`, Bangkok days only via `bangkokDayRange()` · guarded state
+updates + `booking_events` in the same transaction, jobs take an advisory lock · app = `app_user` (DML only),
+migrations = `migrator`, anything Prisma can't express goes in hand-written SQL migrations.
 
 ## 8. Gotchas we've already hit
 
-- **Next.js 16 is newer than most training data.** Read `node_modules/next/dist/docs/` before using a Next API
-  (`apps/web/AGENTS.md`). Cache Components and partial prerendering are **off**, because they're incompatible with
-  `output: "export"`.
-- `tsc` needs Next's generated types: the web `typecheck` script runs `next typegen` first.
-- The Prisma client is generated and git-ignored. Run `npm run db:generate -w api` after `npm ci`.
-- Prisma 7: `prisma.config.ts`, the `prisma-client` generator with ESM output, `@prisma/adapter-pg`. Pinned to stable
-  7.x on purpose (8.x was only an RC).
-- API is ESM: relative imports need the `.js` extension. Nest DI needs value (not type-only) imports for injected classes.
-- Docker Compose has a fixed project name (`movie-ticketing`), so containers are shared across worktrees. Don't
-  `docker compose down -v` unless the lead asks.
-- `.turbo/`, `.claude/worktrees/` and `apps/api/src/generated/` are git- and Prettier-ignored. Never commit them.
-- `gitleaks` may not be installed locally. The pre-commit hook skips it with a warning, and CI still scans.
-- **nestjs-zod 5.5** declares a NestJS 10–11 peer but works on NestJS 12. If `npm install -w api …` fails with
-  ERESOLVE on it, re-run that one command with `--legacy-peer-deps`. Do **not** add a global `.npmrc`
-  (`legacy-peer-deps=true` would hide real conflicts). Drop this once upstream supports NestJS 12.
-- Vitest in the API uses **SWC** (`unplugin-swc`) because Nest DI needs decorator metadata, which esbuild doesn't emit.
-- `prisma generate` works without a database or `.env`. Migrate commands need `MIGRATION_DATABASE_URL`.
-  Turbo runs `db:generate` before api `lint`/`typecheck`/`test`/`build`.
-- Validation errors: `details.fields` is `{ "<field.path>": ["<zod issue code>"] }`, `_root` for whole-body errors,
-  `unrecognized_key` for unknown keys. The web maps it straight onto React Hook Form's `setError`.
-- `movies.poster_url` is **nullable**: no poster → the web's own placeholder. Never use third-party placeholder
-  image hosts (CSP allows only self + `image.tmdb.org`).
-- **Merging two branches that both touched `package-lock.json`**: never hand-merge it. `git checkout --ours
-package-lock.json && npm install` (rebuilds from the merged package.json files), then `npm run check`.
-- Peer deps must be declared explicitly (e.g. `@testing-library/dom` for Testing Library React). A rebuilt lockfile
-  won't keep an undeclared peer.
-- After reinstalling packages while `next dev` runs, Turbopack's cache can keep stale paths ("Cannot find module
-  …/dist/index.js"). Stop the server, `rm -rf apps/web/.next`, start again.
-- Web routes live under `src/app/[locale]/`. Dev pages are `page.dev.tsx` in `src/app/(dev)/` and only exist when
-  `INCLUDE_DEV_PAGES=1` (set by `npm run dev`). `scripts/finalize-build.mjs` fails the build if dev pages or the MSW
-  worker reach `out/`.
-- The embedded browser pane may block service workers. In mock mode the api-client falls back to in-process MSW
-  (`getResponse`) after 2.5 s, so mocks work everywhere.
-- `DemoPaymentPanel` (and `POST /__demo/pay`) is a stand-in until Phase 5 Stripe. It currently ships in prod builds.
-- shadcn's CLI asks for a preset interactively. Pass `-p nova -b radix` and close stdin.
+**Next.js / web**
+
+- Next 16 is newer than most training data: read `node_modules/next/dist/docs/` first (`apps/web/AGENTS.md`).
+  Cache Components / partial prerendering are **off** (incompatible with `output: "export"`).
+- The web `typecheck` runs `next typegen` first (`LayoutProps` etc. don't exist on a fresh checkout otherwise).
+- After reinstalling packages while `next dev` runs, Turbopack can keep stale paths ("Cannot find module …"):
+  stop the server, `rm -rf apps/web/.next`, start again.
+- The embedded browser pane may block service workers; in mock mode the api-client falls back to in-process MSW
+  (`getResponse`) after 2.5 s.
+- `DemoPaymentPanel` / `POST /__demo/pay` is a stand-in until Phase 5 Stripe and currently ships in prod builds
+  (Phase 5 removes it and makes `finalize-build.mjs` reject `__demo`).
+- next-intl `setRequestLocale` (deprecated) and Next `experimental.globalNotFound` are used on purpose; re-check on upgrades.
+- shadcn CLI: pass `-p nova -b radix` and close stdin.
+
+**API / database**
+
+- Prisma client is generated and git-ignored: `npm run db:generate -w api` after `npm ci` (turbo also runs it).
+- Prisma 7 (pinned stable 7.x): `prisma.config.ts`, `prisma-client` generator with ESM output, `@prisma/adapter-pg`.
+  `prisma generate` works without a DB; migrate commands need `MIGRATION_DATABASE_URL`.
+- API is ESM: relative imports need `.js`. Nest DI needs value (not type-only) imports. Vitest uses SWC for decorator metadata.
+- **`app_user` grants live in the `app_user_grants` migration**, not only in `docker/postgres/init`: `prisma migrate
+reset` drops the `public` schema and its grants. Any new role/privilege must be added in a migration too.
+- **`prisma migrate reset` refuses to run from an AI agent.** Explain what will be deleted, ask the product owner
+  explicitly (structured question), and only with a clear "yes" rerun with
+  `PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION="<their exact consent text>"`. Never on anything but the local dev DB.
+- The seed **only adds** (it never changes or deletes showtimes, which could have bookings). Replacing the movie set
+  therefore needs a dev DB reset (above) and then `npm run db:seed`.
+- `fetch-movies` reads `apps/api/.env` and then the root `.env`. TMDB's Thai title falls back to the original title
+  (e.g. Chinese/Hindi); `readableForThai()` treats non-Thai/non-Latin text as missing → English.
+- `movies.poster_url` is nullable; no poster → the web's own placeholder. Images only from `image.tmdb.org` (future CSP).
+- nestjs-zod 5.5 declares a NestJS 10–11 peer: if an `npm install -w api …` hits ERESOLVE, rerun that command with
+  `--legacy-peer-deps`. No global `.npmrc`.
+- Validation errors: `details.fields` = `{ "<path>": ["<zod issue code>"] }`, `_root` for whole-body, `unrecognized_key`.
+- Refresh reuse within `REFRESH_REUSE_GRACE_MS` (10 s) is a plain 401 (racing tabs); later reuse revokes the family.
+  The web serializes refresh across tabs with `navigator.locks`.
+
+**Repo / tooling**
+
+- Docker Compose has a fixed project name (`movie-ticketing`): one shared Postgres for all worktrees. Don't
+  `docker compose down -v` unless asked.
+- `.turbo/`, `.claude/worktrees/`, `apps/api/src/generated/` are git- and Prettier-ignored.
+- Two branches touched `package-lock.json`? Don't hand-merge: `git checkout --ours package-lock.json && npm install`,
+  then `npm run check`. Declare peer deps explicitly (e.g. `@testing-library/dom`) or a rebuilt lockfile drops them.
+- commitlint has no `merge:` type; use `chore: merge …`. `gitleaks` may be missing locally (hook warns; CI scans).

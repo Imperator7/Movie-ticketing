@@ -70,9 +70,9 @@ exists and is tested against the contract-faithful mock API. It's ticked only on
 
 - [x] Prisma schema per ER diagram (all enums, relations, `@@map` to snake_case)
 - [x] Raw SQL migrations: partial uniques (seat lock, one pending booking, email), CHECK constraints, showtime exclusion (`btree_gist`), indexes (DB-1)
-- [x] Grants: `app_user` DML only (DB-2)
+- [x] Grants: `app_user` DML only (DB-2), in the `app_user_grants` migration so resets keep them
 - [x] `seed` (2 cinemas × 3 halls with seat layouts, showtimes today → +30 days, prices). Deterministic and idempotent. Uses `movies.sample.json` until `movies.json` exists
-- [ ] Real movies: `seed:fetch-movies` is built. **Add `TMDB_API_KEY` to `.env`, run `npm run movies:fetch`**, commit `movies.json` + the web mock fixture
+- [x] Real movies: 18 TMDB movies in `movies.json` (TH/EN, posters, backdrops), DB seeded. Refresh any time with `npm run seed:fetch-movies -w api` (+ dev DB reset to replace the set)
 
 **API**
 

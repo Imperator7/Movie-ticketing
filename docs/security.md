@@ -58,7 +58,7 @@ What we protect, from whom, and the control in each layer. Every control has a c
 ## Database
 
 - **DB-1 Integrity:** foreign keys, unique and partial unique indexes, CHECK constraints, and an exclusion constraint (see `database-design.md` §2, §13, §17, §9).
-- **DB-2 Least privilege:** the app connects as `app_user` (DML only). Migrations run as `migrator` (DDL). No superuser in the app.
+- **DB-2 Least privilege:** the app connects as `app_user` (DML only). Migrations run as `migrator` (DDL). No superuser in the app. Grants live in a migration (`app_user_grants`), so resets and fresh databases (Testcontainers, RDS) get them too.
 - **DB-3 Secrets at rest:** password hashes (argon2id), refresh tokens (SHA-256). No raw tokens are ever stored.
 - **DB-4 Transactions:** booking, confirmation and refresh rotation run in transactions with guarded updates and row locks where needed.
 - **DB-5 Audit:** `booking_events` for every booking state change.
