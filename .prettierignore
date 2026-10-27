@@ -9,3 +9,4 @@ apps/web/src/api/generated
 .turbo
 .claude/worktrees
 apps/api/src/generated
+apps/web/public/mockServiceWorker.js
