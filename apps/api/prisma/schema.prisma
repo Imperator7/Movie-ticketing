@@ -1,0 +1,428 @@
+// Source of truth: docs/er-diagram.mmd and docs/database-design.md.
+// Things Prisma cannot express (partial unique indexes, CHECK constraints, the showtime
+// exclusion constraint, btree_gist) live in hand-written SQL migrations. Do not remove them.
+
+generator client {
+  provider            = "prisma-client"
+  output              = "../src/generated/prisma"
+  // ESM project (module: nodenext): emit .js import specifiers.
+  importFileExtension = "js"
+  moduleFormat        = "esm"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ===== Enums =====
+
+enum AuthProvider {
+  LINE
+
+  @@map("auth_provider")
+}
+
+enum MovieRating {
+  PROMOTED // ส
+  GENERAL // ท
+  AGE_13 // น13+
+  AGE_15 // น15+
+  AGE_18 // น18+
+  AGE_20 // ฉ20-
+
+  @@map("movie_rating")
+}
+
+enum MovieStatus {
+  COMING_SOON
+  NOW_SHOWING
+  ENDED
+
+  @@map("movie_status")
+}
+
+enum HallType {
+  STANDARD
+  IMAX
+  FOUR_DX
+
+  @@map("hall_type")
+}
+
+enum SeatType {
+  STANDARD
+  PREMIUM
+
+  @@map("seat_type")
+}
+
+enum ShowtimeFormat {
+  TWO_D
+  THREE_D
+  IMAX
+
+  @@map("showtime_format")
+}
+
+enum ShowtimeStatus {
+  SCHEDULED
+  CANCELLED
+
+  @@map("showtime_status")
+}
+
+enum BookingStatus {
+  PENDING_PAYMENT
+  CONFIRMED
+  CANCELLED
+
+  @@map("booking_status")
+}
+
+enum CancelReason {
+  PAYMENT_TIMEOUT
+  USER_CANCELLED
+  LATE_PAYMENT_REFUNDED
+
+  @@map("cancel_reason")
+}
+
+enum PaymentMethod {
+  CARD
+  PROMPTPAY
+
+  @@map("payment_method")
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+  REFUNDED
+
+  @@map("payment_status")
+}
+
+enum BookingEventType {
+  CREATED
+  PAYMENT_STARTED
+  PAYMENT_FAILED
+  CONFIRMED
+  CANCELLED
+  REFUNDED
+
+  @@map("booking_event_type")
+}
+
+enum EventActor {
+  USER
+  SYSTEM
+  STRIPE
+
+  @@map("event_actor")
+}
+
+// ===== Identity =====
+
+model User {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  // Lowercased. Uniqueness is a PARTIAL unique index (WHERE email IS NOT NULL) in raw SQL.
+  email           String?
+  passwordHash    String?  @map("password_hash")
+  displayName     String   @map("display_name")
+  avatarUrl       String?  @map("avatar_url")
+  phone           String?
+  preferredLocale String   @map("preferred_locale") // "th" or "en"
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  authIdentities  AuthIdentity[]
+  refreshTokens   RefreshToken[]
+  bookings        Booking[]
+  idempotencyKeys IdempotencyKey[]
+
+  @@map("users")
+}
+
+model AuthIdentity {
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId         String       @map("user_id") @db.Uuid
+  provider       AuthProvider
+  providerUserId String       @map("provider_user_id")
+  email          String?
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz()
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([provider, providerUserId])
+  @@index([userId])
+  @@map("auth_identities")
+}
+
+model RefreshToken {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  familyId  String    @map("family_id") @db.Uuid
+  tokenHash String    @unique @map("token_hash")
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz()
+  revokedAt DateTime? @map("revoked_at") @db.Timestamptz()
+  userAgent String?   @map("user_agent")
+  ip        String?   @db.Inet
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([familyId])
+  @@map("refresh_tokens")
+}
+
+// ===== Catalog =====
+
+model Movie {
+  id               String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tmdbId           Int?        @unique @map("tmdb_id")
+  slug             String      @unique
+  titleTh          String      @map("title_th")
+  titleEn          String      @map("title_en")
+  synopsisTh       String      @map("synopsis_th")
+  synopsisEn       String      @map("synopsis_en")
+  durationMin      Int         @map("duration_min")
+  rating           MovieRating
+  originalLanguage String      @map("original_language")
+  releaseDate      DateTime    @map("release_date") @db.Date
+  posterUrl        String      @map("poster_url")
+  backdropUrl      String?     @map("backdrop_url")
+  trailerUrl       String?     @map("trailer_url")
+  status           MovieStatus
+  createdAt        DateTime    @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt        DateTime    @updatedAt @map("updated_at") @db.Timestamptz()
+
+  genres    MovieGenre[]
+  showtimes Showtime[]
+
+  @@map("movies")
+}
+
+model Genre {
+  id     Int    @id @default(autoincrement())
+  tmdbId Int?   @unique @map("tmdb_id")
+  slug   String @unique
+  nameTh String @map("name_th")
+  nameEn String @map("name_en")
+
+  movies MovieGenre[]
+
+  @@map("genres")
+}
+
+model MovieGenre {
+  movieId String @map("movie_id") @db.Uuid
+  genreId Int    @map("genre_id")
+
+  movie Movie @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  genre Genre @relation(fields: [genreId], references: [id])
+
+  @@id([movieId, genreId])
+  @@index([genreId])
+  @@map("movie_genres")
+}
+
+// ===== Venue =====
+
+model Cinema {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nameTh    String   @map("name_th")
+  nameEn    String   @map("name_en")
+  addressTh String   @map("address_th")
+  addressEn String   @map("address_en")
+  city      String
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  halls Hall[]
+
+  @@map("cinemas")
+}
+
+model Hall {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cinemaId  String   @map("cinema_id") @db.Uuid
+  number    Int
+  type      HallType
+  totalRows Int      @map("total_rows")
+  totalCols Int      @map("total_cols")
+
+  cinema    Cinema     @relation(fields: [cinemaId], references: [id])
+  seats     Seat[]
+  showtimes Showtime[]
+
+  @@unique([cinemaId, number])
+  @@map("halls")
+}
+
+model Seat {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  hallId     String   @map("hall_id") @db.Uuid
+  rowLabel   String   @map("row_label")
+  seatNumber Int      @map("seat_number")
+  gridRow    Int      @map("grid_row")
+  gridCol    Int      @map("grid_col")
+  type       SeatType
+  isActive   Boolean  @default(true) @map("is_active")
+
+  hall         Hall          @relation(fields: [hallId], references: [id])
+  bookingSeats BookingSeat[]
+
+  @@unique([hallId, rowLabel, seatNumber])
+  @@map("seats")
+}
+
+// ===== Scheduling =====
+
+model Showtime {
+  id               String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  movieId          String         @map("movie_id") @db.Uuid
+  hallId           String         @map("hall_id") @db.Uuid
+  startsAt         DateTime       @map("starts_at") @db.Timestamptz()
+  endsAt           DateTime       @map("ends_at") @db.Timestamptz()
+  audioLanguage    String         @map("audio_language")
+  subtitleLanguage String?        @map("subtitle_language")
+  format           ShowtimeFormat
+  status           ShowtimeStatus @default(SCHEDULED)
+  createdAt        DateTime       @default(now()) @map("created_at") @db.Timestamptz()
+
+  movie        Movie           @relation(fields: [movieId], references: [id])
+  hall         Hall            @relation(fields: [hallId], references: [id])
+  prices       ShowtimePrice[]
+  bookings     Booking[]
+  bookingSeats BookingSeat[]
+
+  @@index([movieId, startsAt])
+  @@index([hallId, startsAt])
+  @@map("showtimes")
+}
+
+model ShowtimePrice {
+  showtimeId String   @map("showtime_id") @db.Uuid
+  seatType   SeatType @map("seat_type")
+  priceBaht  Int      @map("price_baht")
+
+  showtime Showtime @relation(fields: [showtimeId], references: [id], onDelete: Cascade)
+
+  @@id([showtimeId, seatType])
+  @@map("showtime_prices")
+}
+
+// ===== Booking =====
+
+model Booking {
+  id               String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  bookingCode      String        @unique @map("booking_code")
+  userId           String        @map("user_id") @db.Uuid
+  showtimeId       String        @map("showtime_id") @db.Uuid
+  // One PENDING_PAYMENT per user: partial unique index in raw SQL.
+  status           BookingStatus
+  cancelReason     CancelReason? @map("cancel_reason")
+  totalBaht        Int           @map("total_baht")
+  currency         String        @default("THB")
+  paymentExpiresAt DateTime      @map("payment_expires_at") @db.Timestamptz()
+  holdExpiresAt    DateTime      @map("hold_expires_at") @db.Timestamptz()
+  confirmedAt      DateTime?     @map("confirmed_at") @db.Timestamptz()
+  cancelledAt      DateTime?     @map("cancelled_at") @db.Timestamptz()
+  checkedInAt      DateTime?     @map("checked_in_at") @db.Timestamptz()
+  createdAt        DateTime      @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt        DateTime      @updatedAt @map("updated_at") @db.Timestamptz()
+
+  user     User           @relation(fields: [userId], references: [id])
+  showtime Showtime       @relation(fields: [showtimeId], references: [id])
+  seats    BookingSeat[]
+  payments Payment[]
+  events   BookingEvent[]
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([status, paymentExpiresAt])
+  @@map("bookings")
+}
+
+model BookingSeat {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  bookingId  String    @map("booking_id") @db.Uuid
+  // Denormalized so the partial unique index (showtime_id, seat_id) WHERE released_at IS NULL can exist.
+  showtimeId String    @map("showtime_id") @db.Uuid
+  seatId     String    @map("seat_id") @db.Uuid
+  priceBaht  Int       @map("price_baht")
+  releasedAt DateTime? @map("released_at") @db.Timestamptz()
+
+  booking  Booking  @relation(fields: [bookingId], references: [id])
+  showtime Showtime @relation(fields: [showtimeId], references: [id])
+  seat     Seat     @relation(fields: [seatId], references: [id])
+
+  @@index([bookingId])
+  @@map("booking_seats")
+}
+
+model BookingEvent {
+  id        BigInt           @id @default(autoincrement())
+  bookingId String           @map("booking_id") @db.Uuid
+  type      BookingEventType
+  actor     EventActor
+  data      Json?            @db.JsonB
+  createdAt DateTime         @default(now()) @map("created_at") @db.Timestamptz()
+
+  booking Booking @relation(fields: [bookingId], references: [id])
+
+  @@index([bookingId, createdAt])
+  @@map("booking_events")
+}
+
+model IdempotencyKey {
+  userId         String   @map("user_id") @db.Uuid
+  key            String
+  requestHash    String   @map("request_hash")
+  responseStatus Int?     @map("response_status")
+  responseBody   Json?    @map("response_body") @db.JsonB
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  expiresAt      DateTime @map("expires_at") @db.Timestamptz()
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@id([userId, key])
+  @@index([expiresAt])
+  @@map("idempotency_keys")
+}
+
+// ===== Payment (Stripe) =====
+
+model Payment {
+  id                    String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  bookingId             String        @map("booking_id") @db.Uuid
+  stripePaymentIntentId String        @unique @map("stripe_payment_intent_id")
+  method                PaymentMethod
+  status                PaymentStatus
+  amountBaht            Int           @map("amount_baht")
+  currency              String        @default("THB")
+  cardBrand             String?       @map("card_brand")
+  cardLast4             String?       @map("card_last4")
+  failureCode           String?       @map("failure_code")
+  failureMessage        String?       @map("failure_message")
+  paidAt                DateTime?     @map("paid_at") @db.Timestamptz()
+  refundedAt            DateTime?     @map("refunded_at") @db.Timestamptz()
+  createdAt             DateTime      @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt             DateTime      @updatedAt @map("updated_at") @db.Timestamptz()
+
+  booking Booking @relation(fields: [bookingId], references: [id])
+
+  @@index([bookingId])
+  @@map("payments")
+}
+
+model StripeEvent {
+  id          String    @id
+  type        String
+  payload     Json      @db.JsonB
+  receivedAt  DateTime  @default(now()) @map("received_at") @db.Timestamptz()
+  processedAt DateTime? @map("processed_at") @db.Timestamptz()
+
+  @@map("stripe_events")
+}

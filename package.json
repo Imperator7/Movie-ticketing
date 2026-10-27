@@ -16,7 +16,13 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "prepare": "husky",
-    "check": "npm run format:check && npm run lint:openapi && turbo run lint typecheck test build"
+    "check": "npm run format:check && npm run lint:openapi && turbo run lint typecheck test build",
+    "db:up": "docker compose up -d --wait postgres",
+    "db:down": "docker compose down",
+    "db:migrate": "npm run db:migrate -w api",
+    "db:reset": "npm run db:reset -w api",
+    "db:studio": "npm run db:studio -w api",
+    "db:verify": "npm run db:verify -w api"
   },
   "engines": {
     "node": ">=24"
