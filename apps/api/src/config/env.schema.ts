@@ -1,0 +1,91 @@
+import { z } from "zod";
+
+/** Environments where placeholder secrets from `.env.example` are tolerated. */
+const RELAXED_ENVS = new Set(["development", "test"]);
+
+const MIN_SECRET_BYTES = 32;
+
+/** Values that obviously came from an example file or a copy-paste. */
+const PLACEHOLDER_PATTERN =
+  /change[_-]?me|placeholder|example|dev[_-]|replace[_-]?me|secret[_-]?here|xxxx/i;
+
+const secret = z.string().refine((value) => Buffer.byteLength(value, "utf8") >= MIN_SECRET_BYTES, {
+  message: `must be at least ${MIN_SECRET_BYTES} bytes long (generate one with: openssl rand -base64 48)`,
+});
+
+const booleanFlag = z
+  .enum(["true", "false", "1", "0"])
+  .transform((value) => value === "true" || value === "1");
+
+const SECRET_KEYS = ["JWT_SECRET", "REFRESH_TOKEN_PEPPER", "TICKET_QR_SECRET"] as const;
+
+export const envSchema = z
+  .object({
+    NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
+    PORT: z.coerce.number().int().min(1).max(65535).default(4000),
+    LOG_LEVEL: z
+      .enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"])
+      .default("info"),
+
+    // The app connects as app_user (DML only). Migrations use MIGRATION_DATABASE_URL (Prisma CLI only).
+    DATABASE_URL: z.url({ protocol: /^postgres(ql)?$/ }),
+    /** Pool size per container. Size it against RDS max_connections / number of containers (DB-6). */
+    DB_POOL_MAX: z.coerce.number().int().min(1).max(100).default(10),
+    DB_CONNECT_TIMEOUT_MS: z.coerce.number().int().min(100).default(5000),
+
+    JWT_SECRET: secret,
+    REFRESH_TOKEN_PEPPER: secret,
+    TICKET_QR_SECRET: secret,
+
+    /** Browser origin allowed by CORS (development only). */
+    WEB_ORIGIN: z.url().default("http://localhost:3000"),
+    /** Number of reverse proxies in front of the app (ALB = 1). 0 = trust none. */
+    TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(10).default(0),
+
+    SWAGGER_ENABLED: booleanFlag.default(false),
+
+    /** Time to keep serving (readiness 503) after SIGTERM before closing, so the ALB stops routing first. */
+    SHUTDOWN_DRAIN_MS: z.coerce.number().int().min(0).max(120_000).default(5000),
+    HEALTH_DB_TIMEOUT_MS: z.coerce.number().int().min(50).max(30_000).default(2000),
+  })
+  .superRefine((env, ctx) => {
+    if (RELAXED_ENVS.has(env.NODE_ENV)) return;
+    for (const key of SECRET_KEYS) {
+      if (PLACEHOLDER_PATTERN.test(env[key])) {
+        ctx.addIssue({
+          code: "custom",
+          path: [key],
+          message: `looks like a placeholder; real secrets are required when NODE_ENV=${env.NODE_ENV}`,
+        });
+      }
+    }
+    if (env.SWAGGER_ENABLED) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["SWAGGER_ENABLED"],
+        message: `must not be enabled when NODE_ENV=${env.NODE_ENV}`,
+      });
+    }
+  });
+
+export type Env = z.infer<typeof envSchema>;
+
+export class EnvValidationError extends Error {
+  constructor(public readonly issues: readonly string[]) {
+    super(`Invalid environment configuration:\n${issues.map((line) => `  - ${line}`).join("\n")}`);
+    this.name = "EnvValidationError";
+  }
+}
+
+/** Parses raw env vars. Never includes values in the message, only variable names and reasons. */
+export function validateEnv(raw: Record<string, string | undefined>): Env {
+  const result = envSchema.safeParse(raw);
+  if (result.success) return result.data;
+  throw new EnvValidationError(
+    result.error.issues.map((issue) => {
+      const name = issue.path.join(".") || "(env)";
+      const missing = issue.code === "invalid_type" && raw[name] === undefined;
+      return `${name}: ${missing ? "is required" : issue.message}`;
+    }),
+  );
+}
