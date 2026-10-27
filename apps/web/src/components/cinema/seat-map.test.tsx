@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { seatLabelsEn } from "./labels";
-import { SeatMap, type SeatMapSeat } from "./seat-map";
+import { SeatMap, seatGridPlacement, type SeatMapSeat } from "./seat-map";
 
 const seats: SeatMapSeat[] = ["A", "B"].flatMap((row, r) =>
   [1, 2, 3, 4, 5, 6].map((number) => ({
@@ -13,9 +13,9 @@ const seats: SeatMapSeat[] = ["A", "B"].flatMap((row, r) =>
     type: "STANDARD" as const,
     status: row === "B" && number === 1 ? ("BOOKED" as const) : ("AVAILABLE" as const),
     priceBaht: 200,
-    gridRow: r + 1,
+    gridRow: r,
     // Aisle between columns 3 and 5.
-    gridCol: number <= 3 ? number : number + 1,
+    gridCol: number <= 3 ? number - 1 : number,
   })),
 );
 
@@ -33,6 +33,13 @@ function Harness({ onRejected }: { onRejected?: (reason: "limit" | "unavailable"
 }
 
 const seat = (label: string) => screen.getByRole("button", { name: new RegExp(`^${label},`) });
+
+describe("seatGridPlacement", () => {
+  it("converts 0-based contract positions to CSS grid cells after the row-label column", () => {
+    expect(seatGridPlacement({ gridRow: 0, gridCol: 0 })).toEqual({ gridRow: 1, gridColumn: 2 });
+    expect(seatGridPlacement({ gridRow: 7, gridCol: 14 })).toEqual({ gridRow: 8, gridColumn: 16 });
+  });
+});
 
 describe("SeatMap", () => {
   it("toggles a seat on and off", async () => {

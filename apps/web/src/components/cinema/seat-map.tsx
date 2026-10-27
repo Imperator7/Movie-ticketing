@@ -14,7 +14,7 @@ export interface SeatMapSeat {
   type: SeatType;
   status: SeatStatus;
   priceBaht: number;
-  /** 1-based grid position. Missing columns render as aisles. */
+  /** 0-based grid position (as in the API contract). Missing columns render as aisles. */
   gridRow: number;
   gridCol: number;
 }
@@ -31,6 +31,11 @@ export interface SeatMapProps {
   /** Accessible name of the map. */
   ariaLabel?: string;
   className?: string;
+}
+
+/** CSS grid cell of a seat: columns 1 and last hold the row labels, so seats start at column 2. */
+export function seatGridPlacement(seat: Pick<SeatMapSeat, "gridRow" | "gridCol">) {
+  return { gridRow: seat.gridRow + 1, gridColumn: seat.gridCol + 2 };
 }
 
 type Direction = "ArrowUp" | "ArrowDown" | "ArrowLeft" | "ArrowRight";
@@ -78,9 +83,9 @@ export function SeatMap({
   const refs = useRef(new Map<string, HTMLButtonElement>());
   const [focusedId, setFocusedId] = useState<string | undefined>(undefined);
 
-  const maxCol = Math.max(1, ...seats.map((s) => s.gridCol));
+  const columns = Math.max(1, ...seats.map((s) => s.gridCol + 1));
   const rows = new Map<number, string>();
-  for (const s of seats) rows.set(s.gridRow, s.row);
+  for (const s of seats) rows.set(s.gridRow + 1, s.row);
   const activeId =
     focusedId && seats.some((s) => s.id === focusedId) ? focusedId : (seats[0]?.id ?? "");
 
@@ -108,10 +113,10 @@ export function SeatMap({
         aria-label={ariaLabel}
         onKeyDown={handleKeyDown}
         className="mx-auto grid w-max gap-1 px-2"
-        style={{ gridTemplateColumns: `repeat(${maxCol + 2}, 2rem)` }}
+        style={{ gridTemplateColumns: `repeat(${columns + 2}, 2rem)` }}
       >
         {[...rows.entries()].flatMap(([gridRow, row]) =>
-          [1, maxCol + 2].map((column) => (
+          [1, columns + 2].map((column) => (
             <span
               key={`${gridRow}-${column}`}
               aria-hidden
@@ -130,7 +135,7 @@ export function SeatMap({
               else refs.current.delete(seat.id);
             }}
             data-seat-id={seat.id}
-            style={{ gridRow: seat.gridRow, gridColumn: seat.gridCol + 1 }}
+            style={seatGridPlacement(seat)}
             label={`${seat.row}${seat.number}`}
             type={seat.type}
             status={seat.status}

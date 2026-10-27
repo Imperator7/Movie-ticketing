@@ -43,7 +43,11 @@ export interface MovieSummary {
   durationMin: number;
   rating: MovieRating;
   releaseDate: string;
-  posterUrl: string;
+  /**
+   * TMDB image URL. null → the web shows its own placeholder (no third-party image hosts).
+   * @nullable
+   */
+  posterUrl: string | null;
   status: MovieStatus;
   genres: Genre[];
 }

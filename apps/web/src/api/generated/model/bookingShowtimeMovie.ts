@@ -37,7 +37,8 @@ import type { MovieRating } from "./movieRating";
 export type BookingShowtimeMovie = {
   slug: string;
   title: LocalizedText;
-  posterUrl: string;
+  /** @nullable */
+  posterUrl: string | null;
   rating: MovieRating;
   durationMin: number;
 };

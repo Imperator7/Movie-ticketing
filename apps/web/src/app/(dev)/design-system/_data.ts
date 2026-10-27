@@ -108,8 +108,8 @@ export const demoSeats: SeatMapSeat[] = ROW_LETTERS.flatMap((row, r) =>
       type: premium ? ("PREMIUM" as const) : ("STANDARD" as const),
       status: NON_AVAILABLE[`${row}${number}`] ?? ("AVAILABLE" as const),
       priceBaht: premium ? 260 : 220,
-      gridRow: r + 1,
-      gridCol: number <= AISLE_AFTER ? number : number + 1,
+      gridRow: r,
+      gridCol: number <= AISLE_AFTER ? number - 1 : number,
     };
   }),
 );
