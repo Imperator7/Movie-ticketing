@@ -11,3 +11,6 @@ coverage/
 
 # Agent worktrees
 .claude/worktrees/
+
+# Turborepo cache
+.turbo/
