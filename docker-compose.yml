@@ -1,3 +1,6 @@
+# Fixed project name: the same containers and volumes whatever folder the repo is cloned into.
+name: movie-ticketing
+
 # Local development stack. Production uses AWS RDS (see plan.md), not this file.
 services:
   postgres:
