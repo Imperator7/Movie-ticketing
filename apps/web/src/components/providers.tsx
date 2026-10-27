@@ -3,6 +3,7 @@
 import { QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "next-themes";
 import { useState, type ReactNode } from "react";
+import { DemoControlsLoader } from "@/components/demo-controls-loader";
 import { Devtools } from "@/components/devtools";
 import { MockProvider } from "@/components/mock-provider";
 import { Toaster } from "@/components/ui/sonner";
@@ -21,6 +22,7 @@ export function Providers({ children }: { children: ReactNode }) {
             <Toaster position="top-center" richColors closeButton />
           </TooltipProvider>
           <Devtools />
+          <DemoControlsLoader />
         </QueryClientProvider>
       </MockProvider>
     </ThemeProvider>

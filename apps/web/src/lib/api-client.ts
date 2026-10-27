@@ -1,5 +1,7 @@
 import { ErrorCode, type AuthResponse } from "@/api/generated/model";
 import { useAuthStore } from "@/features/auth/store";
+import { observeServerDate } from "./server-clock";
+import { send as transportSend } from "./transport";
 
 const DEFAULT_BASE_URL = "/api/v1";
 
@@ -73,51 +75,100 @@ function skipsRefresh(url: string): boolean {
   return /^\/auth\/(refresh|login|register|logout)(\?|$)/.test(url);
 }
 
-let refreshInFlight: Promise<boolean> | null = null;
+export interface LockManagerLike {
+  request: <T>(name: string, callback: () => Promise<T>) => Promise<T>;
+}
+
+const REFRESH_LOCK = "auth-refresh";
+
+/** The browser's Web Locks, or `undefined` where unsupported (the in-tab single-flight still applies). */
+function browserLocks(): LockManagerLike | undefined {
+  if (typeof navigator === "undefined" || !("locks" in navigator)) return undefined;
+  const { locks } = navigator;
+  return { request: async (name, callback) => await locks.request(name, callback) };
+}
+
+interface RefreshAttempt {
+  ok: boolean;
+  /** The server said the refresh cookie is not valid (it may just have been rotated by another tab). */
+  invalidToken: boolean;
+}
 
 /**
- * Exchanges the refresh cookie for a new access token. Concurrent callers share one request
- * (the API rotates the cookie, so two parallel refreshes would revoke the session family).
- * Resolves false (and clears the session) when the refresh fails.
+ * Session refresh, serialized twice over:
+ * - in this tab, concurrent callers share one in-flight refresh (single-flight);
+ * - across tabs, a Web Lock (`auth-refresh`) makes refreshes run one at a time. The refresh cookie is
+ *   shared by all tabs and rotates on every use, so the tab that waited sends the *new* cookie.
+ * If the server answers REFRESH_TOKEN_INVALID, one more attempt is made (taking the lock again)
+ * before the session is cleared.
  */
-export function refreshSession(): Promise<boolean> {
-  refreshInFlight ??= (async () => {
+export function createSessionRefresher(getLocks: () => LockManagerLike | undefined = browserLocks) {
+  let inFlight: Promise<boolean> | null = null;
+
+  async function attempt(): Promise<RefreshAttempt> {
     try {
       const id = requestId();
-      const response = await fetch(`${baseUrl()}/auth/refresh`, {
+      const sentAt = Date.now();
+      const response = await transportSend(`${baseUrl()}/auth/refresh`, {
         method: "POST",
         credentials: "include",
         headers: { "X-Request-Id": id },
       });
+      observeServerDate(response.headers.get("Date"), sentAt, Date.now());
       const body = await readBody(response);
-      if (!response.ok || !isRecord(body) || typeof body.accessToken !== "string") {
-        useAuthStore.getState().clear();
-        return false;
+      if (response.ok && isRecord(body) && typeof body.accessToken === "string") {
+        const session = body as unknown as AuthResponse;
+        useAuthStore
+          .getState()
+          .setSession({ accessToken: session.accessToken, user: session.user });
+        return { ok: true, invalidToken: false };
       }
-      const session = body as unknown as AuthResponse;
-      useAuthStore.getState().setSession({ accessToken: session.accessToken, user: session.user });
-      return true;
+      const invalidToken = isRecord(body) && body.code === ErrorCode.REFRESH_TOKEN_INVALID;
+      return { ok: false, invalidToken };
     } catch {
-      useAuthStore.getState().clear();
-      return false;
-    } finally {
-      refreshInFlight = null;
+      return { ok: false, invalidToken: false };
     }
-  })();
-  return refreshInFlight;
+  }
+
+  function serialized(): Promise<RefreshAttempt> {
+    const locks = getLocks();
+    return locks ? locks.request(REFRESH_LOCK, attempt) : attempt();
+  }
+
+  /** Resolves false (and clears the session) when the refresh fails. */
+  return function refresh(): Promise<boolean> {
+    inFlight ??= (async () => {
+      try {
+        let result = await serialized();
+        if (!result.ok && result.invalidToken) result = await serialized();
+        if (!result.ok) useAuthStore.getState().clear();
+        return result.ok;
+      } finally {
+        inFlight = null;
+      }
+    })();
+    return inFlight;
+  };
 }
 
-async function send(path: string, init: RequestInit): Promise<{ response: Response; id: string }> {
+export const refreshSession = createSessionRefresher();
+
+async function request(
+  path: string,
+  init: RequestInit,
+): Promise<{ response: Response; id: string }> {
   const headers = new Headers(init.headers);
   const id = requestId();
   headers.set("X-Request-Id", id);
   const token = useAuthStore.getState().accessToken;
   if (token && !headers.has("Authorization")) headers.set("Authorization", `Bearer ${token}`);
-  const response = await fetch(`${baseUrl()}${path}`, {
+  const sentAt = Date.now();
+  const response = await transportSend(`${baseUrl()}${path}`, {
     ...init,
     headers,
     credentials: "include",
   });
+  observeServerDate(response.headers.get("Date"), sentAt, Date.now());
   return { response, id };
 }
 
@@ -126,10 +177,10 @@ async function send(path: string, init: RequestInit): Promise<{ response: Respon
  * (so React Query sees failures as errors). A 401 triggers one single-flight refresh and one retry.
  */
 export async function apiClient<T>(path: string, init: RequestInit = {}): Promise<T> {
-  let { response, id } = await send(path, init);
+  let { response, id } = await request(path, init);
 
   if (response.status === 401 && !skipsRefresh(path) && (await refreshSession())) {
-    ({ response, id } = await send(path, init));
+    ({ response, id } = await request(path, init));
   }
 
   const data = await readBody(response);

@@ -34,6 +34,6 @@
 import type { Error } from "./error";
 
 /**
- * `VALIDATION_FAILED`: `details.fields` maps field → message keys
+ * `VALIDATION_FAILED`: `details.fields` maps each field path to Zod issue codes (`_root` = whole body, unknown keys = `unrecognized_key`)
  */
 export type ValidationErrorResponse = Error;

@@ -29,8 +29,10 @@ export interface PriceSummaryProps {
   seats: readonly PriceSummarySeat[];
   onBuy: () => void;
   loading?: boolean;
-  /** Extra reason to block buying (e.g. booking closed). Buy is always disabled with no seats. */
+  /** Extra reason to block buying (e.g. booking closed). Buy is disabled with no seats unless `allowEmpty`. */
   disabled?: boolean;
+  /** Lets the button work without seats (e.g. "Continue your booking"). */
+  allowEmpty?: boolean;
   labels?: PriceSummaryLabels;
   locale?: Locale;
   className?: string;
@@ -41,6 +43,7 @@ export function PriceSummary({
   onBuy,
   loading = false,
   disabled = false,
+  allowEmpty = false,
   labels = priceSummaryLabelsTh,
   locale = "th",
   className,
@@ -73,7 +76,7 @@ export function PriceSummary({
       <Button
         size="xl"
         className="w-full"
-        disabled={seats.length === 0 || disabled || loading}
+        disabled={(seats.length === 0 && !allowEmpty) || disabled || loading}
         onClick={onBuy}
       >
         {loading ? <Loader2 aria-hidden className="animate-spin" /> : null}

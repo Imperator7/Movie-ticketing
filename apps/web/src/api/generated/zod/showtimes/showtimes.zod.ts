@@ -56,7 +56,12 @@ export const GetShowtimeResponse = zod.object({
         "Thai film rating system: PROMOTED = ส, GENERAL = ท, AGE_13 = น13+, AGE_15 = น15+, AGE_18 = น18+, AGE_20 = ฉ20-",
       ),
     releaseDate: zod.iso.date(),
-    posterUrl: zod.url(),
+    posterUrl: zod
+      .url()
+      .nullable()
+      .describe(
+        "TMDB image URL. null → the web shows its own placeholder (no third-party image hosts).",
+      ),
     status: zod.enum(["COMING_SOON", "NOW_SHOWING", "ENDED"]),
     genres: zod.array(
       zod.object({

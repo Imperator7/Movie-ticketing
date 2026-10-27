@@ -77,7 +77,7 @@ export const getListMoviesResponseMock = (): ListMovies200 => ({
         durationMin: faker.number.int(),
         rating: faker.helpers.arrayElement(Object.values(MovieRating)),
         releaseDate: faker.date.past().toISOString().slice(0, 10),
-        posterUrl: faker.internet.url(),
+        posterUrl: faker.helpers.arrayElement([faker.internet.url(), null]),
         status: faker.helpers.arrayElement(Object.values(MovieStatus)),
         genres: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
           () => ({
@@ -105,7 +105,7 @@ export const getGetMovieResponseMock = (): MovieDetail => ({
     durationMin: faker.number.int(),
     rating: faker.helpers.arrayElement(Object.values(MovieRating)),
     releaseDate: faker.date.past().toISOString().slice(0, 10),
-    posterUrl: faker.internet.url(),
+    posterUrl: faker.helpers.arrayElement([faker.internet.url(), null]),
     status: faker.helpers.arrayElement(Object.values(MovieStatus)),
     genres: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
       () => ({

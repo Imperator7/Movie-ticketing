@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
+  bangkokDate,
   countdownTone,
   formatBaht,
   formatCountdown,
   formatDuration,
+  formatShowDate,
+  formatShowDateTime,
   formatShowtime,
 } from "./format";
 
@@ -63,5 +66,22 @@ describe("formatDuration", () => {
 describe("formatShowtime", () => {
   it("shows Bangkok local time whatever the input offset", () => {
     expect(formatShowtime("2026-10-28T12:30:00Z")).toBe("19:30");
+  });
+});
+
+describe("Bangkok date helpers", () => {
+  it("bangkokDate rolls over at midnight Bangkok time, not UTC", () => {
+    expect(bangkokDate(Date.UTC(2026, 9, 28, 16, 59))).toBe("2026-10-28");
+    expect(bangkokDate(Date.UTC(2026, 9, 28, 17, 0))).toBe("2026-10-29");
+  });
+
+  it("formatShowDate shows a short weekday and day in both locales", () => {
+    expect(formatShowDate("2026-10-28", "en")).toMatch(/Wed/);
+    expect(formatShowDate("2026-10-28", "en")).toMatch(/28/);
+    expect(formatShowDate("2026-10-28", "th")).toMatch(/[\u0E00-\u0E7F]/);
+  });
+
+  it("formatShowDateTime includes the Bangkok clock time", () => {
+    expect(formatShowDateTime("2026-10-28T19:30:00+07:00", "en")).toMatch(/19:30/);
   });
 });

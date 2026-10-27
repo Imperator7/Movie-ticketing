@@ -53,3 +53,34 @@ export function formatShowtime(iso: string): string {
     timeZone: "Asia/Bangkok",
   }).format(new Date(iso));
 }
+
+const INTL_LOCALE_FULL: Record<Locale, string> = { th: "th-TH", en: "en-GB" };
+
+/** Bangkok calendar day of a timestamp as "YYYY-MM-DD". */
+export function bangkokDate(ms: number): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Bangkok" }).format(new Date(ms));
+}
+
+/** Short weekday + day + month in Bangkok. Takes "YYYY-MM-DD" or an ISO instant. */
+export function formatShowDate(value: string, locale: Locale = "th"): string {
+  const iso = /^\d{4}-\d{2}-\d{2}$/.test(value) ? `${value}T12:00:00+07:00` : value;
+  return new Intl.DateTimeFormat(INTL_LOCALE_FULL[locale], {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    timeZone: "Asia/Bangkok",
+  }).format(new Date(iso));
+}
+
+/** Full date and time in Bangkok for tickets, e.g. "28 Oct 2026, 19:30". */
+export function formatShowDateTime(iso: string, locale: Locale = "th"): string {
+  return new Intl.DateTimeFormat(INTL_LOCALE_FULL[locale], {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+    timeZone: "Asia/Bangkok",
+  }).format(new Date(iso));
+}

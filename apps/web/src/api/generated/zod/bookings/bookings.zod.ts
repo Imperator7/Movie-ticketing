@@ -77,7 +77,7 @@ export const CreateBookingResponse = zod.object({
         th: zod.string(),
         en: zod.string(),
       }),
-      posterUrl: zod.url(),
+      posterUrl: zod.url().nullable(),
       rating: zod
         .enum(["PROMOTED", "GENERAL", "AGE_13", "AGE_15", "AGE_18", "AGE_20"])
         .describe(
@@ -154,7 +154,7 @@ export const GetActiveBookingResponse = zod.object({
         th: zod.string(),
         en: zod.string(),
       }),
-      posterUrl: zod.url(),
+      posterUrl: zod.url().nullable(),
       rating: zod
         .enum(["PROMOTED", "GENERAL", "AGE_13", "AGE_15", "AGE_18", "AGE_20"])
         .describe(
@@ -260,7 +260,7 @@ export const ListMyBookingsResponse = zod
                 th: zod.string(),
                 en: zod.string(),
               }),
-              posterUrl: zod.url(),
+              posterUrl: zod.url().nullable(),
               rating: zod
                 .enum(["PROMOTED", "GENERAL", "AGE_13", "AGE_15", "AGE_18", "AGE_20"])
                 .describe(
@@ -345,7 +345,7 @@ export const GetBookingResponse = zod.object({
         th: zod.string(),
         en: zod.string(),
       }),
-      posterUrl: zod.url(),
+      posterUrl: zod.url().nullable(),
       rating: zod
         .enum(["PROMOTED", "GENERAL", "AGE_13", "AGE_15", "AGE_18", "AGE_20"])
         .describe(
@@ -427,7 +427,7 @@ export const CancelBookingResponse = zod.object({
         th: zod.string(),
         en: zod.string(),
       }),
-      posterUrl: zod.url(),
+      posterUrl: zod.url().nullable(),
       rating: zod
         .enum(["PROMOTED", "GENERAL", "AGE_13", "AGE_15", "AGE_18", "AGE_20"])
         .describe(

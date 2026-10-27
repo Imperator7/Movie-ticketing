@@ -170,13 +170,17 @@ describe("apiClient", () => {
         .mockResolvedValueOnce(unauthorized())
         .mockResolvedValueOnce(
           json(401, { statusCode: 401, code: "REFRESH_TOKEN_INVALID", message: "expired" }),
+        )
+        .mockResolvedValueOnce(
+          json(401, { statusCode: 401, code: "REFRESH_TOKEN_INVALID", message: "expired" }),
         );
 
       await expect(apiClient("/bookings/active")).rejects.toMatchObject({
         status: 401,
         code: "UNAUTHORIZED",
       });
-      expect(fetchMock).toHaveBeenCalledTimes(2);
+      // The request, the refresh and its single retry.
+      expect(fetchMock).toHaveBeenCalledTimes(3);
       expect(useAuthStore.getState().accessToken).toBeNull();
       expect(useAuthStore.getState().user).toBeNull();
     });
