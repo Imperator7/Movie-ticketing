@@ -1,27 +1,285 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
 @plugin "@tailwindcss/typography";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/*
+ * Movie Ticketing design tokens — "Marquee" theme.
+ * Dark-first (an auditorium with the lights down), light theme for daytime use.
+ * Semantic tokens only: components never use raw palette colors.
+ * Docs + live preview: /design-system
+ */
 
 @theme inline {
+  /* Fonts: Latin glyphs come from the first family, Thai glyphs fall through to the Thai family. */
+  --font-sans: var(--font-inter), var(--font-plex-thai), ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-prompt), var(--font-plex-thai), ui-sans-serif, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, monospace;
+
+  /* shadcn/ui semantic colors */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  /* Brand + status colors */
+  --color-gold: var(--gold);
+  --color-gold-foreground: var(--gold-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+
+  /* Seat map */
+  --color-seat-available: var(--seat-available);
+  --color-seat-available-hover: var(--seat-available-hover);
+  --color-seat-premium: var(--seat-premium);
+  --color-seat-premium-hover: var(--seat-premium-hover);
+  --color-seat-selected: var(--seat-selected);
+  --color-seat-selected-foreground: var(--seat-selected-foreground);
+  --color-seat-held: var(--seat-held);
+  --color-seat-booked: var(--seat-booked);
+  --color-seat-taken: var(--seat-taken);
+  --color-screen: var(--screen);
+
+  /* Movie ratings (Thai rating system) */
+  --color-rating-general: var(--rating-general);
+  --color-rating-13: var(--rating-13);
+  --color-rating-15: var(--rating-15);
+  --color-rating-18: var(--rating-18);
+  --color-rating-20: var(--rating-20);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+
+  --animate-seat-taken: seat-taken 3s ease-out;
+  --animate-marquee-glow: marquee-glow 4s ease-in-out infinite;
+
+  @keyframes seat-taken {
+    0%,
+    30% {
+      background-color: var(--seat-taken);
+      box-shadow: 0 0 0 3px color-mix(in oklch, var(--seat-taken) 45%, transparent);
+    }
+    100% {
+      box-shadow: 0 0 0 0 transparent;
+    }
+  }
+
+  @keyframes marquee-glow {
+    0%,
+    100% {
+      opacity: 0.75;
+    }
+    50% {
+      opacity: 1;
+    }
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Light theme ("matinee") */
+:root {
+  --radius: 0.75rem;
+
+  --background: oklch(0.985 0.003 285);
+  --foreground: oklch(0.2 0.02 285);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.2 0.02 285);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.2 0.02 285);
+  --primary: oklch(0.56 0.215 25);
+  --primary-foreground: oklch(0.99 0.005 25);
+  --secondary: oklch(0.945 0.008 285);
+  --secondary-foreground: oklch(0.25 0.02 285);
+  --muted: oklch(0.955 0.006 285);
+  --muted-foreground: oklch(0.5 0.02 285);
+  --accent: oklch(0.94 0.012 285);
+  --accent-foreground: oklch(0.25 0.02 285);
+  --destructive: oklch(0.55 0.22 18);
+  --border: oklch(0.9 0.008 285);
+  --input: oklch(0.88 0.01 285);
+  --ring: oklch(0.56 0.215 25);
+
+  --gold: oklch(0.7 0.14 75);
+  --gold-foreground: oklch(0.22 0.04 75);
+  --success: oklch(0.58 0.15 155);
+  --success-foreground: oklch(0.99 0 0);
+  --warning: oklch(0.72 0.16 65);
+  --warning-foreground: oklch(0.22 0.05 65);
+  --info: oklch(0.56 0.14 245);
+  --info-foreground: oklch(0.99 0 0);
+
+  --seat-available: oklch(0.89 0.012 285);
+  --seat-available-hover: oklch(0.83 0.02 285);
+  --seat-premium: oklch(0.88 0.06 80);
+  --seat-premium-hover: oklch(0.82 0.09 80);
+  --seat-selected: var(--primary);
+  --seat-selected-foreground: var(--primary-foreground);
+  --seat-held: oklch(0.86 0.09 70);
+  --seat-booked: oklch(0.8 0.008 285);
+  --seat-taken: var(--destructive);
+  --screen: oklch(0.6 0.03 285);
+
+  --rating-general: oklch(0.58 0.15 155);
+  --rating-13: oklch(0.6 0.15 230);
+  --rating-15: oklch(0.65 0.15 65);
+  --rating-18: oklch(0.58 0.2 35);
+  --rating-20: oklch(0.45 0.2 20);
+
+  --chart-1: oklch(0.56 0.215 25);
+  --chart-2: oklch(0.7 0.14 75);
+  --chart-3: oklch(0.56 0.14 245);
+  --chart-4: oklch(0.58 0.15 155);
+  --chart-5: oklch(0.5 0.02 285);
+
+  --sidebar: oklch(0.975 0.004 285);
+  --sidebar-foreground: oklch(0.2 0.02 285);
+  --sidebar-primary: oklch(0.56 0.215 25);
+  --sidebar-primary-foreground: oklch(0.99 0.005 25);
+  --sidebar-accent: oklch(0.94 0.012 285);
+  --sidebar-accent-foreground: oklch(0.25 0.02 285);
+  --sidebar-border: oklch(0.9 0.008 285);
+  --sidebar-ring: oklch(0.56 0.215 25);
+}
+
+/* Dark theme ("auditorium", default) */
+.dark {
+  --background: oklch(0.145 0.014 285);
+  --foreground: oklch(0.965 0.006 285);
+  --card: oklch(0.19 0.016 285);
+  --card-foreground: oklch(0.965 0.006 285);
+  --popover: oklch(0.21 0.017 285);
+  --popover-foreground: oklch(0.965 0.006 285);
+  --primary: oklch(0.64 0.215 25);
+  --primary-foreground: oklch(0.99 0.005 25);
+  --secondary: oklch(0.25 0.018 285);
+  --secondary-foreground: oklch(0.965 0.006 285);
+  --muted: oklch(0.23 0.016 285);
+  --muted-foreground: oklch(0.71 0.018 285);
+  --accent: oklch(0.27 0.02 285);
+  --accent-foreground: oklch(0.965 0.006 285);
+  --destructive: oklch(0.66 0.21 18);
+  --border: oklch(1 0 0 / 9%);
+  --input: oklch(1 0 0 / 14%);
+  --ring: oklch(0.64 0.215 25);
+
+  --gold: oklch(0.83 0.13 82);
+  --gold-foreground: oklch(0.22 0.04 75);
+  --success: oklch(0.72 0.16 155);
+  --success-foreground: oklch(0.18 0.03 155);
+  --warning: oklch(0.8 0.15 70);
+  --warning-foreground: oklch(0.2 0.04 70);
+  --info: oklch(0.7 0.12 245);
+  --info-foreground: oklch(0.16 0.03 245);
+
+  --seat-available: oklch(0.33 0.02 285);
+  --seat-available-hover: oklch(0.42 0.025 285);
+  --seat-premium: oklch(0.42 0.07 80);
+  --seat-premium-hover: oklch(0.5 0.09 80);
+  --seat-selected: var(--primary);
+  --seat-selected-foreground: var(--primary-foreground);
+  --seat-held: oklch(0.5 0.1 70);
+  --seat-booked: oklch(0.24 0.012 285);
+  --seat-taken: var(--destructive);
+  --screen: oklch(0.85 0.03 285);
+
+  --rating-general: oklch(0.72 0.16 155);
+  --rating-13: oklch(0.72 0.13 230);
+  --rating-15: oklch(0.8 0.15 70);
+  --rating-18: oklch(0.7 0.18 40);
+  --rating-20: oklch(0.64 0.21 20);
+
+  --chart-1: oklch(0.64 0.215 25);
+  --chart-2: oklch(0.83 0.13 82);
+  --chart-3: oklch(0.7 0.12 245);
+  --chart-4: oklch(0.72 0.16 155);
+  --chart-5: oklch(0.71 0.018 285);
+
+  --sidebar: oklch(0.17 0.015 285);
+  --sidebar-foreground: oklch(0.965 0.006 285);
+  --sidebar-primary: oklch(0.64 0.215 25);
+  --sidebar-primary-foreground: oklch(0.99 0.005 25);
+  --sidebar-accent: oklch(0.27 0.02 285);
+  --sidebar-accent-foreground: oklch(0.965 0.006 285);
+  --sidebar-border: oklch(1 0 0 / 9%);
+  --sidebar-ring: oklch(0.64 0.215 25);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply font-sans;
+    color-scheme: light;
+  }
+  html.dark {
+    color-scheme: dark;
+  }
+  body {
+    @apply bg-background text-foreground;
+    /* Thai stacks vowels and tone marks above and below the line, so it needs looser leading than Latin. */
+    line-height: 1.65;
+    font-feature-settings: "cv11", "ss01";
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-heading;
+    line-height: 1.3;
+    text-wrap: balance;
+  }
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@utility tabular {
+  font-variant-numeric: tabular-nums;
 }
