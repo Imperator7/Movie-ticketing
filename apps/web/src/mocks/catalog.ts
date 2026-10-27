@@ -122,7 +122,8 @@ export const halls: HallDef[] = [
   },
 ];
 
-export const SLOT_TIMES = ["10:30", "13:00", "15:45", "18:30", "21:15"] as const;
+/** Start times per hall. 3.5 h apart, so even the longest movies (about 3 h 15 m) finish before the next one. */
+export const SLOT_TIMES = ["10:00", "13:30", "17:00", "20:30"] as const;
 const DAY_MS = 86_400_000;
 const EPOCH_2020 = Date.UTC(2020, 0, 1);
 

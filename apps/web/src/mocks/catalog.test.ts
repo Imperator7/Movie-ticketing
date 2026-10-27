@@ -68,4 +68,30 @@ describe("the default catalog (from movies.fixture.json)", () => {
     expect(showtimes.length).toBeGreaterThan(0);
     expect(getShowtime(showtimes[0]?.id ?? "")?.id).toBe(showtimes[0]?.id);
   });
+
+  it("never overlaps two screenings in one hall, even for 3 h 15 m movies", () => {
+    const today = Math.floor((Date.now() + 7 * 3_600_000) / 86_400_000) - 18262;
+    expect(Math.max(...defaultMovies.map((m) => m.durationMin))).toBeGreaterThan(0);
+    for (let day = today; day < today + 8; day++) {
+      const byHall = new Map<number, ReturnType<typeof showtimesOnDay>>();
+      for (const showtime of showtimesOnDay(day)) {
+        byHall.set(showtime.hall, [...(byHall.get(showtime.hall) ?? []), showtime]);
+      }
+      for (const list of byHall.values()) {
+        for (let i = 1; i < list.length; i++) {
+          const previous = list[i - 1];
+          const next = list[i];
+          expect((next?.startMs ?? 0) - (previous?.endMs ?? 0)).toBeGreaterThanOrEqual(15 * 60_000);
+        }
+      }
+    }
+  });
+
+  it("loads images only from image.tmdb.org (the future CSP allows nothing else)", () => {
+    for (const movie of defaultMovies) {
+      for (const url of [movie.posterUrl, movie.backdropUrl]) {
+        if (url) expect(new URL(url).host).toBe("image.tmdb.org");
+      }
+    }
+  });
 });
