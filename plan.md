@@ -57,17 +57,17 @@ Each phase lists **DB**, **API** and **WEB** work. Security ids refer to `docs/s
 
 **Repo / DevOps**
 
-- [ ] Turborepo pipeline (`build`, `lint`, `typecheck`, `test`), `.nvmrc`, `.editorconfig`
-- [ ] Shared configs: `packages/tsconfig`, `packages/eslint-config` (typed rules, import order, no floating promises)
-- [ ] Prettier, Husky + lint-staged, commitlint, gitleaks pre-commit (OPS-3)
-- [ ] GitHub Actions CI: lint, typecheck, `lint:openapi`, build, `npm audit`, gitleaks (OPS-1, OPS-4). Dependabot
-- [ ] `docker-compose.yml` (dev): postgres 17 with `app_user` + `migrator` roles (DB-2)
+- [x] Turborepo pipeline (`build`, `lint`, `typecheck`, `test`), `.nvmrc`, `.editorconfig`
+- [x] Shared configs: `packages/tsconfig`, `packages/eslint-config` (typed rules, import order, no floating promises)
+- [x] Prettier, Husky + lint-staged, commitlint, gitleaks pre-commit (OPS-3)
+- [x] GitHub Actions CI: lint, typecheck, `lint:openapi`, build, `npm audit`, gitleaks (OPS-1, OPS-4). Dependabot
+- [x] `docker-compose.yml` (dev): postgres 17 with `app_user` + `migrator` roles (DB-2)
 
 **DB**
 
-- [ ] Prisma schema per ER diagram (all enums, relations, `@@map` to snake_case)
-- [ ] Raw SQL migrations: partial uniques (seat lock, one pending booking, email), CHECK constraints, showtime exclusion (`btree_gist`), indexes (DB-1)
-- [ ] Grants: `app_user` DML only (DB-2)
+- [x] Prisma schema per ER diagram (all enums, relations, `@@map` to snake_case)
+- [x] Raw SQL migrations: partial uniques (seat lock, one pending booking, email), CHECK constraints, showtime exclusion (`btree_gist`), indexes (DB-1)
+- [x] Grants: `app_user` DML only (DB-2)
 - [ ] `seed:fetch-movies` (TMDB → `movies.json`, committed), `seed` (2 cinemas × 3 halls with seat layouts, showtimes today → +30 days, prices). Deterministic and re-runnable
 
 **API**
@@ -80,7 +80,7 @@ Each phase lists **DB**, **API** and **WEB** work. Security ids refer to `docs/s
 - [ ] helmet, CORS (dev only), body limits, `trust proxy` (API-9, API-14)
 - [ ] `getLiveness`, `getReadiness`, graceful shutdown (API-15)
 - [ ] `booking.config.ts` (MAX_SEATS 4, PAYMENT_WINDOW 5 min, SEAT_HOLD 6 min, CUTOFF +30 min), `bangkokDayRange()`
-- [ ] Vitest + Testcontainers harness ready (tests themselves come in Phase 7)
+- [ ] Vitest + Testcontainers harness ready (unit tests ship with each item; integration suites grow per phase)
 
 **WEB**
 
@@ -91,7 +91,7 @@ Each phase lists **DB**, **API** and **WEB** work. Security ids refer to `docs/s
 - [ ] MSW in development so pages can be built before endpoints exist
 - [ ] App shell: header, language switcher, footer (TMDB attribution), error boundary, not-found, loading skeletons
 - [ ] Dev pages excluded from production build (WEB-1)
-- [ ] Storybook + Vitest set up
+- [ ] Storybook (Vitest is already set up in both apps)
 
 ### Phase 2: Auth (email + password)
 
