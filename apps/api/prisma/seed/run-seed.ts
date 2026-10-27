@@ -2,6 +2,7 @@ import { required } from "./required.js";
 import { existsSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import type { PrismaClient } from "../../src/generated/prisma/client.js";
+import { hashPassword, verifyPassword } from "../../src/auth/password.js";
 import { bangkokDateOf, bangkokDayRange } from "../../src/common/time/bangkok.js";
 import { buildSeatLayout } from "./layout.js";
 import { priceShowtime } from "./pricing.js";
@@ -38,6 +39,8 @@ export interface RunSeedOptions {
   /** Injected for tests; defaults to the current time. */
   now?: Date;
   movies?: LoadedMovies;
+  /** Creates the dev demo user (demo@example.com) with this password. Omit/null to skip (always in production). */
+  demoPassword?: string | null;
   log?: (message: string) => void;
 }
 
@@ -59,6 +62,11 @@ export async function runSeed(
   const loaded = options.movies ?? loadMovies();
   const today = bangkokDateOf(options.now ?? new Date());
   log(`Movies: using ${loaded.source} (${String(loaded.movies.length)} movies)`);
+
+  if (options.demoPassword) {
+    await seedDemoUser(prisma, options.demoPassword);
+    log(`Demo user: ${DEMO_USER_EMAIL}`);
+  }
 
   // ---- genres + movies
   const genres = new Map(
@@ -222,6 +230,7 @@ export async function runSeed(
     genres: await prisma.genre.count(),
     movies: await prisma.movie.count(),
     movie_genres: await prisma.movieGenre.count(),
+    users: await prisma.user.count(),
     cinemas: await prisma.cinema.count(),
     halls: await prisma.hall.count(),
     seats: await prisma.seat.count(),
@@ -229,4 +238,28 @@ export async function runSeed(
     showtime_prices: await prisma.showtimePrice.count(),
   };
   return { moviesSource: loaded.source, today, showtimesAdded, counts };
+}
+
+export const DEMO_USER_EMAIL = "demo@example.com";
+
+/** Dev-only login for demos and the frontend mocks. Idempotent: the hash is only rewritten if the password changed. */
+export async function seedDemoUser(prisma: PrismaClient, password: string): Promise<void> {
+  const existing = await prisma.user.findFirst({ where: { email: DEMO_USER_EMAIL } });
+  if (!existing) {
+    await prisma.user.create({
+      data: {
+        email: DEMO_USER_EMAIL,
+        passwordHash: await hashPassword(password),
+        displayName: "Demo",
+        preferredLocale: "th",
+      },
+    });
+    return;
+  }
+  if (!existing.passwordHash || !(await verifyPassword(existing.passwordHash, password))) {
+    await prisma.user.update({
+      where: { id: existing.id },
+      data: { passwordHash: await hashPassword(password) },
+    });
+  }
 }
