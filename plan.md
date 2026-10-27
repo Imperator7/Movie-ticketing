@@ -84,13 +84,13 @@ Each phase lists **DB**, **API** and **WEB** work. Security ids refer to `docs/s
 
 **WEB**
 
-- [ ] next-intl: `app/[locale]`, `messages/th.json` + `en.json` (incl. all `errors.*` codes), `/` → `/th`
+- [x] next-intl: `app/[locale]`, `messages/th.json` + `en.json` (incl. all `errors.*` codes), `/` → `/th`
 - [x] shadcn/ui init, theme tokens (light/dark), fonts with Thai support. Design system approved (S7)
-- [ ] Providers: QueryClient (no retry on 4xx, sensible staleTime), Toaster
-- [ ] `lib/api-client.ts` (base URL, bearer, request id, 401 → single-flight refresh → retry), orval config (`npm run api:generate`) generating client, hooks, Zod and MSW mocks
-- [ ] MSW in development so pages can be built before endpoints exist
-- [ ] App shell: header, language switcher, footer (TMDB attribution), error boundary, not-found, loading skeletons
-- [ ] Dev pages excluded from production build (WEB-1)
+- [x] Providers: QueryClient (no retry on 4xx, sensible staleTime), Toaster
+- [x] `lib/api-client.ts` (base URL, bearer, request id, 401 → single-flight refresh → retry), orval config (`npm run api:generate`) generating client, hooks, Zod and MSW mocks
+- [x] MSW in development so pages can be built before endpoints exist
+- [x] App shell: header, language switcher, footer (TMDB attribution), error boundary, not-found, loading skeletons
+- [x] Dev pages excluded from production build (WEB-1)
 - [ ] Storybook (Vitest is already set up in both apps)
 
 ### Phase 2: Auth (email + password)

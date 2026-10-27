@@ -21,8 +21,8 @@ Update this table when an item is merged. Details live in `plan.md` §4.
 | Design system   | ✅ "Marquee" theme + cinema components, **approved** (`/design-system`)                                                                                                                                                                                                     |
 | Database        | ✅ Prisma schema, hand-written constraints, roles (`migrator` / `app_user`), 26/26 constraint checks pass. ⏳ Seed (needs a TMDB API key)                                                                                                                                   |
 | API foundation  | ✅ Config (validated env), PrismaService (app_user, pool), pino + request id + redaction, contract error filter, nestjs-zod strict validation, Swagger (dev), helmet/CORS/limits, health live/ready + graceful drain, Testcontainers harness. 67 unit + 3 integration tests |
-| Web foundation  | 🔄 In progress (frontend agent): next-intl `/th` `/en`, React Query, api-client, orval + MSW, app shell                                                                                                                                                                     |
-| Next up         | Frontend: web foundation (in review next), then demo screens. Backend: seed (needs TMDB key) and Phase 2 auth                                                                                                                                                               |
+| Web foundation  | ✅ next-intl `/th` `/en` (typed messages, all error codes), React Query, api-client (bearer, request id, single-flight refresh), Zustand session, orval client + Zod + MSW mocks (committed), app shell, dev pages excluded from prod. 115 web tests                        |
+| Next up         | 🔄 Frontend: clickable demo screens (full customer flow on mocks). 🔄 Backend: seed data. Then Phase 2 auth                                                                                                                                                                 |
 
 ## 3. Source of truth
 
@@ -163,4 +163,15 @@ Conventional Commits (`feat|fix|build|docs|chore|test|refactor(scope): …`; `me
   Turbo runs `db:generate` before api `lint`/`typecheck`/`test`/`build`.
 - Validation errors: `details.fields` is `{ "<field.path>": ["<zod issue code>"] }`, `_root` for whole-body errors,
   `unrecognized_key` for unknown keys. The web maps it straight onto React Hook Form's `setError`.
+- **Merging two branches that both touched `package-lock.json`**: never hand-merge it. `git checkout --ours
+package-lock.json && npm install` (rebuilds from the merged package.json files), then `npm run check`.
+- Peer deps must be declared explicitly (e.g. `@testing-library/dom` for Testing Library React). A rebuilt lockfile
+  won't keep an undeclared peer.
+- After reinstalling packages while `next dev` runs, Turbopack's cache can keep stale paths ("Cannot find module
+  …/dist/index.js"). Stop the server, `rm -rf apps/web/.next`, start again.
+- Web routes live under `src/app/[locale]/`. Dev pages are `page.dev.tsx` in `src/app/(dev)/` and only exist when
+  `INCLUDE_DEV_PAGES=1` (set by `npm run dev`). `scripts/finalize-build.mjs` fails the build if dev pages or the MSW
+  worker reach `out/`.
+- The embedded browser pane may block service workers, so the MSW worker isn't guaranteed there (an in-process mock
+  fallback is planned in the demo item).
 - shadcn's CLI asks for a preset interactively. Pass `-p nova -b radix` and close stdin.
