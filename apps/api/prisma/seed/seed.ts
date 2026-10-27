@@ -17,7 +17,17 @@ async function main(): Promise<void> {
     const log = (message: string): void => {
       process.stdout.write(`${message}\n`);
     };
-    const summary = await runSeed(prisma, { log });
+    const isProduction = process.env.NODE_ENV === "production";
+    if (isProduction && process.env.SEED_DEMO_PASSWORD) {
+      throw new Error(
+        "SEED_DEMO_PASSWORD must not be set when NODE_ENV=production: the demo user is dev only",
+      );
+    }
+    // The demo user exists in development/test only.
+    const demoPassword = isProduction
+      ? null
+      : (process.env.SEED_DEMO_PASSWORD ?? "demo-password-123");
+    const summary = await runSeed(prisma, { log, demoPassword });
     log(
       `Window: ${summary.today} + 30 days (Bangkok). Showtimes added this run: ${String(summary.showtimesAdded)}`,
     );

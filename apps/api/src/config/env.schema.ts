@@ -37,12 +37,40 @@ export const envSchema = z
     REFRESH_TOKEN_PEPPER: secret,
     TICKET_QR_SECRET: secret,
 
-    /** Browser origin allowed by CORS (development only). */
-    WEB_ORIGIN: z.url().default("http://localhost:3000"),
+    /**
+     * Web origins, comma separated. CORS allows them in development only; the Origin guard on the
+     * cookie endpoints (/auth/refresh, /auth/logout) requires the request Origin to be one of them (API-5).
+     */
+    WEB_ORIGINS: z
+      .string()
+      .default("http://localhost:3000")
+      .transform((value) =>
+        value
+          .split(",")
+          .map((origin) => origin.trim())
+          .filter((origin) => origin !== ""),
+      )
+      .pipe(z.array(z.url()).min(1)),
     /** Number of reverse proxies in front of the app (ALB = 1). 0 = trust none. */
     TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(10).default(0),
 
     SWAGGER_ENABLED: booleanFlag.default(false),
+
+    // --- Auth (API-4/5/6) ---
+    JWT_ISSUER: z.string().min(1).default("movie-ticketing-api"),
+    JWT_AUDIENCE: z.string().min(1).default("movie-ticketing-web"),
+    /** `Secure` flag of the refresh cookie. `false` is only allowed in development/test. */
+    COOKIE_SECURE: booleanFlag.default(true),
+    /**
+     * A revoked refresh token presented again within this window is treated as a concurrent refresh
+     * (401, family kept) instead of theft (family revoked). 0 = always treat as reuse.
+     */
+    REFRESH_REUSE_GRACE_MS: z.coerce.number().int().min(0).max(60_000).default(0),
+
+    // Rate limits (API-6), per minute. TODO(redis): in-memory counters are per container.
+    RATE_LIMIT_GLOBAL_PER_MIN: z.coerce.number().int().min(1).default(300),
+    RATE_LIMIT_AUTH_PER_MIN: z.coerce.number().int().min(1).default(10),
+    RATE_LIMIT_LOGIN_PER_EMAIL_PER_MIN: z.coerce.number().int().min(1).default(5),
 
     /** Time to keep serving (readiness 503) after SIGTERM before closing, so the ALB stops routing first. */
     SHUTDOWN_DRAIN_MS: z.coerce.number().int().min(0).max(120_000).default(5000),
@@ -58,6 +86,13 @@ export const envSchema = z
           message: `looks like a placeholder; real secrets are required when NODE_ENV=${env.NODE_ENV}`,
         });
       }
+    }
+    if (!env.COOKIE_SECURE) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["COOKIE_SECURE"],
+        message: `must be true when NODE_ENV=${env.NODE_ENV}`,
+      });
     }
     if (env.SWAGGER_ENABLED) {
       ctx.addIssue({

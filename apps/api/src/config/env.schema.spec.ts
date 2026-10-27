@@ -110,4 +110,47 @@ describe("validateEnv", () => {
     expect(message).toContain("DATABASE_URL");
     expect(message).toContain("PORT");
   });
+
+  describe("auth settings", () => {
+    it("defaults: Secure cookie, issuer/audience, one web origin, rate limits", () => {
+      const env = validateEnv({ ...base, NODE_ENV: "production" });
+
+      expect(env).toMatchObject({
+        COOKIE_SECURE: true,
+        JWT_ISSUER: "movie-ticketing-api",
+        JWT_AUDIENCE: "movie-ticketing-web",
+        WEB_ORIGINS: ["http://localhost:3000"],
+        REFRESH_REUSE_GRACE_MS: 0,
+        RATE_LIMIT_GLOBAL_PER_MIN: 300,
+        RATE_LIMIT_AUTH_PER_MIN: 10,
+        RATE_LIMIT_LOGIN_PER_EMAIL_PER_MIN: 5,
+      });
+    });
+
+    it("parses WEB_ORIGINS as a trimmed comma-separated list", () => {
+      const env = validateEnv({
+        ...base,
+        WEB_ORIGINS: " https://a.example.com , https://b.example.com ,",
+      });
+
+      expect(env.WEB_ORIGINS).toEqual(["https://a.example.com", "https://b.example.com"]);
+    });
+
+    it("rejects an invalid or empty WEB_ORIGINS", () => {
+      expect(messageOf({ ...base, WEB_ORIGINS: "not a url" })).toContain("WEB_ORIGINS");
+      expect(messageOf({ ...base, WEB_ORIGINS: " , " })).toContain("WEB_ORIGINS");
+    });
+
+    it.each(["development", "test"])("allows COOKIE_SECURE=false when NODE_ENV=%s", (nodeEnv) => {
+      expect(
+        validateEnv({ ...base, NODE_ENV: nodeEnv, COOKIE_SECURE: "false" }).COOKIE_SECURE,
+      ).toBe(false);
+    });
+
+    it("refuses COOKIE_SECURE=false in production", () => {
+      expect(messageOf({ ...base, NODE_ENV: "production", COOKIE_SECURE: "false" })).toContain(
+        "COOKIE_SECURE: must be true",
+      );
+    });
+  });
 });

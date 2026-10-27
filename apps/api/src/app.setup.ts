@@ -1,6 +1,7 @@
 import type { INestApplication } from "@nestjs/common";
 import type { NestExpressApplication } from "@nestjs/platform-express";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
+import cookieParser from "cookie-parser";
 import helmet from "helmet";
 import { cleanupOpenApiDoc } from "nestjs-zod";
 import { ConfigService } from "./config/config.service.js";
@@ -29,11 +30,12 @@ export function configureApp(app: NestExpressApplication): void {
   app.use(helmet(config.get("SWAGGER_ENABLED") ? { contentSecurityPolicy: false } : {}));
 
   if (config.isDevelopment) {
-    app.enableCors({ origin: config.get("WEB_ORIGIN"), credentials: true });
+    app.enableCors({ origin: config.get("WEB_ORIGINS"), credentials: true });
   }
 
   // Global JSON limit. A route that needs a different parser (the Stripe webhook, which needs the raw body)
   // can be added later with its own `app.useBodyParser(...)` / middleware scoped to its path.
+  app.use(cookieParser()); // the refresh token cookie `rt`
   app.useBodyParser("json", { limit: JSON_BODY_LIMIT });
 
   app.enableShutdownHooks(["SIGINT"]); // SIGTERM is handled in main.ts so readiness can drain first.
@@ -48,6 +50,7 @@ function setupSwagger(app: INestApplication): void {
       .setTitle("Movie Ticketing API")
       .setVersion("0.1.0")
       .addBearerAuth()
+      .addCookieAuth("rt", { type: "apiKey", in: "cookie", name: "rt" }, "refreshCookie")
       .build(),
   );
   // Served at /api/docs (outside the global prefix). cleanupOpenApiDoc renders the Zod DTO schemas.
