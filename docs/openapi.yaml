@@ -793,7 +793,8 @@ components:
 
     MovieRating:
       type: string
-      enum: [G, PG, PG13, R18, R20]
+      description: "Thai film rating system: PROMOTED = ส, GENERAL = ท, AGE_13 = น13+, AGE_15 = น15+, AGE_18 = น18+, AGE_20 = ฉ20-"
+      enum: [PROMOTED, GENERAL, AGE_13, AGE_15, AGE_18, AGE_20]
 
     Genre:
       type: object

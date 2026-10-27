@@ -253,18 +253,18 @@ bookings for accounting) is in the backlog.
 
 ## Enums
 
-| Enum               | Values                                                                   |
-| ------------------ | ------------------------------------------------------------------------ |
-| auth_provider      | LINE _(GOOGLE later)_                                                    |
-| movie_rating       | G, PG, PG13, R18, R20                                                    |
-| movie_status       | COMING_SOON, NOW_SHOWING, ENDED                                          |
-| hall_type          | STANDARD, IMAX, FOUR_DX                                                  |
-| seat_type          | STANDARD, PREMIUM _(COUPLE in backlog)_                                  |
-| showtime_format    | TWO_D, THREE_D, IMAX                                                     |
-| showtime_status    | SCHEDULED, CANCELLED                                                     |
-| booking_status     | PENDING_PAYMENT, CONFIRMED, CANCELLED                                    |
-| cancel_reason      | PAYMENT_TIMEOUT, USER_CANCELLED, LATE_PAYMENT_REFUNDED                   |
-| payment_method     | CARD, PROMPTPAY                                                          |
-| payment_status     | PENDING, SUCCEEDED, FAILED, CANCELLED, REFUNDED                          |
-| booking_event_type | CREATED, PAYMENT_STARTED, PAYMENT_FAILED, CONFIRMED, CANCELLED, REFUNDED |
-| event_actor        | USER, SYSTEM, STRIPE                                                     |
+| Enum               | Values                                                                                                         |
+| ------------------ | -------------------------------------------------------------------------------------------------------------- |
+| auth_provider      | LINE _(GOOGLE later)_                                                                                          |
+| movie_rating       | PROMOTED (ส), GENERAL (ท), AGE_13 (น13+), AGE_15 (น15+), AGE_18 (น18+), AGE_20 (ฉ20-): Thai film rating system |
+| movie_status       | COMING_SOON, NOW_SHOWING, ENDED                                                                                |
+| hall_type          | STANDARD, IMAX, FOUR_DX                                                                                        |
+| seat_type          | STANDARD, PREMIUM _(COUPLE in backlog)_                                                                        |
+| showtime_format    | TWO_D, THREE_D, IMAX                                                                                           |
+| showtime_status    | SCHEDULED, CANCELLED                                                                                           |
+| booking_status     | PENDING_PAYMENT, CONFIRMED, CANCELLED                                                                          |
+| cancel_reason      | PAYMENT_TIMEOUT, USER_CANCELLED, LATE_PAYMENT_REFUNDED                                                         |
+| payment_method     | CARD, PROMPTPAY                                                                                                |
+| payment_status     | PENDING, SUCCEEDED, FAILED, CANCELLED, REFUNDED                                                                |
+| booking_event_type | CREATED, PAYMENT_STARTED, PAYMENT_FAILED, CONFIRMED, CANCELLED, REFUNDED                                       |
+| event_actor        | USER, SYSTEM, STRIPE                                                                                           |
