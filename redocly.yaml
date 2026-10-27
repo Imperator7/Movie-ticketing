@@ -1,0 +1,11 @@
+extends:
+  - recommended
+rules:
+  # Redirect-only endpoints (LINE login) have no 2xx response by design.
+  operation-2xx-response: off
+  # Public read-only list endpoints and logout have no meaningful 4xx.
+  operation-4xx-response: off
+  # Private project, no license.
+  info-license: off
+  # The first server is the same-origin relative URL.
+  no-server-example.com: off

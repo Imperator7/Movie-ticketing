@@ -13,6 +13,7 @@ There is no admin UI yet. Movies, cinemas, halls, seats and showtimes come from 
 | Rule | Value | Where it's enforced |
 |---|---|---|
 | Max seats per booking | **4** | API validation |
+| Active bookings per user | **1** `PENDING_PAYMENT` at a time | partial unique index + API (`409 ACTIVE_BOOKING_EXISTS`) |
 | Payment window | **5 min** after the booking is created | `bookings.payment_expires_at`, then the Stripe PaymentIntent is cancelled |
 | Seat hold | **6 min** after the booking is created | `bookings.hold_expires_at` |
 | Booking cut-off | until **30 min after** `showtimes.starts_at` | API validation |
@@ -136,6 +137,22 @@ ALTER TABLE showtimes ADD CONSTRAINT showtimes_no_overlap
 
 ### 10. Refresh tokens are stored hashed
 Only a SHA-256 hash is stored. Tokens are rotated on every refresh, and the old one is revoked.
+Access token: 15 min. Refresh token: 7 days, and each refresh starts a new 7 days.
+
+### 12. Login methods: email/password now, LINE later, with no schema change
+- Email login: `users.email` + `users.password_hash`.
+- LINE Login (OAuth 2.0 / OpenID Connect): one `auth_identities` row `(LINE, <LINE userId>)`. LINE only shares the email
+  if the channel has been granted that permission, so `users.email` is nullable (unique when present).
+- Rule: every user has a `password_hash` **or** at least one identity (checked in the auth service).
+- Google or other providers later = just a new `auth_provider` enum value.
+
+### 13. One active booking per user
+```sql
+CREATE UNIQUE INDEX bookings_one_pending_per_user
+  ON bookings (user_id) WHERE status = 'PENDING_PAYMENT';
+```
+`POST /bookings` first cancels the user's own *stale* pending booking (`hold_expires_at < now()`) in the same
+transaction, so an expired booking that the job hasn't cleaned up yet never blocks the user.
 
 ### 11. Seed data comes from TMDB, snapshotted to JSON
 `npm run seed:fetch-movies` (needs `TMDB_API_KEY`) pulls now-playing and upcoming movies for region `TH` in
@@ -157,11 +174,15 @@ TMDB attribution in the footer.
 | booking_seats | partial unique `(showtime_id, seat_id) WHERE released_at IS NULL` | seat lock |
 | payments | `(booking_id)` | payments of a booking |
 | refresh_tokens | `(user_id)` | revoke all sessions |
+| auth_identities | unique `(provider, provider_user_id)` | find user by LINE id |
+| users | partial unique `(email) WHERE email IS NOT NULL` | email login |
+| bookings | partial unique `(user_id) WHERE status = 'PENDING_PAYMENT'` | one active booking |
 
 ## Enums
 
 | Enum | Values |
 |---|---|
+| auth_provider | LINE *(GOOGLE later)* |
 | movie_rating | G, PG, PG13, R18, R20 |
 | movie_status | COMING_SOON, NOW_SHOWING, ENDED |
 | hall_type | STANDARD, IMAX, FOUR_DX |

@@ -1,294 +1,144 @@
-# Movie Ticketing — Project Plan
+# Movie Ticketing — Plan
 
-A full-stack movie ticketing app built to be production-ready. It is also a way to learn AWS, DevOps,
-and AI-assisted development.
+A full-stack movie ticketing app (Next.js + NestJS), built production-ready to learn AWS, DevOps and AI-assisted development.
 
-**Current focus: MVP (customer side only).** Admin tools, real-time seats and similar features come later (§9).
+## 1. MVP
 
----
+A customer can, in **Thai (default) or English**: browse movies → pick a showtime → pick 1–4 seats (as a guest) →
+log in → pay within 5 min by **card (Mastercard/Visa)** or **PromptPay QR** (Stripe test mode, THB) → get a **ticket QR**
+→ see "My bookings". There is no admin UI. Data comes from a seed script.
 
-## 1. MVP Scope
+**Done when:** the full stack runs with `docker compose up`, a ticket can be bought end to end, and unit, integration
+and e2e tests pass. AWS comes after the MVP.
 
-A customer can, in **Thai (default) or English**:
+## 2. Design docs (source of truth)
 
-1. Browse movies (now showing, coming soon) and filter by genre, as a guest
-2. Open a movie and see showtimes by date and cinema
-3. Pick up to 4 seats on a seat map, as a guest
-4. Log in / sign up **only when buying** (selected seats survive the login redirect)
-5. Pay within 5 minutes with **card (Mastercard / Visa)** or **PromptPay QR** through Stripe (test mode, THB)
-6. Get a confirmed booking with a **ticket QR code**
-7. See "My bookings"
+| What | File | Review at |
+|---|---|---|
+| Database: ER diagram | `docs/er-diagram.mmd` | `/er-diagram` |
+| Database: rules, seat locks, booking lifecycle | `docs/database-design.md` | `/er-diagram` (below the diagram) |
+| API contract: every endpoint, schema and error code | `docs/openapi.yaml` (`npm run lint:openapi`) | `/openapi` |
 
-**MVP is done when:** the whole stack runs with `docker compose up` locally, a ticket can be bought end to end with
-Stripe test mode (Stripe CLI forwards webhooks), and unit, integration and e2e test suites pass.
-Tests are written in a dedicated phase **after** features (see §8). AWS is a separate milestone after the MVP.
+## 3. Stack
 
-There is no admin UI in the MVP. Movies, cinemas, halls, seats and showtimes come from a **seed script**.
-
----
-
-## 2. Tech Stack
-
-| Layer | Choice |
+| Area | Choice |
 |---|---|
-| Monorepo | npm workspaces (`apps/web`, `apps/api`, `packages/*`). Turborepo is optional later |
-| Frontend | Next.js 16 (App Router) + TypeScript, **static export** (`output: "export"`) |
-| Styling / UI | Tailwind CSS v4 + **shadcn/ui** |
-| API client | **orval**: generates typed fetchers, TanStack Query hooks and Zod schemas from the NestJS OpenAPI spec |
-| Server state | **TanStack Query** |
-| Client state | **Zustand** |
-| Forms | **React Hook Form + Zod** (`@hookform/resolvers/zod`) |
-| i18n | **next-intl**, locale-prefixed routes `/th/...` (default), `/en/...` |
-| Backend | NestJS + TypeScript |
-| ORM / DB | Prisma + PostgreSQL |
-| Auth | JWT access token + rotating refresh token (HTTP-only cookie) |
-| Payments | Stripe **PaymentIntents + Payment Element** (`card`, `promptpay`), webhooks |
-| API docs | Swagger (`@nestjs/swagger`) at `/api/docs` |
-| Testing | Jest (api), Vitest + Testing Library (web), Playwright (e2e) |
-| Local infra | Docker Compose (Postgres) |
-| CI | GitHub Actions |
+| Repo | npm workspaces: `apps/web`, `apps/api` |
+| Web | Next.js 16 static export, Tailwind v4, shadcn/ui, next-intl (`/th`, `/en`) |
+| Web state | TanStack Query (server state), Zustand (session only), React Hook Form + Zod (forms), URL (filters, date, `?seats=`) |
+| API client | orval → typed fetchers, Query hooks and Zod schemas from OpenAPI |
+| API | NestJS, Prisma, PostgreSQL, Swagger, pino |
+| Auth | Email + password first, **LINE Login (OAuth 2.0)** later. JWT 15 min + rotating httpOnly refresh cookie (7 days) |
+| Payments | Stripe PaymentIntents + Payment Element (`card`, `promptpay`), webhooks |
+| Tests | Jest (api unit + integration), Vitest + Testing Library (web), Playwright (e2e) |
+| Run | Docker Compose: postgres, api, web (nginx + `/api` forwarding), stripe-cli |
+| Later | GitHub Actions, AWS (S3 + CloudFront, ALB + ECS Fargate, RDS), Terraform |
 
-> **Stripe + PromptPay note:** PromptPay is only available to Stripe accounts registered in **Thailand**, with
-> THB as the currency. Card payments work with any account. Test Mastercard: `5555 5555 5555 4444`.
+## 4. Work checklist
 
----
+### Phase 0: Design ✅
+- [x] Monorepo + Next.js scaffold (static export)
+- [x] ER diagram, database design, booking lifecycle (`/er-diagram`)
+- [x] OpenAPI contract (`/openapi`)
+- [x] Grilling rounds 1–3 (decisions log §7)
 
-## 3. Architecture
+### Phase 1: Foundation
+- [ ] `apps/api` NestJS: config with env validation, pino logs + request id, global error filter → `Error` schema, Swagger at `/api/docs`
+- [ ] `docker-compose.yml` with postgres (dev). `.env.example` files
+- [ ] Prisma schema per ER diagram + raw SQL migrations: seat-lock partial unique, one-pending-booking partial unique, email partial unique, showtime no-overlap (`btree_gist`)
+- [ ] `booking.config.ts` (MAX_SEATS 4, PAYMENT_WINDOW 5 min, SEAT_HOLD 6 min, CUTOFF +30 min)
+- [ ] `seed:fetch-movies` (TMDB → `movies.json`, committed) and `seed` (2 cinemas × 3 halls, showtimes today → +30 days)
+- [ ] `getHealth`
+- [ ] Web: next-intl (`/th` default, `/en`, `messages/*.json`, `/` → `/th`), shadcn/ui, QueryClientProvider, `api-client.ts`, orval config + `npm run api:generate`
+- [ ] Web: app shell (header, language switcher, footer with TMDB attribution, error and loading states)
 
-```
-Browser ──► CloudFront ─┬─ /*      ──► S3 (Next.js static export)
-                        └─ /api/*  ──► ALB ──► ECS Fargate (NestJS) ──► RDS Postgres
-Stripe ──── webhook ───────────────────────► /api/v1/payments/webhook
-```
+### Phase 2: Auth (email + password)
+- [ ] API: `register`, `login`, `refresh` (rotation), `logout`, `getMe`, argon2id, rate limit on `/auth/*`
+- [ ] Web: `useAuthStore` (memory), session restore on load, 401 → refresh → retry (single flight)
+- [ ] Web: `/login?next=`, `/register?next=` (RHF + Zod, server errors mapped to fields)
 
-- **Static export** means no SSR, Server Actions, middleware, or cookies on the Next.js side. All data
-  is fetched in the browser from NestJS.
-- **Dynamic pages use query params** (`/th/movie?slug=dune`, `/th/booking?id=...`), because static export can't
-  generate `/movies/[slug]` for data that doesn't exist at build time. Only `[locale]` is a path segment
-  (`generateStaticParams` → `th`, `en`).
-- `/` redirects to `/th` with a tiny client page for now. Later a CloudFront Function redirects by `Accept-Language`.
-- One domain for both parts means no CORS issues in production, and the refresh cookie can be `SameSite=Strict`.
+### Phase 3: Catalog
+- [ ] API: `listGenres`, `listCinemas`, `listMovies`, `getMovie`, `listMovieShowtimes`
+- [ ] Web: home, `/movies` (genre + search in URL), `/movie?slug=` (date picker from `availableDates`)
 
----
+### Phase 4: Seats and booking
+- [ ] API: `getShowtime`, `getSeatMap` (status computed at request time, `no-store`)
+- [ ] API: `createBooking` (one transaction, error codes per the contract), `getActiveBooking`, `getBooking`, `cancelBooking`, `listMyBookings`
+- [ ] API: expiry job every 30 s (cancel PaymentIntent → `PAYMENT_TIMEOUT` + unlock; refused → wait until the hold ends)
+- [ ] Web: `/showtime?id=&seats=` seat map, polling every 10 s, "seat just taken" UX (§6)
+- [ ] Web: "Buy" → login if needed → `createBooking` → `/checkout`
+- [ ] Web: active-booking banner + blocked paths (§6)
 
-## 4. MVP Checklist: Data Schema
+### Phase 5: Payment
+- [ ] API: `createPaymentIntent` (idempotent, `toStripeAmount = baht × 100`), `stripeWebhook` (raw body, signature, `stripe_events` idempotency, late payment → auto refund)
+- [ ] Web: `/checkout?bookingId=` Payment Element (Card + PromptPay QR), 5:00 countdown, "Time's up" dialog (§6)
+- [ ] Web: `/checkout/complete` polls `getBooking` until CONFIRMED / CANCELLED
+- [ ] Verify with Stripe CLI: test Mastercard `5555 5555 5555 4444`, PromptPay test authorize / fail
 
-Full design: [`docs/database-design.md`](docs/database-design.md). Diagram: `/er-diagram`.
+### Phase 6: Tickets
+- [ ] API: signed `ticketQr` (`bookingCode.hmac`) on CONFIRMED bookings
+- [ ] Web: `/bookings` (upcoming / past), `/booking?id=` ticket with QR
 
-- [x] ER diagram drafted (`docs/er-diagram.mmd`)
-- [x] Grilling rounds 1–2 applied (seat lock model, booking lifecycle, bilingual columns, TMDB fields)
-- [ ] **Final review after grilling round 3** ← *you are here*
-- [ ] Prisma schema (`apps/api/prisma/schema.prisma`) matching the diagram
-- [ ] Enums: rating, movie status, hall type, seat type, showtime format/status, booking status, cancel reason, payment method/status
-- [ ] `booking.config.ts`: MAX_SEATS=4, PAYMENT_WINDOW_MIN=5, SEAT_HOLD_MIN=6, BOOKING_CUTOFF_AFTER_START_MIN=30
-- [ ] Raw SQL migration: partial unique index `booking_seats (showtime_id, seat_id) WHERE released_at IS NULL`
-- [ ] Raw SQL migration: showtime overlap exclusion constraint (`btree_gist`)
-- [ ] Secondary indexes (see design doc)
-- [ ] `seed:fetch-movies`: TMDB now playing + upcoming (region TH, `th-TH` + `en-US`) → committed `movies.json` (needs `TMDB_API_KEY`)
-- [ ] `seed`: reads `movies.json`, plus 2 cinemas, 3 halls each with seat layouts, showtimes **today → +30 days**, prices
-- [ ] Test: two concurrent bookings for the same seat → exactly one succeeds
+### Phase 7: Tests
+- [ ] Unit: booking rules, pricing, `toStripeAmount`, QR signing, auth token rotation
+- [ ] Integration (real test Postgres): concurrent same-seat booking → one wins, one-active-booking, payment timeout, late payment refund, webhook signature + duplicates
+- [ ] e2e (Playwright): guest browse → seats → login → pay with test Mastercard → ticket; PromptPay via Stripe's test authorize page; seat-taken UX
+- [ ] Rule: every row in the business-rules table (`docs/database-design.md`) has a test. No coverage % target
 
----
+### Phase 8: Full stack on Docker Compose = MVP done
+- [ ] Dockerfiles: api (multi-stage), web (build → nginx serving `out/`, `/api` forwarded to the api, like CloudFront)
+- [ ] Compose: postgres, api (runs migrations on start), web, stripe-cli (forwards webhooks)
+- [ ] README: one-command setup, test card numbers
 
-## 5. MVP Checklist: API Endpoints (`/api/v1`)
+### After the MVP
+- [ ] **LINE Login** (`startLineLogin`, `lineLoginCallback`, already in the contract and schema). Then Google
+- [ ] Email verification, password reset (needs email: AWS SES)
+- [ ] CI (GitHub Actions): lint, typecheck, `lint:openapi`, tests, build. Contract check: NestJS spec matches `docs/openapi.yaml`
+- [ ] AWS: manual first (VPC, RDS, ECR, ECS Fargate, ALB, S3 + CloudFront + OAC, Route 53, ACM, budget alarm), then Terraform + deploys through GitHub OIDC
+- [ ] Admin UI, couple seats, real-time seats (WebSocket), Redis, door check-in scanner
 
-### Health
-- [ ] `GET /health` — DB ping, used by the ALB
+## 5. Frontend rules
 
-### Auth
-- [ ] `POST /auth/register` — email, password, fullName → user + access token, sets refresh cookie
-- [ ] `POST /auth/login` → access token + refresh cookie
-- [ ] `POST /auth/refresh` — reads the cookie, rotates the token → new access token
-- [ ] `POST /auth/logout` — revokes the refresh token, clears the cookie
-- [ ] `GET /auth/me` — current user
+- **Server data lives only in TanStack Query.** Never copy it into Zustand. Query keys come from orval helpers. Mutations invalidate what they change.
+- **Zustand = session only** (access token + user, memory, not persisted).
+- **URL = shareable state**: filters, date, `?seats=` (survives the login redirect).
+- **Forms = React Hook Form + `zodResolver`.** Schemas extend the orval-generated Zod.
+- **Errors:** the UI shows `t(\`errors.${code}\`)`, never the API's English `message`.
+- **Structure:** `app/[locale]/…` (thin routes) · `features/<auth|movies|showtimes|bookings|payments>/` · `api/generated/` (orval, never edited) · `lib/` · `components/ui/` (shadcn).
 
-### Catalog (public)
-- [ ] `GET /genres`
-- [ ] `GET /cinemas`
-- [ ] `GET /movies?status=&genre=&q=&page=` — paginated list
-- [ ] `GET /movies/:slug` — detail with genres
-- [ ] `GET /movies/:slug/showtimes?date=&cinemaId=` — grouped by cinema → hall → times
+## 6. Key UX specs
 
-### Showtimes and seats (public)
-- [ ] `GET /showtimes/:id` — movie, hall, cinema, prices per seat type
-- [ ] `GET /showtimes/:id/seats` — seat map with each seat's status: `AVAILABLE | HELD | BOOKED`
+**Seat just taken** (seen by polling, or via `409 SEAT_TAKEN` on Buy): the seat leaves the selection and `?seats=`,
+flashes red for about 3 s, a toast says "Seat A5 was just taken" (one toast per refresh), the price summary updates, and
+Buy is disabled if nothing is left. The rest of the selection is kept.
 
-### Bookings (auth required)
-- [ ] `POST /bookings` — `{ showtimeId, seatIds[1..4] }` → `PENDING_PAYMENT` booking (5-min payment window, 6-min seat hold)
-  - `409 SEAT_TAKEN` if a seat is locked, `422 BOOKING_CLOSED` after starts_at + 30 min, `422 TOO_MANY_SEATS`
-- [ ] `GET /bookings/me` — my bookings (upcoming / past)
-- [ ] `GET /bookings/:id` — detail. Includes `ticketQr` (signed payload) once `CONFIRMED`
-- [ ] `POST /bookings/:id/cancel` — user gives up before paying → `CANCELLED (USER_CANCELLED)`, seats unlocked, PaymentIntent cancelled. Not allowed after payment (no refunds)
+**One active booking:**
+- A global banner on every page when `getActiveBooking` returns one: "Booking in progress · 3:12 [Continue payment] [Cancel]". It is checked on load and on window focus, so it greets users who closed the app and came back.
+- Checkout blocks going back: the back button or link → dialog "Going back will cancel this booking" → confirm → `cancelBooking` → seat map with the same `?seats=`.
+- The seat map's Buy is replaced with "Continue your booking" while one is active. `409 ACTIVE_BOOKING_EXISTS` → go to that booking.
 
-### Payments
-- [ ] `POST /bookings/:id/payment-intent` — creates or reuses a Stripe PaymentIntent → `{ clientSecret, paymentExpiresAt }` (auth). `422 PAYMENT_WINDOW_CLOSED` after `payment_expires_at`
-  - Amounts are whole baht in the DB. Convert with `toStripeAmount(baht) = baht * 100` only here (Stripe wants satang)
-- [ ] `POST /payments/webhook` — Stripe signature verified, raw body, idempotent through `stripe_events`
-  - `payment_intent.succeeded` → payment `SUCCEEDED`, booking `CONFIRMED` (guarded update)
-  - `payment_intent.succeeded` for a `CANCELLED` booking → automatic refund, `LATE_PAYMENT_REFUNDED`
-  - `payment_intent.payment_failed` → payment `FAILED` (user may retry inside the window)
+**Time's up** (countdown hits 0): dialog, payment disabled, button → seat map with the same `?seats=`.
 
-### Background jobs
-- [ ] Every 30 s: for `PENDING_PAYMENT` bookings past `payment_expires_at`, cancel the PaymentIntent. If the cancel succeeds →
-  `CANCELLED (PAYMENT_TIMEOUT)` + unlock seats. If refused (already processing), leave it until `hold_expires_at`, then cancel and unlock
-- [ ] Availability never depends on the job: checks use `hold_expires_at > now()`. See the lifecycle in the design doc §3
+**Checkout complete:** spinner "Confirming payment…" while polling → ticket. If `CANCELLED (LATE_PAYMENT_REFUNDED)`:
+"Payment arrived after the time limit and has been refunded."
 
-### Cross-cutting
-- [ ] Config module with env validation (fail fast)
-- [ ] Global `ValidationPipe` / Zod pipe, consistent error format `{ statusCode, code, message, details? }`
-- [ ] Swagger docs
-- [ ] Structured logs (pino) with a request id
-- [ ] Rate limiting on `/auth/*`
-- [ ] Helmet, CORS (dev only), `enableShutdownHooks()`
+## 7. Decisions log
 
----
-
-## 6. MVP Checklist: Frontend Pages
-
-| Route | Page | Auth |
-|---|---|---|
-All routes below are under `/[locale]` (`/th`, `/en`), except `/er-diagram`.
-
-| Route | Page | Auth |
-|---|---|---|
-| `/` | Home: now showing and coming soon | – |
-| `/movies?genre=&q=` | Movie list with filters | – |
-| `/movie?slug=` | Movie detail, date picker, showtimes | – |
-| `/showtime?id=&seats=A5,A6` | Seat map, select ≤ 4 seats (kept in the URL), price summary | "Buy" → login if needed, returns with seats |
-| `/checkout?bookingId=` | 5:00 countdown, Stripe Payment Element (Card / PromptPay QR), cancel button | ✓ |
-| `/checkout/complete` | Stripe `return_url`. Polls the booking until `CONFIRMED` / `CANCELLED` | ✓ |
-| `/bookings` | My bookings | ✓ |
-| `/booking?id=` | Ticket with QR code | ✓ |
-| `/login?next=`, `/register?next=` | Auth forms | – |
-| `/er-diagram` | Dev page: database review | – |
-
-- [x] Next.js app scaffolded, static export working
-- [x] `/er-diagram` page
-- [ ] next-intl setup: `messages/th.json`, `messages/en.json`, language switcher, Thai date and ฿ formatting
-- [ ] App shell: header, auth menu, layout, error and loading states, TMDB attribution footer
-- [ ] Each page in the table above
-- [ ] Route guard (client-side): redirect to `/login?next=...`
-- [ ] Responsive (mobile first). Seat map usable on a phone
-
----
-
-## 7. Frontend Standards
-
-### 7.1 State: server state vs client state
-
-| Kind | Owner | Examples |
-|---|---|---|
-| **Server state**: data that lives in the DB | **TanStack Query** | movies, showtimes, seat map, my bookings, current user |
-| **Client state**: global, UI-only, never in the DB | **Zustand** | `useAuthStore`: access token + user (memory only, not persisted) |
-| **Local UI state**: one feature only | `useState` / `useReducer` | open dialogs, hover states |
-| **Form state** | **React Hook Form** | login and register inputs |
-| **URL state** | search params | genre filter, selected date, movie slug, selected seats (`?seats=`) |
-
-Rules:
-- Never copy server data into Zustand. If it comes from the API, it lives in the Query cache.
-- Query keys come from orval-generated helpers (e.g. `getGetMovieQueryKey(slug)`), never inline arrays.
-- Mutations invalidate the queries they affect. For example, after `POST /bookings`, invalidate `seats(showtimeId)`.
-- Zustand holds the session only (decision D3). Components read it with selectors. Add a store only when state is truly global.
-- Filters and selected dates live in the URL, so they can be shared and survive a refresh.
-
-### 7.2 Forms
-- Every form is React Hook Form + `zodResolver(schema)`. Types come from `z.infer<typeof schema>`.
-- Server validation errors (e.g. "email already used") map back onto fields with `setError`.
-
-### 7.3 Proposed folder structure (`apps/web/src`)
-```
-app/                    # routes only, thin
-features/
-  auth/                 # store.ts (Zustand), schemas.ts (form extensions), components/
-  movies/
-  showtimes/            # seat map lives here
-  bookings/
-  payments/
-api/
-  generated/            # orval output, never edited by hand
-lib/
-  api-client.ts         # custom fetch used by orval: base URL, auth header, 401 → refresh → retry
-  query-client.ts
-components/ui/          # shared presentational components
-```
-
-### 7.4 Decisions (approved 2026-10-28)
-- [x] **D1 API types: OpenAPI codegen.** NestJS DTOs + `@nestjs/swagger` are the source of truth. `orval` generates
-  `apps/web/src/api/generated/*` (fetchers, Query hooks, Zod schemas). Run `npm run api:generate` after API changes.
-  Generated Zod schemas are reused in forms (`zodResolver`), extended where the UI needs more (e.g. confirm password).
-- [x] **D2 Auth: access token in memory + refresh token in an httpOnly cookie.** On app load, `POST /auth/refresh`
-  restores the session. The api-client attaches `Authorization: Bearer`, and on a `401` it refreshes once and retries
-  (concurrent 401s share one refresh request).
-- [x] **D3 Zustand: session only.** Seat selection lives in the URL (`?seats=`), so it survives the login redirect (G3).
-- [x] **D4 UI: shadcn/ui** (Radix + Tailwind), including its `Form` components wired to React Hook Form.
-
----
-
-## 8. Roadmap to the MVP
-
-| Phase | Work | Done when |
-|---|---|---|
-| **0. Design** | ER diagram, endpoint list, frontend standards decisions (D1–D4 ✅) | ER diagram approved |
-| **1. Foundation** | `apps/api` (NestJS), Docker Compose Postgres, Prisma schema + migrations + seed, health, config, Swagger. Web: providers (Query, Zustand), api-client, app shell | `GET /health` OK, seed loads, web calls the API |
-| **2. Auth** | Register, login, refresh, logout, me. Login/register pages | Can sign up, log in, refresh survives a page reload |
-| **3. Catalog** | Movies, genres, cinemas, showtimes endpoints and pages | Can browse to a showtime |
-| **4. Booking** | Seat map endpoint and UI, hold seats, expiry job, concurrency test | Can hold seats, holds expire |
-| **5. Payment** | PaymentIntent, Payment Element (card + PromptPay), webhook, complete page | Test Mastercard and PromptPay both confirm a booking |
-| **6. Tickets** | Signed ticket QR, My bookings, ticket page | Ticket QR displayed |
-| **7. Quality** | Unit + e2e tests, Playwright happy path, GitHub Actions CI | CI green on every PR |
-| **8. AWS** | Manual deploy first (VPC, RDS, ECR, ECS Fargate, ALB, S3, CloudFront, Route 53, ACM), then Terraform + CD through GitHub OIDC | Live on your domain |
-
-### AWS cost reminders
-- Turn on an **AWS Budgets alert on day one**
-- NAT Gateway (about $32/month) is the most common surprise. Consider VPC endpoints or a single NAT
-- RDS `db.t4g.micro` is free tier eligible for 12 months
-- Tear down environments you aren't using
-
----
-
-## 9. After the MVP (backlog)
-
-- Admin UI: CRUD for movies, cinemas, halls, showtimes, and seat layout editor
-- Couple seats (seat type `COUPLE`, counts as 2 of the 4-seat limit)
-- Real-time seat updates (WebSocket / SSE)
-- Redis for seat holds and caching
-- Email tickets (AWS SES)
-- Cancellation and refunds
-- Door check-in scanner (uses `checked_in_at`)
-- Google login
-- Poster uploads to S3 (presigned URLs)
-- AWS WAF, CloudWatch dashboards and alarms
-
----
-
-## 10. Production-Readiness Checklist
-
-- [ ] Secrets in Secrets Manager / SSM, never in git
-- [ ] Env validation at startup
-- [ ] Health check used by the ALB
-- [ ] Structured JSON logs with request ids
-- [ ] Migrations run as a separate step before deploy
-- [ ] Graceful shutdown
-- [ ] Rate limiting on auth
-- [ ] Helmet, HTTP-only `Secure` `SameSite` refresh cookie
-- [ ] Stripe webhook signature check and idempotency
-- [ ] Booking confirmed only by the webhook, never by the client
-- [ ] Least-privilege IAM roles
-- [ ] RDS automated backups
-- [ ] Budget and error alarms
-
----
-
-## 11. Decisions Log (grilling sessions)
-
-### Round 1 (2026-10-28)
-| # | Topic | Decision |
-|---|---|---|
-| G1 | MVP done | Runs locally on Docker Compose, all unit / integration / e2e tests pass. Tests are written after features |
-| G2 | Stripe | Thai Stripe account, so card + PromptPay are both available |
-| G3 | Login gate | Browse and pick seats as a guest. Login is required only when buying |
-| G4 | Hold / payment TTL | Payment window **5 min** (PaymentIntent cancelled after), seat hold **6 min**. Locks live **only in the DB**. Unpaid → `CANCELLED (PAYMENT_TIMEOUT)`. Late success → auto refund |
-| G5 | Limits | Max **4 seats**. Booking open until **30 min after start**. **No refunds or cancellation after payment.** Couple seats → backlog |
-| G6 | Seed data | **TMDB** snapshot to committed JSON, posters as TMDB URLs (not downloaded), showtimes today → +30 days |
-| G7 | Language | **Thai default** + English. Content in `*_th` / `*_en` columns. UI with **next-intl**, `/th` `/en` routes |
-| G8 | Git | Git now, commit at meaningful checkpoints |
+| # | Decision |
+|---|---|
+| D1 | Types: OpenAPI → orval (fetchers, Query hooks, Zod) |
+| D2 | Tokens: access in memory, refresh in httpOnly cookie |
+| D3 | Zustand: session only. Seat selection lives in the URL |
+| D4 | UI: shadcn/ui |
+| G1 | MVP done = Docker Compose locally + all tests. Tests written after features |
+| G2 | Thai Stripe account: card + PromptPay |
+| G3 | Guests browse and pick seats. Login only to buy |
+| G4 | Payment window 5 min, seat hold 6 min, locks only in the DB. Unpaid → `CANCELLED (PAYMENT_TIMEOUT)`. Late payment → auto refund |
+| G5 | Max 4 seats. Booking open until start + 30 min. No refunds or cancellation after payment. Couple seats → backlog |
+| G6 | Seed from TMDB snapshot JSON. Posters as TMDB URLs (not downloaded). Showtimes today → +30 days |
+| G7 | Thai default + English: `*_th` / `*_en` columns, next-intl, `/th` `/en` routes |
+| G8 | Git, commit at checkpoints |
+| R1 | Auth: email + password first, LINE Login (OAuth 2.0) later. Schema ready now (`auth_identities`) |
+| R2 | Seat map polls every 10 s, with "seat just taken" UX |
+| R3 | One active booking, **blocked** (not auto-cancelled), global banner, blocked back navigation |
+| R4–R7 | Time's-up dialog · translated error codes · full Compose stack with nginx + stripe-cli · test plan per Phase 7 |

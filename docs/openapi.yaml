@@ -1,0 +1,1017 @@
+openapi: 3.1.0
+info:
+  title: Movie Ticketing API
+  version: 0.1.0
+  summary: Design contract for the MVP (customer side).
+  description: |
+    **Status: design contract for review.** Once NestJS is built, its generated spec must match this one,
+    and orval generates the web client from it.
+
+    ## Conventions
+    - Base path: `/api/v1`. All timestamps are ISO 8601 with an offset. Cinemas are in **Asia/Bangkok**.
+    - **Money is whole baht** (`integer`, e.g. `220` = ฿220). Stripe gets `baht × 100` inside the API only.
+    - Bilingual content is returned as `LocalizedText` (`{ th, en }`). The web picks the one for the current locale.
+    - **Errors** always use the `Error` schema. The web translates `code`, and `message` is English for logs.
+    - Auth: `Authorization: Bearer <accessToken>` (15 min). The refresh token is an httpOnly cookie `rt`
+      (`Path=/api/v1/auth`, `SameSite=Strict`, `Secure`), valid 7 days and rotated on every refresh.
+
+    ## Business rules
+    | Rule | Value |
+    |---|---|
+    | Seats per booking | 1–4 |
+    | Active (`PENDING_PAYMENT`) bookings per user | 1 |
+    | Payment window | 5 min from booking creation |
+    | Seat hold | 6 min from booking creation |
+    | Booking cut-off | 30 min after the showtime starts |
+    | Refunds | none, except an automatic refund for a payment that succeeds after the window |
+servers:
+  - url: /api/v1
+    description: Same origin (CloudFront / nginx forwards /api to NestJS)
+  - url: http://localhost:4000/api/v1
+    description: Local NestJS (npm run dev)
+
+tags:
+  - name: Health
+    description: Liveness and readiness for the load balancer.
+  - name: Auth
+    description: Email + password (MVP). LINE Login (later) uses the same tokens.
+  - name: Catalog
+    description: Public movie, genre and cinema data.
+  - name: Showtimes
+    description: Public showtime detail and live seat map.
+  - name: Bookings
+    description: Seat locks and the booking lifecycle. Requires login.
+  - name: Payments
+    description: Stripe PaymentIntents (card + PromptPay) and webhooks.
+
+paths:
+  /health:
+    get:
+      tags: [Health]
+      operationId: getHealth
+      summary: Liveness and DB check (used by the ALB)
+      security: []
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status, db]
+                properties:
+                  status: { type: string, const: ok }
+                  db: { type: string, const: up }
+        "503":
+          $ref: "#/components/responses/Error"
+
+  # ---------------------------------------------------------------- Auth
+  /auth/register:
+    post:
+      tags: [Auth]
+      operationId: register
+      summary: Create an account with email + password and log in
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RegisterRequest" }
+      responses:
+        "201":
+          description: Registered and logged in. Sets the `rt` refresh cookie.
+          headers:
+            Set-Cookie: { $ref: "#/components/headers/RefreshCookie" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AuthResponse" }
+        "409":
+          description: "`EMAIL_ALREADY_USED`"
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "422": { $ref: "#/components/responses/ValidationError" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      operationId: login
+      summary: Log in with email + password
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LoginRequest" }
+      responses:
+        "200":
+          description: Logged in. Sets the `rt` refresh cookie.
+          headers:
+            Set-Cookie: { $ref: "#/components/headers/RefreshCookie" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AuthResponse" }
+        "401":
+          description: "`INVALID_CREDENTIALS` (same message for an unknown email or a wrong password)"
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "422": { $ref: "#/components/responses/ValidationError" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+
+  /auth/refresh:
+    post:
+      tags: [Auth]
+      operationId: refresh
+      summary: Exchange the refresh cookie for a new access token (rotates the cookie)
+      description: |
+        Called on app load to restore the session, and by the api-client after a `401`.
+        Concurrent callers on the web share one in-flight refresh.
+      security:
+        - refreshCookie: []
+      responses:
+        "200":
+          description: New access token. Sets a new `rt` cookie (the old one is revoked).
+          headers:
+            Set-Cookie: { $ref: "#/components/headers/RefreshCookie" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AuthResponse" }
+        "401":
+          description: "`REFRESH_TOKEN_INVALID` (missing, expired or revoked). The web treats the user as a guest."
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  /auth/logout:
+    post:
+      tags: [Auth]
+      operationId: logout
+      summary: Revoke the current refresh token (this device only) and clear the cookie
+      security:
+        - refreshCookie: []
+      responses:
+        "204":
+          description: Logged out (also returned when already logged out)
+
+  /auth/me:
+    get:
+      tags: [Auth]
+      operationId: getMe
+      summary: Current user
+      responses:
+        "200":
+          description: The logged-in user
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/User" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /auth/line:
+    get:
+      tags: [Auth]
+      operationId: startLineLogin
+      summary: "[Later] Start LINE Login (OAuth 2.0 + PKCE)"
+      description: |
+        **Not in the first auth slice.** Redirects to LINE's authorize URL. `state` and the PKCE verifier are stored in a
+        short-lived httpOnly cookie.
+      security: []
+      parameters:
+        - name: next
+          in: query
+          description: Web path to return to after login, e.g. `/th/showtime?id=...&seats=A5,A6`. Must be a relative path.
+          schema: { type: string }
+        - $ref: "#/components/parameters/Locale"
+      responses:
+        "302":
+          description: Redirect to `https://access.line.me/oauth2/v2.1/authorize?...`
+
+  /auth/line/callback:
+    get:
+      tags: [Auth]
+      operationId: lineLoginCallback
+      summary: "[Later] LINE Login callback"
+      description: |
+        Verifies `state`, exchanges `code` for tokens, verifies the ID token, then finds or creates the user through
+        `auth_identities (LINE, sub)`. Sets the `rt` cookie and redirects to the web `/{locale}/auth/callback?next=...`,
+        which calls `/auth/refresh` to get an access token.
+      security: []
+      parameters:
+        - { name: code, in: query, required: true, schema: { type: string } }
+        - { name: state, in: query, required: true, schema: { type: string } }
+      responses:
+        "302":
+          description: Redirect back to the web app (with `?error=LINE_LOGIN_FAILED` on failure)
+
+  # ---------------------------------------------------------------- Catalog
+  /genres:
+    get:
+      tags: [Catalog]
+      operationId: listGenres
+      summary: All genres
+      security: []
+      responses:
+        "200":
+          description: Genres
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Genre" }
+
+  /cinemas:
+    get:
+      tags: [Catalog]
+      operationId: listCinemas
+      summary: All cinemas
+      security: []
+      responses:
+        "200":
+          description: Cinemas
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Cinema" }
+
+  /movies:
+    get:
+      tags: [Catalog]
+      operationId: listMovies
+      summary: List movies (paginated)
+      security: []
+      parameters:
+        - name: status
+          in: query
+          schema: { $ref: "#/components/schemas/MovieStatus" }
+        - name: genre
+          in: query
+          description: Genre slug
+          schema: { type: string, examples: [action] }
+        - name: q
+          in: query
+          description: Search in Thai and English titles
+          schema: { type: string, maxLength: 100 }
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PageSize"
+      responses:
+        "200":
+          description: Movies
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/PageMeta"
+                  - type: object
+                    required: [items]
+                    properties:
+                      items:
+                        type: array
+                        items: { $ref: "#/components/schemas/MovieSummary" }
+        "422": { $ref: "#/components/responses/ValidationError" }
+
+  /movies/{slug}:
+    get:
+      tags: [Catalog]
+      operationId: getMovie
+      summary: Movie detail
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/MovieSlug"
+      responses:
+        "200":
+          description: Movie
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MovieDetail" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /movies/{slug}/showtimes:
+    get:
+      tags: [Catalog]
+      operationId: listMovieShowtimes
+      summary: Showtimes of a movie on one Bangkok calendar day, grouped by cinema
+      description: |
+        Only `SCHEDULED` showtimes that are still bookable (now < starts_at + 30 min) are returned.
+        `availableDates` lets the date picker show only days that have showtimes (today → +30 days).
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/MovieSlug"
+        - name: date
+          in: query
+          required: true
+          description: Bangkok calendar day
+          schema: { type: string, format: date, examples: ["2026-10-28"] }
+        - name: cinemaId
+          in: query
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Showtimes grouped by cinema
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MovieShowtimes" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "422": { $ref: "#/components/responses/ValidationError" }
+
+  # ---------------------------------------------------------------- Showtimes
+  /showtimes/{showtimeId}:
+    get:
+      tags: [Showtimes]
+      operationId: getShowtime
+      summary: Showtime detail (movie, cinema, hall, prices)
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/ShowtimeId"
+      responses:
+        "200":
+          description: Showtime
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ShowtimeDetail" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /showtimes/{showtimeId}/seats:
+    get:
+      tags: [Showtimes]
+      operationId: getSeatMap
+      summary: Live seat map (polled every 10 s by the web while visible)
+      description: |
+        Seat status is computed from the DB at request time:
+        `BOOKED` = locked by a CONFIRMED booking, `HELD` = locked by a PENDING_PAYMENT booking inside its hold,
+        `AVAILABLE` = otherwise. It never depends on the expiry job having run.
+        Sent with `Cache-Control: no-store`.
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/ShowtimeId"
+      responses:
+        "200":
+          description: Seat map
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SeatMap" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  # ---------------------------------------------------------------- Bookings
+  /bookings:
+    post:
+      tags: [Bookings]
+      operationId: createBooking
+      summary: Lock seats and create a PENDING_PAYMENT booking
+      description: |
+        In one transaction, this:
+        1. Cancels the caller's own stale pending booking (hold already over), if any.
+        2. Rejects the request if the caller still has an active pending booking (`ACTIVE_BOOKING_EXISTS`).
+        3. Unlocks stale holds on the requested seats.
+        4. Inserts the booking and booking_seats. The partial unique index decides who wins a race.
+
+        Sets `paymentExpiresAt = now + 5 min` and `holdExpiresAt = now + 6 min`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateBookingRequest" }
+      responses:
+        "201":
+          description: Seats locked
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Booking" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404":
+          description: "`SHOWTIME_NOT_FOUND` or `SEAT_NOT_FOUND` (seat not in this hall, or inactive)"
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "409":
+          description: |
+            `SEAT_TAKEN`: `details.seatIds` lists the seats that were taken. The web refreshes the map and highlights them.
+            `ACTIVE_BOOKING_EXISTS`: `details.bookingId` is the active booking. The web sends the user there.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+              examples:
+                seatTaken:
+                  value:
+                    statusCode: 409
+                    code: SEAT_TAKEN
+                    message: One or more seats are no longer available
+                    details: { seatIds: ["9b2f6c1e-1d1a-4a43-9a51-6c0f2b8f9e11"] }
+                activeBooking:
+                  value:
+                    statusCode: 409
+                    code: ACTIVE_BOOKING_EXISTS
+                    message: You already have a booking in progress
+                    details: { bookingId: "3f1c2d4e-5a6b-4c7d-8e9f-0a1b2c3d4e5f" }
+        "422":
+          description: "`VALIDATION_FAILED`, `TOO_MANY_SEATS` or `BOOKING_CLOSED`"
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  /bookings/active:
+    get:
+      tags: [Bookings]
+      operationId: getActiveBooking
+      summary: The caller's in-progress (PENDING_PAYMENT, inside its hold) booking
+      description: |
+        Polled by the global "booking in progress" banner on app load and on window focus.
+        Returns `204` when there is none.
+      responses:
+        "200":
+          description: Active booking
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Booking" }
+        "204":
+          description: No active booking
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /bookings/me:
+    get:
+      tags: [Bookings]
+      operationId: listMyBookings
+      summary: My bookings (confirmed and cancelled)
+      parameters:
+        - name: scope
+          in: query
+          description: "`upcoming` = showtime not ended yet, `past` = ended. Both newest first."
+          schema: { type: string, enum: [upcoming, past], default: upcoming }
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PageSize"
+      responses:
+        "200":
+          description: Bookings
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/PageMeta"
+                  - type: object
+                    required: [items]
+                    properties:
+                      items:
+                        type: array
+                        items: { $ref: "#/components/schemas/Booking" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /bookings/{bookingId}:
+    get:
+      tags: [Bookings]
+      operationId: getBooking
+      summary: Booking detail (includes `ticketQr` once CONFIRMED)
+      description: Polled by `/checkout/complete` until the status is no longer PENDING_PAYMENT.
+      parameters:
+        - $ref: "#/components/parameters/BookingId"
+      responses:
+        "200":
+          description: Booking
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Booking" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404":
+          description: "`NOT_FOUND`, also returned for another user's booking (doesn't reveal that it exists)"
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  /bookings/{bookingId}/cancel:
+    post:
+      tags: [Bookings]
+      operationId: cancelBooking
+      summary: Give up a booking before paying
+      description: |
+        Only allowed while PENDING_PAYMENT. Cancels the Stripe PaymentIntent first. If Stripe says it is already
+        processing or succeeded, the cancel is refused (`PAYMENT_IN_PROGRESS`) and the webhook decides.
+        On success: `CANCELLED (USER_CANCELLED)` and the seats are unlocked.
+      parameters:
+        - $ref: "#/components/parameters/BookingId"
+      responses:
+        "200":
+          description: Cancelled
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Booking" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: "`BOOKING_NOT_PENDING` (already confirmed or cancelled, no cancellation after payment) or `PAYMENT_IN_PROGRESS`"
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  # ---------------------------------------------------------------- Payments
+  /bookings/{bookingId}/payment-intent:
+    post:
+      tags: [Payments]
+      operationId: createPaymentIntent
+      summary: Create or reuse the Stripe PaymentIntent for a booking
+      description: |
+        Returns the `clientSecret` for the Stripe Payment Element, which lets the user choose Card or PromptPay.
+        Idempotent: calling it again inside the window returns the same PaymentIntent.
+        The PaymentIntent is created with `amount = totalBaht × 100`, `currency = thb`,
+        `payment_method_types = [card, promptpay]`, and `metadata.bookingId`.
+      parameters:
+        - $ref: "#/components/parameters/BookingId"
+      responses:
+        "200":
+          description: PaymentIntent ready
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PaymentIntentResponse" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: "`BOOKING_NOT_PENDING`"
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "422":
+          description: "`PAYMENT_WINDOW_CLOSED` (now ≥ paymentExpiresAt)"
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  /payments/webhook:
+    post:
+      tags: [Payments]
+      operationId: stripeWebhook
+      summary: Stripe webhook (called by Stripe, not the web)
+      description: |
+        Verifies the `Stripe-Signature` header against the **raw** body. Idempotent: the event id is inserted into
+        `stripe_events` first, and duplicates return `200` without doing anything.
+
+        | Event | Effect |
+        |---|---|
+        | `payment_intent.succeeded` | payment SUCCEEDED, booking CONFIRMED (guarded update). If the booking is already CANCELLED: automatic refund, payment REFUNDED, cancel reason LATE_PAYMENT_REFUNDED |
+        | `payment_intent.payment_failed` | payment FAILED, booking stays PENDING_PAYMENT (user may retry inside the window) |
+        | `payment_intent.canceled` | payment CANCELLED |
+      security: []
+      parameters:
+        - name: Stripe-Signature
+          in: header
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Stripe Event object (see Stripe docs)
+      responses:
+        "200":
+          description: Received (including duplicates and ignored event types)
+        "400":
+          description: "`WEBHOOK_SIGNATURE_INVALID`"
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    refreshCookie:
+      type: apiKey
+      in: cookie
+      name: rt
+
+  headers:
+    RefreshCookie:
+      description: "`rt=<token>; HttpOnly; Secure; SameSite=Strict; Path=/api/v1/auth; Max-Age=604800`"
+      schema: { type: string }
+
+  parameters:
+    Page:
+      name: page
+      in: query
+      schema: { type: integer, minimum: 1, default: 1 }
+    PageSize:
+      name: pageSize
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 50, default: 20 }
+    Locale:
+      name: locale
+      in: query
+      schema: { $ref: "#/components/schemas/Locale" }
+    MovieSlug:
+      name: slug
+      in: path
+      required: true
+      schema: { type: string, examples: [dune-part-two] }
+    ShowtimeId:
+      name: showtimeId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    BookingId:
+      name: bookingId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+
+  responses:
+    Error:
+      description: Error
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    ValidationError:
+      description: "`VALIDATION_FAILED`: `details.fields` maps field → message keys"
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+          example:
+            statusCode: 422
+            code: VALIDATION_FAILED
+            message: Validation failed
+            details: { fields: { email: ["invalid_email"] } }
+    Unauthorized:
+      description: "`UNAUTHORIZED` (missing or expired access token). The web refreshes once and retries."
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    NotFound:
+      description: "`NOT_FOUND`"
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    RateLimited:
+      description: "`RATE_LIMITED`. See the `Retry-After` header."
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+
+  schemas:
+    # ---------- shared
+    Error:
+      type: object
+      required: [statusCode, code, message]
+      properties:
+        statusCode: { type: integer, examples: [409] }
+        code: { $ref: "#/components/schemas/ErrorCode" }
+        message:
+          type: string
+          description: English, for logs and developers. The UI shows a translation of `code`.
+        details:
+          type: object
+          additionalProperties: true
+          description: "Code-specific data, e.g. `{ seatIds }`, `{ bookingId }`, `{ fields }`"
+
+    ErrorCode:
+      type: string
+      description: Stable error codes. The web has a translation for each one in `th.json` / `en.json`.
+      enum:
+        - VALIDATION_FAILED
+        - UNAUTHORIZED
+        - FORBIDDEN
+        - NOT_FOUND
+        - RATE_LIMITED
+        - INTERNAL_ERROR
+        - EMAIL_ALREADY_USED
+        - INVALID_CREDENTIALS
+        - REFRESH_TOKEN_INVALID
+        - LINE_LOGIN_FAILED
+        - SHOWTIME_NOT_FOUND
+        - SEAT_NOT_FOUND
+        - BOOKING_CLOSED
+        - TOO_MANY_SEATS
+        - SEAT_TAKEN
+        - ACTIVE_BOOKING_EXISTS
+        - BOOKING_NOT_PENDING
+        - PAYMENT_IN_PROGRESS
+        - PAYMENT_WINDOW_CLOSED
+        - WEBHOOK_SIGNATURE_INVALID
+
+    PageMeta:
+      type: object
+      required: [page, pageSize, total]
+      properties:
+        page: { type: integer }
+        pageSize: { type: integer }
+        total: { type: integer }
+
+    Locale:
+      type: string
+      enum: [th, en]
+      default: th
+
+    LocalizedText:
+      type: object
+      required: [th, en]
+      properties:
+        th: { type: string }
+        en: { type: string }
+      example: { th: "ดูน ภาคสอง", en: "Dune: Part Two" }
+
+    # ---------- auth
+    RegisterRequest:
+      type: object
+      required: [email, password, displayName]
+      properties:
+        email: { type: string, format: email, maxLength: 254 }
+        password: { type: string, minLength: 8, maxLength: 128 }
+        displayName: { type: string, minLength: 1, maxLength: 80 }
+        phone:
+          type: string
+          pattern: "^0[0-9]{8,9}$"
+          description: Optional Thai phone number
+        preferredLocale: { $ref: "#/components/schemas/Locale" }
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string }
+
+    AuthResponse:
+      type: object
+      required: [accessToken, expiresIn, user]
+      properties:
+        accessToken: { type: string, description: JWT }
+        expiresIn: { type: integer, description: Seconds, examples: [900] }
+        user: { $ref: "#/components/schemas/User" }
+
+    User:
+      type: object
+      required: [id, displayName, preferredLocale, loginMethods]
+      properties:
+        id: { type: string, format: uuid }
+        email: { type: [string, "null"], format: email }
+        displayName: { type: string }
+        avatarUrl: { type: [string, "null"], format: uri }
+        phone: { type: [string, "null"] }
+        preferredLocale: { $ref: "#/components/schemas/Locale" }
+        loginMethods:
+          type: array
+          items: { type: string, enum: [PASSWORD, LINE] }
+
+    # ---------- catalog
+    MovieStatus:
+      type: string
+      enum: [COMING_SOON, NOW_SHOWING, ENDED]
+
+    MovieRating:
+      type: string
+      enum: [G, PG, PG13, R18, R20]
+
+    Genre:
+      type: object
+      required: [id, slug, name]
+      properties:
+        id: { type: integer }
+        slug: { type: string, examples: [action] }
+        name: { $ref: "#/components/schemas/LocalizedText" }
+
+    Cinema:
+      type: object
+      required: [id, name, address, city]
+      properties:
+        id: { type: string, format: uuid }
+        name: { $ref: "#/components/schemas/LocalizedText" }
+        address: { $ref: "#/components/schemas/LocalizedText" }
+        city: { type: string, examples: [Bangkok] }
+
+    MovieSummary:
+      type: object
+      required: [id, slug, title, durationMin, rating, releaseDate, posterUrl, status, genres]
+      properties:
+        id: { type: string, format: uuid }
+        slug: { type: string }
+        title: { $ref: "#/components/schemas/LocalizedText" }
+        durationMin: { type: integer, examples: [166] }
+        rating: { $ref: "#/components/schemas/MovieRating" }
+        releaseDate: { type: string, format: date }
+        posterUrl: { type: string, format: uri }
+        status: { $ref: "#/components/schemas/MovieStatus" }
+        genres:
+          type: array
+          items: { $ref: "#/components/schemas/Genre" }
+
+    MovieDetail:
+      allOf:
+        - $ref: "#/components/schemas/MovieSummary"
+        - type: object
+          required: [synopsis, originalLanguage]
+          properties:
+            synopsis: { $ref: "#/components/schemas/LocalizedText" }
+            originalLanguage: { type: string, examples: [en] }
+            backdropUrl: { type: [string, "null"], format: uri }
+            trailerUrl: { type: [string, "null"], format: uri }
+
+    # ---------- showtimes
+    ShowtimeFormat:
+      type: string
+      enum: [TWO_D, THREE_D, IMAX]
+
+    SeatType:
+      type: string
+      enum: [STANDARD, PREMIUM]
+
+    Price:
+      type: object
+      required: [seatType, priceBaht]
+      properties:
+        seatType: { $ref: "#/components/schemas/SeatType" }
+        priceBaht: { type: integer, examples: [220] }
+
+    ShowtimeSlot:
+      type: object
+      description: One time button in the showtime list
+      required: [id, startsAt, format, audioLanguage, hallNumber, hallType, fromPriceBaht, seatsLeft]
+      properties:
+        id: { type: string, format: uuid }
+        startsAt: { type: string, format: date-time }
+        format: { $ref: "#/components/schemas/ShowtimeFormat" }
+        audioLanguage: { type: string, examples: [EN] }
+        subtitleLanguage: { type: [string, "null"], examples: [TH] }
+        hallNumber: { type: integer }
+        hallType: { type: string, enum: [STANDARD, IMAX, FOUR_DX] }
+        fromPriceBaht: { type: integer, description: Cheapest seat type }
+        seatsLeft: { type: integer, description: AVAILABLE seats right now }
+
+    MovieShowtimes:
+      type: object
+      required: [movieId, date, availableDates, cinemas]
+      properties:
+        movieId: { type: string, format: uuid }
+        date: { type: string, format: date }
+        availableDates:
+          type: array
+          items: { type: string, format: date }
+        cinemas:
+          type: array
+          items:
+            type: object
+            required: [cinema, showtimes]
+            properties:
+              cinema: { $ref: "#/components/schemas/Cinema" }
+              showtimes:
+                type: array
+                items: { $ref: "#/components/schemas/ShowtimeSlot" }
+
+    ShowtimeDetail:
+      type: object
+      required: [id, movie, cinema, hall, startsAt, endsAt, format, audioLanguage, prices, bookingClosesAt, isBookable]
+      properties:
+        id: { type: string, format: uuid }
+        movie: { $ref: "#/components/schemas/MovieSummary" }
+        cinema: { $ref: "#/components/schemas/Cinema" }
+        hall:
+          type: object
+          required: [id, number, type]
+          properties:
+            id: { type: string, format: uuid }
+            number: { type: integer }
+            type: { type: string, enum: [STANDARD, IMAX, FOUR_DX] }
+        startsAt: { type: string, format: date-time }
+        endsAt: { type: string, format: date-time }
+        format: { $ref: "#/components/schemas/ShowtimeFormat" }
+        audioLanguage: { type: string }
+        subtitleLanguage: { type: [string, "null"] }
+        prices:
+          type: array
+          items: { $ref: "#/components/schemas/Price" }
+        bookingClosesAt: { type: string, format: date-time, description: startsAt + 30 min }
+        isBookable: { type: boolean }
+        maxSeatsPerBooking: { type: integer, const: 4 }
+
+    SeatStatus:
+      type: string
+      enum: [AVAILABLE, HELD, BOOKED]
+
+    Seat:
+      type: object
+      required: [id, label, row, number, gridRow, gridCol, type, status]
+      properties:
+        id: { type: string, format: uuid }
+        label: { type: string, examples: [A5] }
+        row: { type: string, examples: [A] }
+        number: { type: integer, examples: [5] }
+        gridRow: { type: integer, description: 0-based position on the map (gaps = aisles) }
+        gridCol: { type: integer }
+        type: { $ref: "#/components/schemas/SeatType" }
+        status: { $ref: "#/components/schemas/SeatStatus" }
+
+    SeatMap:
+      type: object
+      required: [showtimeId, totalRows, totalCols, seats, prices, generatedAt]
+      properties:
+        showtimeId: { type: string, format: uuid }
+        totalRows: { type: integer }
+        totalCols: { type: integer }
+        seats:
+          type: array
+          description: Active seats only
+          items: { $ref: "#/components/schemas/Seat" }
+        prices:
+          type: array
+          items: { $ref: "#/components/schemas/Price" }
+        generatedAt: { type: string, format: date-time }
+
+    # ---------- bookings
+    BookingStatus:
+      type: string
+      enum: [PENDING_PAYMENT, CONFIRMED, CANCELLED]
+
+    CancelReason:
+      type: string
+      enum: [PAYMENT_TIMEOUT, USER_CANCELLED, LATE_PAYMENT_REFUNDED]
+
+    CreateBookingRequest:
+      type: object
+      required: [showtimeId, seatIds]
+      properties:
+        showtimeId: { type: string, format: uuid }
+        seatIds:
+          type: array
+          minItems: 1
+          maxItems: 4
+          uniqueItems: true
+          items: { type: string, format: uuid }
+
+    BookingSeat:
+      type: object
+      required: [seatId, label, type, priceBaht]
+      properties:
+        seatId: { type: string, format: uuid }
+        label: { type: string, examples: [A5] }
+        type: { $ref: "#/components/schemas/SeatType" }
+        priceBaht: { type: integer }
+
+    PaymentSummary:
+      type: object
+      required: [method, status]
+      properties:
+        method: { type: string, enum: [CARD, PROMPTPAY] }
+        status: { type: string, enum: [PENDING, SUCCEEDED, FAILED, CANCELLED, REFUNDED] }
+        cardBrand: { type: [string, "null"], examples: [mastercard] }
+        cardLast4: { type: [string, "null"], examples: ["4444"] }
+        paidAt: { type: [string, "null"], format: date-time }
+
+    Booking:
+      type: object
+      required:
+        [id, bookingCode, status, showtime, seats, totalBaht, currency, paymentExpiresAt, holdExpiresAt, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        bookingCode: { type: string, examples: [MT-7KQ2XP] }
+        status: { $ref: "#/components/schemas/BookingStatus" }
+        cancelReason:
+          oneOf:
+            - $ref: "#/components/schemas/CancelReason"
+            - type: "null"
+        showtime:
+          type: object
+          required: [id, startsAt, format, movie, cinema, hallNumber]
+          properties:
+            id: { type: string, format: uuid }
+            startsAt: { type: string, format: date-time }
+            format: { $ref: "#/components/schemas/ShowtimeFormat" }
+            hallNumber: { type: integer }
+            movie:
+              type: object
+              required: [slug, title, posterUrl, rating, durationMin]
+              properties:
+                slug: { type: string }
+                title: { $ref: "#/components/schemas/LocalizedText" }
+                posterUrl: { type: string, format: uri }
+                rating: { $ref: "#/components/schemas/MovieRating" }
+                durationMin: { type: integer }
+            cinema: { $ref: "#/components/schemas/Cinema" }
+        seats:
+          type: array
+          items: { $ref: "#/components/schemas/BookingSeat" }
+        totalBaht: { type: integer, examples: [440] }
+        currency: { type: string, const: THB }
+        paymentExpiresAt: { type: string, format: date-time }
+        holdExpiresAt: { type: string, format: date-time }
+        confirmedAt: { type: [string, "null"], format: date-time }
+        cancelledAt: { type: [string, "null"], format: date-time }
+        createdAt: { type: string, format: date-time }
+        latestPayment:
+          oneOf:
+            - $ref: "#/components/schemas/PaymentSummary"
+            - type: "null"
+        ticketQr:
+          type: [string, "null"]
+          description: Signed payload `<bookingCode>.<hmac>` to render as a QR. Only set when CONFIRMED.
+
+    # ---------- payments
+    PaymentIntentResponse:
+      type: object
+      required: [clientSecret, publishableKey, amountBaht, paymentExpiresAt]
+      properties:
+        clientSecret: { type: string, description: For Stripe.js / Payment Element }
+        publishableKey: { type: string, description: "Stripe pk_test_..." }
+        amountBaht: { type: integer }
+        paymentExpiresAt: { type: string, format: date-time }
+
+security:
+  - bearerAuth: []

@@ -2,12 +2,23 @@ erDiagram
     %% ===== Identity =====
     USERS {
         uuid id PK
-        text email UK "lowercased, unique"
-        text password_hash "argon2id"
-        text full_name
+        text email UK "nullable (LINE may not share it), lowercased"
+        text password_hash "nullable, argon2id, only for email login"
+        text display_name
+        text avatar_url "nullable, from LINE profile"
         text phone "nullable"
+        text preferred_locale "th or en"
         timestamptz created_at
         timestamptz updated_at
+    }
+
+    AUTH_IDENTITIES {
+        uuid id PK
+        uuid user_id FK
+        auth_provider provider "LINE (GOOGLE later)"
+        text provider_user_id "UK with provider, e.g. LINE userId"
+        text email "nullable, as given by the provider"
+        timestamptz created_at
     }
 
     REFRESH_TOKENS {
@@ -108,7 +119,7 @@ erDiagram
     BOOKINGS {
         uuid id PK
         text booking_code UK "short human code, e.g. MT-7KQ2XP, encoded in ticket QR"
-        uuid user_id FK
+        uuid user_id FK "max one PENDING_PAYMENT per user"
         uuid showtime_id FK
         booking_status status "PENDING_PAYMENT, CONFIRMED, CANCELLED"
         cancel_reason cancel_reason "nullable: PAYMENT_TIMEOUT, USER_CANCELLED, LATE_PAYMENT_REFUNDED"
@@ -160,6 +171,7 @@ erDiagram
     }
 
     %% ===== Relationships =====
+    USERS          ||--o{ AUTH_IDENTITIES  : "signs in with"
     USERS          ||--o{ REFRESH_TOKENS   : "has sessions"
     USERS          ||--o{ BOOKINGS         : "makes"
 
