@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { moviesFileSchema } from "./schema.js";
 import {
+  readableForThai,
   TmdbClient,
   fetchSeedMovies,
   finalizeMovies,
@@ -190,6 +191,26 @@ describe("mapTmdbMovie", () => {
     const movie = mapTmdbMovie(th, en, "NOW_SHOWING");
 
     expect(moviesFileSchema.safeParse({ movies: [movie] }).success).toBe(true);
+  });
+});
+
+describe("readableForThai", () => {
+  it("keeps Thai and Latin titles", () => {
+    expect(readableForThai("อเวนเจอร์ส: เผด็จศึก")).toBe("อเวนเจอร์ส: เผด็จศึก");
+    expect(readableForThai("Street Fighter")).toBe("Street Fighter");
+    expect(readableForThai("พี่บึ้ก… โคตรคน ชนนรก")).toBe("พี่บึ้ก… โคตรคน ชนนรก");
+  });
+
+  it("treats other scripts (TMDB's original-title fallback) as missing", () => {
+    expect(readableForThai("欢迎来龙餐馆")).toBeUndefined();
+    expect(readableForThai("रामायणम")).toBeUndefined();
+    expect(readableForThai("Ramayana: रामायणम")).toBeUndefined();
+  });
+
+  it("treats empty text as missing and keeps digit-only titles", () => {
+    expect(readableForThai("  ")).toBeUndefined();
+    expect(readableForThai(null)).toBeUndefined();
+    expect(readableForThai("1917")).toBe("1917");
   });
 });
 
