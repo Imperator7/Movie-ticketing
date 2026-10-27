@@ -1,11 +1,10 @@
 "use client";
 
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter as useFullRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { cancelBooking, useGetBooking } from "@/api/generated/endpoints/bookings/bookings";
+import { useGetBooking } from "@/api/generated/endpoints/bookings/bookings";
 import type { Booking } from "@/api/generated/model";
 import { dataOf } from "@/api/unwrap";
 import { PageContainer, QueryError } from "@/components/page-states";
@@ -13,9 +12,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { RequireAuth } from "@/features/auth/require-auth";
 import { useErrorMessage } from "@/features/auth/use-error-message";
 import { useBackNavigationGuard, type BlockedNavigation } from "@/features/bookings/use-back-guard";
+import { useCancelBookingOptimistic } from "@/features/bookings/use-booking-mutations";
 import { useCountdown } from "@/features/bookings/use-countdown";
 import { showtimePath } from "@/features/showtimes/seat-params";
 import { useRouter } from "@/i18n/navigation";
+import { ApiError } from "@/lib/api-client";
 import { toLocale } from "@/lib/localized";
 import { CheckoutBody } from "./checkout-body";
 import { DemoPaymentPanel } from "./demo-payment-panel";
@@ -26,7 +27,6 @@ function CheckoutContent({ bookingId, Panel }: { bookingId: string; Panel: Payme
   const locale = toLocale(useLocale());
   const router = useRouter();
   const fullRouter = useFullRouter();
-  const queryClient = useQueryClient();
   const errorMessage = useErrorMessage();
 
   const query = useGetBooking(bookingId, { query: { enabled: bookingId !== "" } });
@@ -53,24 +53,22 @@ function CheckoutContent({ bookingId, Panel }: { bookingId: string; Panel: Payme
       b.seats.map((s) => s.label),
     );
 
-  const cancel = useMutation({
-    mutationFn: () => cancelBooking(bookingId),
-    onError: (error) => {
-      // Already cancelled or paid: the seat map / result screen is still the right place.
-      toast.error(errorMessage(error));
-    },
-    onSettled: () => {
-      void queryClient.invalidateQueries();
-    },
-  });
+  const cancel = useCancelBookingOptimistic();
 
-  /** Cancels the booking (best effort), then goes to `go`. */
+  /**
+   * Cancels the booking (optimistically), then goes to `go`. If the server refuses (e.g. a payment
+   * is in progress) everything is rolled back, the error is shown and the user stays here.
+   */
   const cancelThen = async (b: Booking, go: () => void) => {
     setLeaving(null);
     try {
-      await cancel.mutateAsync();
-    } catch {
-      // Handled by onError.
+      await cancel.mutateAsync(b);
+    } catch (error) {
+      // Already cancelled or timed out: the seat map is still the right place.
+      if (!(error instanceof ApiError && error.code === "BOOKING_NOT_PENDING")) {
+        toast.error(errorMessage(error));
+        return;
+      }
     }
     go();
   };

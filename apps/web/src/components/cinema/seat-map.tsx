@@ -26,6 +26,10 @@ export interface SeatMapProps {
   onRejected?: (reason: "limit" | "unavailable") => void;
   /** Seats that were just taken by someone else (flash red). */
   justTakenIds?: readonly string[];
+  /** Our seats while Buy is in flight. */
+  pendingIds?: readonly string[];
+  /** Ignores taps and marks the map busy (e.g. while a booking is being created). */
+  disabled?: boolean;
   maxSeats?: number;
   labels?: SeatLabels;
   /** Accessible name of the map. */
@@ -75,6 +79,8 @@ export function SeatMap({
   onSelectionChange,
   onRejected,
   justTakenIds = [],
+  pendingIds = [],
+  disabled = false,
   maxSeats,
   labels = seatLabelsTh,
   ariaLabel = "แผนผังที่นั่ง",
@@ -90,6 +96,7 @@ export function SeatMap({
     focusedId && seats.some((s) => s.id === focusedId) ? focusedId : (seats[0]?.id ?? "");
 
   function handleToggle(seat: SeatMapSeat) {
+    if (disabled) return;
     const result = toggleSeat(selectedIds, seat.id, seat.status, maxSeats);
     if (result.rejected) onRejected?.(result.rejected);
     else onSelectionChange(result.selection);
@@ -111,6 +118,7 @@ export function SeatMap({
       <div
         role="group"
         aria-label={ariaLabel}
+        aria-busy={disabled || undefined}
         onKeyDown={handleKeyDown}
         className="mx-auto grid w-max gap-1 px-2"
         style={{ gridTemplateColumns: `repeat(${columns + 2}, 2rem)` }}
@@ -142,6 +150,7 @@ export function SeatMap({
             priceBaht={seat.priceBaht}
             selected={selectedIds.includes(seat.id)}
             justTaken={justTakenIds.includes(seat.id)}
+            pending={pendingIds.includes(seat.id)}
             labels={labels}
             tabIndex={seat.id === activeId ? 0 : -1}
             onFocus={() => {
