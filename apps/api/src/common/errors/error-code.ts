@@ -1,0 +1,38 @@
+/**
+ * Stable error codes. Must match `components.schemas.ErrorCode` in docs/openapi.yaml exactly
+ * (the web has a translation for each one).
+ */
+export const ErrorCode = {
+  VALIDATION_FAILED: "VALIDATION_FAILED",
+  UNAUTHORIZED: "UNAUTHORIZED",
+  FORBIDDEN: "FORBIDDEN",
+  NOT_FOUND: "NOT_FOUND",
+  RATE_LIMITED: "RATE_LIMITED",
+  INTERNAL_ERROR: "INTERNAL_ERROR",
+  EMAIL_ALREADY_USED: "EMAIL_ALREADY_USED",
+  INVALID_CREDENTIALS: "INVALID_CREDENTIALS",
+  REFRESH_TOKEN_INVALID: "REFRESH_TOKEN_INVALID",
+  LINE_LOGIN_FAILED: "LINE_LOGIN_FAILED",
+  SHOWTIME_NOT_FOUND: "SHOWTIME_NOT_FOUND",
+  SEAT_NOT_FOUND: "SEAT_NOT_FOUND",
+  BOOKING_CLOSED: "BOOKING_CLOSED",
+  TOO_MANY_SEATS: "TOO_MANY_SEATS",
+  SEAT_TAKEN: "SEAT_TAKEN",
+  ACTIVE_BOOKING_EXISTS: "ACTIVE_BOOKING_EXISTS",
+  BOOKING_NOT_PENDING: "BOOKING_NOT_PENDING",
+  PAYMENT_IN_PROGRESS: "PAYMENT_IN_PROGRESS",
+  PAYMENT_WINDOW_CLOSED: "PAYMENT_WINDOW_CLOSED",
+  WEBHOOK_SIGNATURE_INVALID: "WEBHOOK_SIGNATURE_INVALID",
+  IDEMPOTENCY_KEY_REUSED: "IDEMPOTENCY_KEY_REUSED",
+  IDEMPOTENCY_KEY_MISSING: "IDEMPOTENCY_KEY_MISSING",
+} as const;
+
+export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];
+
+/** The `Error` schema of the API contract. */
+export interface ErrorBody {
+  statusCode: number;
+  code: ErrorCode;
+  message: string;
+  details?: Record<string, unknown>;
+}
