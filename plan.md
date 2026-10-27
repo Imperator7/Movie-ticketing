@@ -26,21 +26,21 @@ A phase isn't done until its unit tests pass in CI. Integration and e2e suites c
 
 ## 3. Stack
 
-| Area          | Choice                                                                                                                   |
-| ------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| Repo          | npm workspaces + **Turborepo** (cached builds). Node 24 (`.nvmrc`), TypeScript strict everywhere                         |
-| Quality       | ESLint (typed rules), Prettier, Husky + lint-staged, commitlint (Conventional Commits), gitleaks                         |
-| Web           | Next.js 16 static export, Tailwind v4, shadcn/ui, next-intl (`/th`, `/en`), Storybook (UI components, seat map)          |
-| Web state     | TanStack Query (server state), Zustand (session only), React Hook Form + Zod (forms), URL (filters, date, `?seats=`)     |
-| API client    | orval → typed fetchers, Query hooks, Zod schemas and **MSW mocks** from OpenAPI                                          |
-| API           | NestJS 12 (ESM), **nestjs-zod** (Zod DTOs → OpenAPI), Prisma, PostgreSQL 17, pino, helmet, throttler, `@nestjs/schedule` |
-| Auth          | Email + password first, **LINE Login (OAuth 2.0)** later. JWT 15 min + rotating refresh cookie with family revocation    |
-| Payments      | Stripe PaymentIntents + Payment Element (`card`, `promptpay`), webhooks                                                  |
-| Observability | Request ids end to end, pino JSON logs, Sentry (web + api)                                                               |
-| Tests         | **Vitest everywhere** (web + api unit), **Testcontainers** Postgres (api integration), Playwright (e2e)                  |
-| Run           | Docker Compose: postgres, api, web (nginx + `/api` forwarding + security headers), stripe-cli                            |
-| CI            | GitHub Actions from Phase 1: lint, typecheck, spec lint, tests, build, audit, gitleaks                                   |
-| Later         | AWS (S3 + CloudFront, ALB + ECS Fargate, RDS), Terraform, GitHub OIDC deploys                                            |
+| Area          | Choice                                                                                                                     |
+| ------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| Repo          | npm workspaces + **Turborepo** (cached builds). Node 24 (`.nvmrc`), TypeScript strict everywhere                           |
+| Quality       | ESLint (typed rules), Prettier, Husky + lint-staged, commitlint (Conventional Commits), gitleaks                           |
+| Web           | Next.js 16 static export, Tailwind v4, shadcn/ui, next-intl (`/th`, `/en`), `/design-system` as the component catalog (S9) |
+| Web state     | TanStack Query (server state), Zustand (session only), React Hook Form + Zod (forms), URL (filters, date, `?seats=`)       |
+| API client    | orval → typed fetchers, Query hooks, Zod schemas and **MSW mocks** from OpenAPI                                            |
+| API           | NestJS 12 (ESM), **nestjs-zod** (Zod DTOs → OpenAPI), Prisma, PostgreSQL 17, pino, helmet, throttler, `@nestjs/schedule`   |
+| Auth          | Email + password first, **LINE Login (OAuth 2.0)** later. JWT 15 min + rotating refresh cookie with family revocation      |
+| Payments      | Stripe PaymentIntents + Payment Element (`card`, `promptpay`), webhooks                                                    |
+| Observability | Request ids end to end, pino JSON logs, Sentry (web + api)                                                                 |
+| Tests         | **Vitest everywhere** (web + api unit), **Testcontainers** Postgres (api integration), Playwright (e2e)                    |
+| Run           | Docker Compose: postgres, api, web (nginx + `/api` forwarding + security headers), stripe-cli                              |
+| CI            | GitHub Actions from Phase 1: lint, typecheck, spec lint, tests, build, audit, gitleaks                                     |
+| Later         | AWS (S3 + CloudFront, ALB + ECS Fargate, RDS), Terraform, GitHub OIDC deploys                                              |
 
 ## 4. Work checklist
 
@@ -95,7 +95,7 @@ exists and is tested against the contract-faithful mock API. It's ticked only on
 - [x] MSW in development so pages can be built before endpoints exist
 - [x] App shell: header, language switcher, footer (TMDB attribution), error boundary, not-found, loading skeletons
 - [x] Dev pages excluded from production build (WEB-1)
-- [ ] Storybook _(open question: `/design-system` already serves as the live component catalog. Keep or drop?)_
+- [x] ~~Storybook~~ dropped (S9): `/design-system` is the live component catalog
 
 ### Phase 2: Auth (email + password)
 
@@ -137,7 +137,7 @@ exists and is tested against the contract-faithful mock API. It's ticked only on
 - [ ] `getActiveBooking`, `getBooking`, `listMyBookings`, `cancelBooking`, all scoped by user (API-1)
 - [ ] Expiry job every 30 s with an advisory lock: cancel PaymentIntent → `PAYMENT_TIMEOUT` + unlock. Also cleans idempotency keys
       **WEB**
-- [ ] Seat map component (Storybook stories for every state), keyboard navigation + aria labels, mobile pinch/zoom
+- [ ] Seat map component (every state on `/design-system`), keyboard navigation + aria labels, mobile pinch/zoom
 - [ ] 🧪 `/showtime?id=&seats=`: 10 s polling while visible, "seat just taken" UX (§6), price summary
 - [ ] 🧪 Buy → login if needed → `createBooking` (Idempotency-Key per click) → `/checkout`
 - [ ] 🧪 Active-booking banner, blocked back navigation (§6)
@@ -235,9 +235,10 @@ Buy is disabled if nothing is left. The rest of the selection is kept.
 | R4–R7 | Time's-up dialog · translated error codes · full Compose stack · test plan per Phase 7                                                                                             |
 | S1    | Backend validation with **nestjs-zod** (Zod everywhere)                                                                                                                            |
 | S2    | Refresh token families, Origin check, booking audit trail, idempotency keys, CHECK constraints, advisory-locked jobs, split DB roles                                               |
-| S3    | Production-grade tooling from Phase 1: Turborepo, strict lint, CI, gitleaks, MSW, Storybook, Testcontainers, Sentry                                                                |
+| S3    | Production-grade tooling from Phase 1: Turborepo, strict lint, CI, gitleaks, MSW, Testcontainers, Sentry (Storybook later dropped, S9)                                             |
 | S4    | NestJS 12 scaffold kept. **Vitest** for the API too (one test runner repo-wide)                                                                                                    |
 | S5    | Movie ratings use the **Thai system**: PROMOTED, GENERAL, AGE_13, AGE_15, AGE_18, AGE_20                                                                                           |
 | S6    | Work split: one Sonnet subagent for frontend, one for backend, each in its own worktree. One plan item at a time, reviewed by the lead before merging into `main`                  |
 | S7    | Design system "Marquee" **approved** (dark-first cinema theme, Prompt / Inter / IBM Plex Sans Thai, seat-state and Thai-rating tokens). Reference: `/design-system` (dev only)     |
 | S8    | Occupied seats (BOOKED and HELD by others) show a **plain filled person icon** instead of ✕, colour still tells sold (grey) from being-paid (amber stripes). Product owner request |
+| S9    | **Storybook dropped.** `/design-system` (dev-only page) already renders every token and cinema component state. Product owner, 2026-10-28                                          |
