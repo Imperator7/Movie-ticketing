@@ -141,7 +141,7 @@ exists and is tested against the contract-faithful mock API. It's ticked only on
 - [ ] 🧪 `/showtime?id=&seats=`: 10 s polling while visible, "seat just taken" UX (§6), price summary
 - [ ] 🧪 Buy → login if needed → `createBooking` (Idempotency-Key per click) → `/checkout`
 - [ ] 🧪 Active-booking banner, blocked back navigation (§6)
-- [ ] 🧪 **Optimistic seat map:** Buy previews your seats as held (polling paused, cache primed for checkout), cancel releases them instantly. Rollback on `SEAT_TAKEN` / errors. The DB stays the source of truth
+- [ ] 🧪 **Optimistic seat map:** Buy previews your seats as held (polling paused, cache primed for checkout), cancel releases them instantly. Rollback on `SEAT_TAKEN` / errors. The DB stays the source of truth. On rollback: apology toast ("ขออภัย ที่นั่ง A5 มีผู้จองไปแล้ว"), and the taken seats show as occupied immediately
 
 ### Phase 5: Payment
 
@@ -215,28 +215,29 @@ Buy is disabled if nothing is left. The rest of the selection is kept.
 
 ## 7. Decisions log
 
-| #     | Decision                                                                                                                                                                       |
-| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| D1    | Types: OpenAPI → orval (fetchers, Query hooks, Zod, MSW mocks)                                                                                                                 |
-| D2    | Tokens: access in memory, refresh in httpOnly cookie                                                                                                                           |
-| D3    | Zustand: session only. Seat selection lives in the URL                                                                                                                         |
-| D4    | UI: shadcn/ui                                                                                                                                                                  |
-| G1    | MVP done = Docker Compose locally + all tests. **Unit tests with each phase** (updated), integration + e2e in Phase 7                                                          |
-| G2    | Thai Stripe account: card + PromptPay                                                                                                                                          |
-| G3    | Guests browse and pick seats. Login only to buy                                                                                                                                |
-| G4    | Payment window 5 min, seat hold 6 min, locks only in the DB. Unpaid → `CANCELLED (PAYMENT_TIMEOUT)`. Late payment → auto refund                                                |
-| G5    | Max 4 seats. Booking open until start + 30 min. No refunds or cancellation after payment. Couple seats → backlog                                                               |
-| G6    | Seed from TMDB snapshot JSON. Posters as TMDB URLs. Showtimes today → +30 days                                                                                                 |
-| G7    | Thai default + English: `*_th` / `*_en` columns, next-intl, `/th` `/en` routes                                                                                                 |
-| G8    | Git, commit at checkpoints                                                                                                                                                     |
-| R1    | Auth: email + password first, LINE Login later. Schema ready now (`auth_identities`)                                                                                           |
-| R2    | Seat map polls every 10 s, with "seat just taken" UX                                                                                                                           |
-| R3    | One active booking, blocked (not auto-cancelled), global banner, blocked back navigation                                                                                       |
-| R4–R7 | Time's-up dialog · translated error codes · full Compose stack · test plan per Phase 7                                                                                         |
-| S1    | Backend validation with **nestjs-zod** (Zod everywhere)                                                                                                                        |
-| S2    | Refresh token families, Origin check, booking audit trail, idempotency keys, CHECK constraints, advisory-locked jobs, split DB roles                                           |
-| S3    | Production-grade tooling from Phase 1: Turborepo, strict lint, CI, gitleaks, MSW, Storybook, Testcontainers, Sentry                                                            |
-| S4    | NestJS 12 scaffold kept. **Vitest** for the API too (one test runner repo-wide)                                                                                                |
-| S5    | Movie ratings use the **Thai system**: PROMOTED, GENERAL, AGE_13, AGE_15, AGE_18, AGE_20                                                                                       |
-| S6    | Work split: one Sonnet subagent for frontend, one for backend, each in its own worktree. One plan item at a time, reviewed by the lead before merging into `main`              |
-| S7    | Design system "Marquee" **approved** (dark-first cinema theme, Prompt / Inter / IBM Plex Sans Thai, seat-state and Thai-rating tokens). Reference: `/design-system` (dev only) |
+| #     | Decision                                                                                                                                                                           |
+| ----- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| D1    | Types: OpenAPI → orval (fetchers, Query hooks, Zod, MSW mocks)                                                                                                                     |
+| D2    | Tokens: access in memory, refresh in httpOnly cookie                                                                                                                               |
+| D3    | Zustand: session only. Seat selection lives in the URL                                                                                                                             |
+| D4    | UI: shadcn/ui                                                                                                                                                                      |
+| G1    | MVP done = Docker Compose locally + all tests. **Unit tests with each phase** (updated), integration + e2e in Phase 7                                                              |
+| G2    | Thai Stripe account: card + PromptPay                                                                                                                                              |
+| G3    | Guests browse and pick seats. Login only to buy                                                                                                                                    |
+| G4    | Payment window 5 min, seat hold 6 min, locks only in the DB. Unpaid → `CANCELLED (PAYMENT_TIMEOUT)`. Late payment → auto refund                                                    |
+| G5    | Max 4 seats. Booking open until start + 30 min. No refunds or cancellation after payment. Couple seats → backlog                                                                   |
+| G6    | Seed from TMDB snapshot JSON. Posters as TMDB URLs. Showtimes today → +30 days                                                                                                     |
+| G7    | Thai default + English: `*_th` / `*_en` columns, next-intl, `/th` `/en` routes                                                                                                     |
+| G8    | Git, commit at checkpoints                                                                                                                                                         |
+| R1    | Auth: email + password first, LINE Login later. Schema ready now (`auth_identities`)                                                                                               |
+| R2    | Seat map polls every 10 s, with "seat just taken" UX                                                                                                                               |
+| R3    | One active booking, blocked (not auto-cancelled), global banner, blocked back navigation                                                                                           |
+| R4–R7 | Time's-up dialog · translated error codes · full Compose stack · test plan per Phase 7                                                                                             |
+| S1    | Backend validation with **nestjs-zod** (Zod everywhere)                                                                                                                            |
+| S2    | Refresh token families, Origin check, booking audit trail, idempotency keys, CHECK constraints, advisory-locked jobs, split DB roles                                               |
+| S3    | Production-grade tooling from Phase 1: Turborepo, strict lint, CI, gitleaks, MSW, Storybook, Testcontainers, Sentry                                                                |
+| S4    | NestJS 12 scaffold kept. **Vitest** for the API too (one test runner repo-wide)                                                                                                    |
+| S5    | Movie ratings use the **Thai system**: PROMOTED, GENERAL, AGE_13, AGE_15, AGE_18, AGE_20                                                                                           |
+| S6    | Work split: one Sonnet subagent for frontend, one for backend, each in its own worktree. One plan item at a time, reviewed by the lead before merging into `main`                  |
+| S7    | Design system "Marquee" **approved** (dark-first cinema theme, Prompt / Inter / IBM Plex Sans Thai, seat-state and Thai-rating tokens). Reference: `/design-system` (dev only)     |
+| S8    | Occupied seats (BOOKED and HELD by others) show a **plain filled person icon** instead of ✕, colour still tells sold (grey) from being-paid (amber stripes). Product owner request |
