@@ -145,6 +145,7 @@ Each phase lists **DB**, **API** and **WEB** work. Security ids refer to `docs/s
       **WEB**
 - [ ] `/checkout?bookingId=`: Payment Element (Card + PromptPay QR), 5:00 countdown synced to server time, "Time's up" dialog (WEB-8)
 - [ ] `/checkout/complete`: polls `getBooking` until CONFIRMED / CANCELLED, handles the late-refund case
+- [ ] Replace `DemoPaymentPanel` with the Stripe panel in production and make `finalize-build.mjs` fail on `__demo` in `out/` (the demo panel currently ships because it is the only panel)
 - [ ] Verify with Stripe CLI: test Mastercard `5555 5555 5555 4444`, decline cards, PromptPay authorize / fail
 
 ### Phase 6: Tickets

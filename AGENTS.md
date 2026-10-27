@@ -14,16 +14,17 @@ work, as long as it genuinely helps.
 
 Update this table when an item is merged. Details live in `plan.md` §4.
 
-| Area               | State                                                                                                                                                                                                                                                                             |
-| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Phase 0: Design    | ✅ Done: ER diagram, DB design, OpenAPI contract, security doc, grilling decisions                                                                                                                                                                                                |
-| Repo / DevOps      | ✅ Turborepo, shared TS + ESLint configs, Prettier, Husky, commitlint, CI workflow (not yet pushed to GitHub), Dependabot                                                                                                                                                         |
-| Design system      | ✅ "Marquee" theme + cinema components, **approved** (`/design-system`)                                                                                                                                                                                                           |
-| Database           | ✅ Prisma schema, hand-written constraints, roles (`migrator` / `app_user`), 26/26 constraint checks. ✅ Idempotent seed (2 cinemas, 6 halls, 992 seats, 31 days of showtimes) from `movies.sample.json`. ⏳ Real movies need `TMDB_API_KEY` → `npm run seed:fetch-movies -w api` |
-| API foundation     | ✅ Config (validated env), PrismaService (app_user, pool), pino + request id + redaction, contract error filter, nestjs-zod strict validation, Swagger (dev), helmet/CORS/limits, health live/ready + graceful drain, Testcontainers harness. 67 unit + 3 integration tests       |
-| Web foundation     | ✅ next-intl `/th` `/en` (typed messages, all error codes), React Query, api-client (bearer, request id, single-flight refresh), Zustand session, orval client + Zod + MSW mocks (committed), app shell, dev pages excluded from prod. 115 web tests                              |
-| Auth (Phase 2 API) | ✅ register/login/refresh/logout/me, argon2id, JWT (jose, HS256 pinned), rotating refresh cookie + family revocation (10 s racing-tab grace), Origin guard, rate limits, demo user seed. 202 unit + 32 integration tests                                                          |
-| Next up            | 🔄 Frontend: clickable demo (in progress). Web needs cross-tab refresh lock (Web Locks) per database-design §14. Backend: Phase 3 catalog (awaiting go-ahead)                                                                                                                     |
+| Area               | State                                                                                                                                                                                                                                                                                       |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Phase 0: Design    | ✅ Done: ER diagram, DB design, OpenAPI contract, security doc, grilling decisions                                                                                                                                                                                                          |
+| Repo / DevOps      | ✅ Turborepo, shared TS + ESLint configs, Prettier, Husky, commitlint, CI workflow (not yet pushed to GitHub), Dependabot                                                                                                                                                                   |
+| Design system      | ✅ "Marquee" theme + cinema components, **approved** (`/design-system`)                                                                                                                                                                                                                     |
+| Database           | ✅ Prisma schema, hand-written constraints, roles (`migrator` / `app_user`), 26/26 constraint checks. ✅ Idempotent seed (2 cinemas, 6 halls, 992 seats, 31 days of showtimes) from `movies.sample.json`. ⏳ Real movies need `TMDB_API_KEY` → `npm run seed:fetch-movies -w api`           |
+| API foundation     | ✅ Config (validated env), PrismaService (app_user, pool), pino + request id + redaction, contract error filter, nestjs-zod strict validation, Swagger (dev), helmet/CORS/limits, health live/ready + graceful drain, Testcontainers harness. 67 unit + 3 integration tests                 |
+| Web foundation     | ✅ next-intl `/th` `/en` (typed messages, all error codes), React Query, api-client (bearer, request id, single-flight refresh), Zustand session, orval client + Zod + MSW mocks (committed), app shell, dev pages excluded from prod. 115 web tests                                        |
+| Auth (Phase 2 API) | ✅ register/login/refresh/logout/me, argon2id, JWT (jose, HS256 pinned), rotating refresh cookie + family revocation (10 s racing-tab grace), Origin guard, rate limits, demo user seed. 202 unit + 32 integration tests                                                                    |
+| Clickable demo     | ✅ All customer screens on a stateful mock API (TH/EN): browse → seats → login → checkout (demo card / PromptPay) → ticket QR → my bookings, active-booking banner, back-block, time's up, seat taken, cross-tab refresh lock, demo controls. 205 web tests. Run: `npm run dev:mock -w web` |
+| Next up            | Phase 3 catalog API (awaiting go-ahead), then switch the web from mocks to the real API screen by screen                                                                                                                                                                                    |
 
 ## 3. Source of truth
 
@@ -175,6 +176,7 @@ package-lock.json && npm install` (rebuilds from the merged package.json files),
 - Web routes live under `src/app/[locale]/`. Dev pages are `page.dev.tsx` in `src/app/(dev)/` and only exist when
   `INCLUDE_DEV_PAGES=1` (set by `npm run dev`). `scripts/finalize-build.mjs` fails the build if dev pages or the MSW
   worker reach `out/`.
-- The embedded browser pane may block service workers, so the MSW worker isn't guaranteed there (an in-process mock
-  fallback is planned in the demo item).
+- The embedded browser pane may block service workers. In mock mode the api-client falls back to in-process MSW
+  (`getResponse`) after 2.5 s, so mocks work everywhere.
+- `DemoPaymentPanel` (and `POST /__demo/pay`) is a stand-in until Phase 5 Stripe. It currently ships in prod builds.
 - shadcn's CLI asks for a preset interactively. Pass `-p nova -b radix` and close stdin.
