@@ -8,3 +8,6 @@ coverage/
 !.env.example
 .DS_Store
 *.log
+
+# Prisma generated client
+apps/api/src/generated/

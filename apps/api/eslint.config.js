@@ -1,7 +1,7 @@
 import { nest } from "@movie/eslint-config/nest";
 
 export default [
-  { ignores: ["dist/**", "coverage/**"] },
+  { ignores: ["dist/**", "coverage/**", "src/generated/**"] },
   ...nest,
   {
     languageOptions: {
