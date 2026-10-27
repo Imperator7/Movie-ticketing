@@ -224,6 +224,13 @@ describe("auth (real database)", () => {
       const second = refreshCookie(await refresh(first)).value;
       const third = refreshCookie(await refresh(second)).value; // legitimate rotations
 
+      // Time passes beyond REFRESH_REUSE_GRACE_MS (10 s), so a replay is theft, not a racing tab.
+      await queryOne(
+        `UPDATE refresh_tokens t SET revoked_at = t.revoked_at - interval '1 minute'
+         FROM users u WHERE u.id = t.user_id AND u.email = $1 AND t.revoked_at IS NOT NULL`,
+        [email],
+      );
+
       // An attacker replays the first (revoked) token.
       const replay = await refresh(first);
       expect(replay.status).toBe(401);

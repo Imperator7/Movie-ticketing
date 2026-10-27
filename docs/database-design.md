@@ -180,8 +180,18 @@ TMDB attribution in the footer.
 
 Every login starts a new `family_id`. Each refresh revokes the presented token and issues a new one in the same family.
 If an **already-revoked** token is presented again, someone else has a copy, so **every token in the family is
-revoked** and the user must log in again. Done in one transaction with `SELECT … FOR UPDATE` on the token row, so two
-tabs refreshing at the same moment don't trigger a false alarm. The web also makes refresh single-flight.
+revoked** and the user must log in again. Done in one transaction with `SELECT … FOR UPDATE` on the token row.
+
+**Racing tabs vs theft.** Two tabs refreshing at once look exactly like reuse: after the row lock, the loser presents a
+token that was revoked a moment ago. So:
+
+- **Server:** a token revoked less than `REFRESH_REUSE_GRACE_MS` ago (default **10 s**) gets a plain
+  `401 REFRESH_TOKEN_INVALID` and the family is **kept**. Older reuse still revokes the whole family. The cost is a
+  10-second window where a stolen token replay isn't flagged (it still fails).
+- **Web:** refresh is single-flight inside a tab **and** serialized across tabs with the Web Locks API
+  (`navigator.locks`). The refresh cookie is shared by all tabs, so the tab that waited refreshes with the new cookie.
+  If a refresh still returns `REFRESH_TOKEN_INVALID`, it retries once (after taking the lock again) before treating
+  the user as logged out.
 
 ### 15. Booking audit trail
 

@@ -120,7 +120,7 @@ describe("validateEnv", () => {
         JWT_ISSUER: "movie-ticketing-api",
         JWT_AUDIENCE: "movie-ticketing-web",
         WEB_ORIGINS: ["http://localhost:3000"],
-        REFRESH_REUSE_GRACE_MS: 0,
+        REFRESH_REUSE_GRACE_MS: 10_000,
         RATE_LIMIT_GLOBAL_PER_MIN: 300,
         RATE_LIMIT_AUTH_PER_MIN: 10,
         RATE_LIMIT_LOGIN_PER_EMAIL_PER_MIN: 5,
