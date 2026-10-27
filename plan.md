@@ -141,6 +141,7 @@ exists and is tested against the contract-faithful mock API. It's ticked only on
 - [ ] 🧪 `/showtime?id=&seats=`: 10 s polling while visible, "seat just taken" UX (§6), price summary
 - [ ] 🧪 Buy → login if needed → `createBooking` (Idempotency-Key per click) → `/checkout`
 - [ ] 🧪 Active-booking banner, blocked back navigation (§6)
+- [ ] 🧪 **Optimistic seat map:** Buy previews your seats as held (polling paused, cache primed for checkout), cancel releases them instantly. Rollback on `SEAT_TAKEN` / errors. The DB stays the source of truth
 
 ### Phase 5: Payment
 
