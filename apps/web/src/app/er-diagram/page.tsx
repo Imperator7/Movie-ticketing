@@ -1,10 +1,10 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import type { Element } from "hast";
 import type { Metadata } from "next";
 import Markdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { MermaidDiagram } from "@/components/mermaid-diagram";
+import { mermaidSource } from "@/lib/diagram";
 
 export const metadata: Metadata = {
   title: "ER Diagram · Movie Ticketing",
@@ -12,15 +12,6 @@ export const metadata: Metadata = {
 };
 
 const docsDir = path.join(process.cwd(), "..", "..", "docs");
-
-/** Returns the source of a ```mermaid fenced block, or null for any other <pre>. */
-function mermaidSource(pre: Element | undefined): string | null {
-  const code = pre?.children[0];
-  if (code?.type !== "element" || code.tagName !== "code") return null;
-  const classes = code.properties.className;
-  if (!Array.isArray(classes) || !classes.includes("language-mermaid")) return null;
-  return code.children.map((child) => (child.type === "text" ? child.value : "")).join("");
-}
 
 const markdownComponents: Components = {
   // Render ```mermaid blocks in the design notes as diagrams instead of code.

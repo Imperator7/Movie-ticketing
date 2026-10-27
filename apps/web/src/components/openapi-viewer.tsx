@@ -3,9 +3,9 @@
 import { useEffect, useRef } from "react";
 import "swagger-ui-dist/swagger-ui.css";
 
-type Props = {
+interface Props {
   spec: Record<string, unknown>;
-};
+}
 
 export function OpenApiViewer({ spec }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -28,7 +28,9 @@ export function OpenApiViewer({ spec }: Props) {
       });
     }
 
-    render();
+    render().catch((err: unknown) => {
+      console.error("Failed to render the OpenAPI viewer", err);
+    });
     return () => {
       cancelled = true;
     };

@@ -1,0 +1,8 @@
+{
+  "extends": "@movie/tsconfig/nestjs.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "types": ["vitest/globals", "node"]
+  },
+  "include": ["src", "test", "*.ts"]
+}

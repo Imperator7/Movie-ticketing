@@ -4,15 +4,15 @@ What we protect, from whom, and the control in each layer. Every control has a c
 
 ## Assets and threats
 
-| Asset | Threat | Main controls |
-|---|---|---|
-| Other users' bookings and tickets | IDOR (guessing or changing ids) | Ownership in every query (§API-1), 404 not 403, integration tests per endpoint |
-| Money / ticket integrity | Client tampering with prices, forged confirmations | Server-side pricing, webhook-only confirmation, amount check, signed ticket QR |
-| Seats | Hoarding, double-booking, race conditions | DB unique indexes, 1 active booking, 4-seat max, holds expire, rate limits |
-| Accounts | Credential stuffing, stolen tokens, CSRF | argon2id, rate limits, short JWT, refresh rotation + family revocation, SameSite + Origin check |
-| Personal data (PDPA) | Leaks through logs, errors, over-collection | Log redaction, generic errors, minimal fields |
-| Secrets | Leaking keys | Env validation, Secrets Manager, never in git or logs, separate test and live keys |
-| Availability | Abuse, bad deploys | Rate limits, readiness checks, graceful shutdown, alarms |
+| Asset                             | Threat                                             | Main controls                                                                                   |
+| --------------------------------- | -------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| Other users' bookings and tickets | IDOR (guessing or changing ids)                    | Ownership in every query (§API-1), 404 not 403, integration tests per endpoint                  |
+| Money / ticket integrity          | Client tampering with prices, forged confirmations | Server-side pricing, webhook-only confirmation, amount check, signed ticket QR                  |
+| Seats                             | Hoarding, double-booking, race conditions          | DB unique indexes, 1 active booking, 4-seat max, holds expire, rate limits                      |
+| Accounts                          | Credential stuffing, stolen tokens, CSRF           | argon2id, rate limits, short JWT, refresh rotation + family revocation, SameSite + Origin check |
+| Personal data (PDPA)              | Leaks through logs, errors, over-collection        | Log redaction, generic errors, minimal fields                                                   |
+| Secrets                           | Leaking keys                                       | Env validation, Secrets Manager, never in git or logs, separate test and live keys              |
+| Availability                      | Abuse, bad deploys                                 | Rate limits, readiness checks, graceful shutdown, alarms                                        |
 
 ## Frontend (web)
 
@@ -21,7 +21,7 @@ What we protect, from whom, and the control in each layer. Every control has a c
 - **WEB-3 Other headers:** HSTS, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy` (camera, mic and geolocation off).
 - **WEB-4 Tokens:** access token in memory only, never in localStorage. The refresh token is an httpOnly cookie that JS can't read.
 - **WEB-5 Redirects:** `?next=` only accepts relative paths starting with `/th/` or `/en/` (open-redirect protection).
-- **WEB-6 Env:** only `NEXT_PUBLIC_*` values that are safe to be public (API base path, Stripe *publishable* key).
+- **WEB-6 Env:** only `NEXT_PUBLIC_*` values that are safe to be public (API base path, Stripe _publishable_ key).
 - **WEB-7 Errors:** show translated messages for error codes. Never render raw server text. Error boundaries per route. Report errors to Sentry with the request id.
 - **WEB-8 Payments:** card and PromptPay data only inside Stripe's Payment Element iframe (PCI SAQ A).
 

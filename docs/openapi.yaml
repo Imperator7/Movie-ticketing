@@ -858,7 +858,8 @@ components:
     ShowtimeSlot:
       type: object
       description: One time button in the showtime list
-      required: [id, startsAt, format, audioLanguage, hallNumber, hallType, fromPriceBaht, seatsLeft]
+      required:
+        [id, startsAt, format, audioLanguage, hallNumber, hallType, fromPriceBaht, seatsLeft]
       properties:
         id: { type: string, format: uuid }
         startsAt: { type: string, format: date-time }
@@ -892,7 +893,20 @@ components:
 
     ShowtimeDetail:
       type: object
-      required: [id, movie, cinema, hall, startsAt, endsAt, format, audioLanguage, prices, bookingClosesAt, isBookable]
+      required:
+        [
+          id,
+          movie,
+          cinema,
+          hall,
+          startsAt,
+          endsAt,
+          format,
+          audioLanguage,
+          prices,
+          bookingClosesAt,
+          isBookable,
+        ]
       properties:
         id: { type: string, format: uuid }
         movie: { $ref: "#/components/schemas/MovieSummary" }
@@ -992,7 +1006,18 @@ components:
     Booking:
       type: object
       required:
-        [id, bookingCode, status, showtime, seats, totalBaht, currency, paymentExpiresAt, holdExpiresAt, createdAt]
+        [
+          id,
+          bookingCode,
+          status,
+          showtime,
+          seats,
+          totalBaht,
+          currency,
+          paymentExpiresAt,
+          holdExpiresAt,
+          createdAt,
+        ]
       properties:
         id: { type: string, format: uuid }
         bookingCode: { type: string, examples: [MT-7KQ2XP] }

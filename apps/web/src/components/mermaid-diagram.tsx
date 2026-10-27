@@ -1,25 +1,14 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
+import { clampZoom, fitZoom, svgWidth } from "@/lib/diagram";
 
-type Props = {
+interface Props {
   chart: string;
-};
-
-const MIN_ZOOM = 0.25;
-const MAX_ZOOM = 3;
-
-/** Natural width of a mermaid SVG, read from its viewBox. */
-function svgWidth(svg: string): number | null {
-  const match = svg.match(/viewBox="[\d.-]+ [\d.-]+ ([\d.]+) [\d.]+"/);
-  return match ? Number(match[1]) : null;
 }
 
-/** Zoom level that fits the diagram into the viewport width (never upscales). */
-function fitZoom(viewport: HTMLElement, naturalWidth: number): number {
-  const available = viewport.clientWidth - 32; // minus p-4 padding
-  return Math.min(1, Math.max(MIN_ZOOM, +(available / naturalWidth).toFixed(2)));
-}
+/** Horizontal padding of the viewport (p-4 on both sides). */
+const VIEWPORT_PADDING = 32;
 
 export function MermaidDiagram({ chart }: Props) {
   const id = useId().replace(/:/g, "");
@@ -32,7 +21,7 @@ export function MermaidDiagram({ chart }: Props) {
   const fitToWidth = () => {
     const viewport = viewportRef.current;
     if (!viewport || !naturalWidth) return;
-    setZoom(fitZoom(viewport, naturalWidth));
+    setZoom(fitZoom(viewport.clientWidth - VIEWPORT_PADDING, naturalWidth));
   };
 
   useEffect(() => {
@@ -56,7 +45,7 @@ export function MermaidDiagram({ chart }: Props) {
           const width = svgWidth(result.svg);
           const viewport = viewportRef.current;
           if (width && viewport) {
-            setZoom(fitZoom(viewport, width));
+            setZoom(fitZoom(viewport.clientWidth - VIEWPORT_PADDING, width));
           }
         }
       } catch (err) {
@@ -64,16 +53,21 @@ export function MermaidDiagram({ chart }: Props) {
       }
     }
 
-    render();
-    media.addEventListener("change", render);
+    // render() reports its own errors through setError, so the promise can be ignored safely.
+    const rerender = () => {
+      void render();
+    };
+    rerender();
+    media.addEventListener("change", rerender);
     return () => {
       cancelled = true;
-      media.removeEventListener("change", render);
+      media.removeEventListener("change", rerender);
     };
   }, [chart, id]);
 
-  const changeZoom = (delta: number) =>
-    setZoom((z) => Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, +(z + delta).toFixed(2))));
+  const changeZoom = (delta: number) => {
+    setZoom((z) => clampZoom(z + delta));
+  };
 
   if (error) {
     return (
@@ -89,7 +83,9 @@ export function MermaidDiagram({ chart }: Props) {
       <div className="flex items-center gap-2 border-b border-neutral-200 px-3 py-2 text-sm dark:border-neutral-800">
         <button
           type="button"
-          onClick={() => changeZoom(-0.25)}
+          onClick={() => {
+            changeZoom(-0.25);
+          }}
           className="rounded border border-neutral-300 px-2 py-0.5 hover:bg-neutral-100 dark:border-neutral-700 dark:hover:bg-neutral-800"
           aria-label="Zoom out"
         >
@@ -98,7 +94,9 @@ export function MermaidDiagram({ chart }: Props) {
         <span className="w-12 text-center tabular-nums">{Math.round(zoom * 100)}%</span>
         <button
           type="button"
-          onClick={() => changeZoom(0.25)}
+          onClick={() => {
+            changeZoom(0.25);
+          }}
           className="rounded border border-neutral-300 px-2 py-0.5 hover:bg-neutral-100 dark:border-neutral-700 dark:hover:bg-neutral-800"
           aria-label="Zoom in"
         >
@@ -113,14 +111,19 @@ export function MermaidDiagram({ chart }: Props) {
         </button>
         <button
           type="button"
-          onClick={() => setZoom(1)}
+          onClick={() => {
+            setZoom(1);
+          }}
           className="text-neutral-500 hover:underline"
         >
           100%
         </button>
       </div>
 
-      <div ref={viewportRef} className="max-h-[75vh] overflow-auto bg-white p-4 dark:bg-neutral-950">
+      <div
+        ref={viewportRef}
+        className="max-h-[75vh] overflow-auto bg-white p-4 dark:bg-neutral-950"
+      >
         {svg ? (
           <div
             className="[&>svg]:h-auto [&>svg]:w-full [&>svg]:max-w-none"
