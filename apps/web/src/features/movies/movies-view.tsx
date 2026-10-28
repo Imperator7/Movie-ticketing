@@ -1,5 +1,6 @@
 "use client";
 
+import { keepPreviousData } from "@tanstack/react-query";
 import { Search, X } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
@@ -13,9 +14,12 @@ import { useRouter } from "@/i18n/navigation";
 import { pickText, toLocale } from "@/lib/localized";
 import { cn } from "cn";
 import { MovieGrid, MovieGridSkeleton } from "./movie-card";
+import { moviesPath, parsePage } from "./movies-url";
 import { useDebouncedValue } from "./use-debounced-value";
 
 const SEARCH_DEBOUNCE_MS = 300;
+/** Page size of the catalog list; the API allows up to 50. */
+export const PAGE_SIZE = 12;
 
 /** `/movies?genre=&q=`: both filters live in the URL (the search box is debounced). */
 export function MoviesView() {
@@ -29,25 +33,19 @@ export function MoviesView() {
   const [text, setText] = useState(q);
   const debounced = useDebouncedValue(text, SEARCH_DEBOUNCE_MS);
 
+  const goToPage = (next: number) => {
+    router.replace(moviesPath({ genre, q, page: next }), { scroll: true });
+  };
+  // Changing a filter goes back to page 1 (moviesPath leaves the page out).
   const setFilters = (next: { genre?: string; q?: string }) => {
-    const query = new URLSearchParams();
-    const nextGenre = next.genre ?? genre;
-    const nextQ = next.q ?? q;
-    if (nextGenre) query.set("genre", nextGenre);
-    if (nextQ) query.set("q", nextQ);
-    const qs = query.toString();
-    router.replace(qs ? `/movies?${qs}` : "/movies", { scroll: false });
+    router.replace(moviesPath({ genre: next.genre ?? genre, q: next.q ?? q }), { scroll: false });
   };
 
   // Debounced search text -> URL.
   useEffect(() => {
     const trimmed = debounced.trim();
     if (trimmed === q) return;
-    const query = new URLSearchParams();
-    if (genre) query.set("genre", genre);
-    if (trimmed) query.set("q", trimmed);
-    const qs = query.toString();
-    router.replace(qs ? `/movies?${qs}` : "/movies", { scroll: false });
+    router.replace(moviesPath({ genre, q: trimmed }), { scroll: false });
     // `q` and `genre` come from the URL this effect writes to.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debounced]);
@@ -60,8 +58,14 @@ export function MoviesView() {
   }
 
   const genres = dataOf(useListGenres().data) ?? [];
-  const query = useListMovies({ genre: genre || undefined, q: q || undefined, pageSize: 50 });
-  const movies = dataOf(query.data)?.items;
+  const page = parsePage(params.get("page"));
+  const query = useListMovies(
+    { genre: genre || undefined, q: q || undefined, page, pageSize: PAGE_SIZE },
+    { query: { placeholderData: keepPreviousData } },
+  );
+  const result = dataOf(query.data);
+  const movies = result?.items;
+  const pages = result ? Math.max(1, Math.ceil(result.total / PAGE_SIZE)) : 1;
   const filtered = genre !== "" || q !== "";
 
   return (
@@ -119,7 +123,7 @@ export function MoviesView() {
         {movies ? (
           <>
             <p role="status" className="text-sm text-muted-foreground">
-              {t("resultCount", { count: movies.length })}
+              {t("resultCount", { count: result.total })}
             </p>
             {movies.length === 0 ? (
               <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-border p-10 text-center">
@@ -139,8 +143,41 @@ export function MoviesView() {
                 ) : null}
               </div>
             ) : (
-              <MovieGrid movies={movies} />
+              <div
+                aria-busy={query.isPlaceholderData || undefined}
+                className={query.isPlaceholderData ? "opacity-60" : undefined}
+              >
+                <MovieGrid movies={movies} />
+              </div>
             )}
+            {pages > 1 || page > 1 ? (
+              <nav
+                aria-label={t("pagination")}
+                className="flex items-center justify-center gap-3 pt-2"
+              >
+                <Button
+                  variant="outline"
+                  disabled={page <= 1}
+                  onClick={() => {
+                    goToPage(page - 1);
+                  }}
+                >
+                  {t("previous")}
+                </Button>
+                <span className="text-sm text-muted-foreground tabular">
+                  {t("pageOf", { page, pages })}
+                </span>
+                <Button
+                  variant="outline"
+                  disabled={page >= pages}
+                  onClick={() => {
+                    goToPage(page + 1);
+                  }}
+                >
+                  {t("next")}
+                </Button>
+              </nav>
+            ) : null}
           </>
         ) : null}
       </div>

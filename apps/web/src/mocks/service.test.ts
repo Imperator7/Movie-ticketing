@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
 import type { Booking, SeatMap } from "@/api/generated/model";
-import { nowShowing, bangkokDayIndex, seatLayout, seededStatus, showtimesOnDay } from "./catalog";
+import {
+  cinemas,
+  movies,
+  nowShowing,
+  bangkokDayIndex,
+  seatLayout,
+  seededStatus,
+  showtimesOnDay,
+} from "./catalog";
 import { createDb, DEMO_EMAIL, DEMO_PASSWORD, type MockDb, type MockUser } from "./db";
 import * as service from "./service";
 
@@ -292,5 +300,47 @@ describe("mock server: expiry, cancel and payment", () => {
     expect(Math.min(...rowA)).toBe(0);
     expect(new Set(rowA).size).toBe(rowA.length);
     expect(rowA).not.toContain(showtime.hallDef.aisleAfter);
+  });
+
+  it("covers today to +30 days in availableDates", () => {
+    const { db } = setup();
+    const movie = nowShowing[0];
+    const body = service.getMovieShowtimes(db, movie?.slug ?? "", "2026-10-28", null, T0).body as {
+      availableDates: string[];
+    };
+    expect(body.availableDates.length).toBeLessThanOrEqual(31);
+    expect(body.availableDates.every((d) => d >= "2026-10-28" && d <= "2026-11-27")).toBe(true);
+    expect(body.availableDates).toEqual([...body.availableDates].sort());
+  });
+
+  it("cinemaId also narrows availableDates to days that cinema shows the movie", () => {
+    const { db } = setup();
+    const movie = nowShowing[0];
+    const all = service.getMovieShowtimes(db, movie?.slug ?? "", "2026-10-28", null, T0).body as {
+      availableDates: string[];
+    };
+    const only = cinemas[1];
+    const narrowed = service.getMovieShowtimes(
+      db,
+      movie?.slug ?? "",
+      "2026-10-28",
+      only?.id ?? null,
+      T0,
+    ).body as { availableDates: string[]; cinemas: { cinema: { id: string } }[] };
+    expect(narrowed.availableDates.length).toBeLessThanOrEqual(all.availableDates.length);
+    expect(narrowed.cinemas.every((c) => c.cinema.id === only?.id)).toBe(true);
+    for (const d of narrowed.availableDates) expect(all.availableDates).toContain(d);
+  });
+
+  it("a coming-soon movie has showtimes from its release day on, none before", () => {
+    const { db } = setup();
+    const soon = movies.find((m) => m.status === "COMING_SOON");
+    expect(soon).toBeDefined();
+    const body = service.getMovieShowtimes(db, soon?.slug ?? "", "2026-10-28", null, T0).body as {
+      availableDates: string[];
+      cinemas: unknown[];
+    };
+    expect(body.cinemas).toEqual([]); // nothing on a day before release
+    for (const d of body.availableDates) expect(d >= (soon?.releaseDate ?? "")).toBe(true);
   });
 });

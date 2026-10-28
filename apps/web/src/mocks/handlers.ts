@@ -93,7 +93,10 @@ export const handlers: RequestHandler[] = [
         page,
         pageSize,
         total: filtered.length,
-        items: filtered.slice((page - 1) * pageSize, page * pageSize),
+        // MovieSummary only: the detail-only fields (backdrop, trailer, language) stay out of lists.
+        items: filtered
+          .slice((page - 1) * pageSize, page * pageSize)
+          .map(({ originalLanguage: _l, backdropUrl: _b, trailerUrl: _t, ...summary }) => summary),
       },
     };
   }),

@@ -87,7 +87,11 @@
     "comingSoon": "เร็ว ๆ นี้",
     "cardSeeShowtimes": "ดูรอบฉาย",
     "cardViewDetails": "ดูรายละเอียด",
-    "cardReleasesOn": "เข้าฉาย {date}"
+    "cardReleasesOn": "เข้าฉาย {date}",
+    "pagination": "เลือกหน้า",
+    "previous": "ก่อนหน้า",
+    "next": "ถัดไป",
+    "pageOf": "หน้า {page} จาก {pages}"
   },
   "movie": {
     "back": "ภาพยนตร์ทั้งหมด",
@@ -105,7 +109,11 @@
     "fewLeft": "เหลือ {count} ที่",
     "closed": "ปิดจอง",
     "releaseDate": "เข้าฉาย {date}",
-    "dateStrip": "วันที่ฉาย"
+    "dateStrip": "วันที่ฉาย",
+    "noShowtimesYet": "ยังไม่มีรอบฉาย",
+    "noShowtimesYetHint": "ยังไม่มีรอบฉายที่เปิดให้จองในขณะนี้ กลับมาดูใหม่เร็ว ๆ นี้",
+    "soldOut": "เต็ม",
+    "fromPrice": "เริ่ม {price}"
   },
   "seat": {
     "standard": "มาตรฐาน",

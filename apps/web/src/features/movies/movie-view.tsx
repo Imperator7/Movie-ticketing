@@ -3,7 +3,8 @@
 import { Clock } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { keepPreviousData } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 import { useGetMovie, useListMovieShowtimes } from "@/api/generated/endpoints/catalog/catalog";
 import type { ShowtimeFormat } from "@/api/generated/model";
 import { dataOf } from "@/api/unwrap";
@@ -13,7 +14,14 @@ import { PageContainer, QueryError } from "@/components/page-states";
 import { Skeleton } from "@/components/ui/skeleton";
 import { showtimePath } from "@/features/showtimes/seat-params";
 import { useRouter, Link } from "@/i18n/navigation";
-import { bangkokDate, formatDuration, formatShowDate } from "@/lib/format";
+import {
+  bangkokDate,
+  formatBaht,
+  formatDuration,
+  formatReleaseDate,
+  formatShowDate,
+} from "@/lib/format";
+import { isDateOnly, resolveShowDate } from "@/lib/show-date";
 import { otherText, pickText, toLocale } from "@/lib/localized";
 import { ApiError } from "@/lib/api-client";
 import { cn } from "cn";
@@ -71,16 +79,38 @@ export function MovieView() {
   const slug = params.get("slug") ?? "";
   const dateParam = params.get("date");
   const [today] = useState(() => bangkokDate(Date.now()));
-  const date = dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam) ? dateParam : today;
 
+  // The API needs a `date`: ask for the URL's day (or today) first. Once `availableDates` is known,
+  // a day without showtimes jumps to the first day that has some (see resolveShowDate).
+  // `keepPreviousData` keeps `availableDates` known while the next day loads.
   const movieQuery = useGetMovie(slug, { query: { enabled: slug !== "" } });
   const movie = dataOf(movieQuery.data);
-  const showtimesQuery = useListMovieShowtimes(
+  const requestedDate = isDateOnly(dateParam) ? dateParam : today;
+  const firstQuery = useListMovieShowtimes(
+    slug,
+    { date: requestedDate },
+    { query: { enabled: slug !== "", placeholderData: keepPreviousData } },
+  );
+  const { date, jumped } = resolveShowDate(
+    dateParam,
+    today,
+    dataOf(firstQuery.data)?.availableDates,
+  );
+  // Same cache entry as `firstQuery` unless we jumped to another day.
+  const dayQuery = useListMovieShowtimes(
     slug,
     { date },
-    { query: { enabled: slug !== "" && movie?.status === "NOW_SHOWING" } },
+    {
+      query: { enabled: slug !== "" && date !== requestedDate, placeholderData: keepPreviousData },
+    },
   );
+  const showtimesQuery = date === requestedDate ? firstQuery : dayQuery;
   const showtimes = dataOf(showtimesQuery.data);
+  useEffect(() => {
+    if (jumped && slug !== "") {
+      router.replace(`/movie?slug=${encodeURIComponent(slug)}&date=${date}`, { scroll: false });
+    }
+  }, [jumped, date, slug, router]);
 
   if (movieQuery.isError) {
     const missing = movieQuery.error instanceof ApiError && movieQuery.error.status === 404;
@@ -144,7 +174,9 @@ export function MovieView() {
                 {formatDuration(movie.durationMin, locale)}
               </span>
               <span>{movie.genres.map((g) => pickText(g.name, locale)).join(" / ")}</span>
-              <span>{t("releaseDate", { date: formatShowDate(movie.releaseDate, locale) })}</span>
+              <span>
+                {t("releaseDate", { date: formatReleaseDate(movie.releaseDate, locale) })}
+              </span>
             </p>
             <h2 className="mt-2 text-lg font-semibold">{t("synopsis")}</h2>
             <p className="max-w-prose text-muted-foreground">{pickText(movie.synopsis, locale)}</p>
@@ -156,10 +188,14 @@ export function MovieView() {
             {t("showtimes")}
           </h2>
 
-          {movie.status === "COMING_SOON" ? (
-            <p className="rounded-xl border border-dashed border-border p-6 text-muted-foreground">
-              {t("comingSoonNote")}
-            </p>
+          {showtimes && dates.length === 0 ? (
+            // No showtimes on any day yet (typical for a movie that is not out yet).
+            <div className="flex flex-col gap-1 rounded-xl border border-dashed border-border p-6">
+              <p className="font-medium">{t("noShowtimesYet")}</p>
+              <p className="text-sm text-muted-foreground">
+                {movie.status === "COMING_SOON" ? t("comingSoonNote") : t("noShowtimesYetHint")}
+              </p>
+            </div>
           ) : (
             <>
               <div
@@ -210,7 +246,14 @@ export function MovieView() {
                 </div>
               ) : null}
               {showtimes?.cinemas.map(({ cinema, showtimes: slots }) => (
-                <div key={cinema.id} className="flex flex-col gap-3">
+                <div
+                  key={cinema.id}
+                  aria-busy={showtimesQuery.isPlaceholderData || undefined}
+                  className={cn(
+                    "flex flex-col gap-3",
+                    showtimesQuery.isPlaceholderData && "opacity-50",
+                  )}
+                >
                   <div>
                     <h3 className="text-lg font-semibold">{pickText(cinema.name, locale)}</h3>
                     <p className="text-sm text-muted-foreground">
@@ -227,14 +270,15 @@ export function MovieView() {
                           closed={slot.seatsLeft === 0}
                           labels={{
                             fewSeatsLeft: (count) => t("fewLeft", { count }),
-                            closed: t("closed"),
+                            closed: t("soldOut"),
                           }}
                           onSelect={() => {
                             router.push(showtimePath(slot.id, []));
                           }}
                         />
                         <span className="text-xs text-muted-foreground">
-                          {t("hall", { number: slot.hallNumber })}
+                          {t("hall", { number: slot.hallNumber })} ·{" "}
+                          {t("fromPrice", { price: formatBaht(slot.fromPriceBaht, locale) })}
                         </span>
                       </li>
                     ))}

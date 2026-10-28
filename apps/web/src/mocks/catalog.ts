@@ -20,6 +20,8 @@ export interface Catalog {
   genres: Genre[];
   movies: MovieDetail[];
   nowShowing: MovieDetail[];
+  /** Movies that can have screenings: everything that has not ended (coming-soon ones from their release day). */
+  playable: MovieDetail[];
 }
 
 /** Builds the catalog from a fixture (generated from the API seed's movies file). */
@@ -29,12 +31,13 @@ export function buildCatalog(source: MoviesFixture): Catalog {
     genres: source.genres.map((g) => ({ ...g })),
     movies,
     nowShowing: movies.filter((m) => m.status === "NOW_SHOWING"),
+    playable: movies.filter((m) => m.status !== "ENDED"),
   };
 }
 
 /**
  * Which movie (index into `catalog.movies`) plays in a hall slot on a day: a rotation over the
- * now-showing movies, whatever their number. -1 when nothing is showing.
+ * movies that are not over, whatever their number. -1 when there is none.
  */
 export function rotationMovieIndex(
   catalog: Catalog,
@@ -42,9 +45,9 @@ export function rotationMovieIndex(
   slot: number,
   dayIndex: number,
 ): number {
-  if (catalog.nowShowing.length === 0) return -1;
-  const rotation = (hall * SLOT_TIMES.length + slot + dayIndex) % catalog.nowShowing.length;
-  const target = catalog.nowShowing[rotation];
+  if (catalog.playable.length === 0) return -1;
+  const rotation = (hall * SLOT_TIMES.length + slot + dayIndex) % catalog.playable.length;
+  const target = catalog.playable[rotation];
   return target ? catalog.movies.indexOf(target) : -1;
 }
 
@@ -193,7 +196,9 @@ export function resolveShowtime(key: ShowtimeKey): ShowtimeInfo | undefined {
   const movieDef = movies[key.movie];
   const time = SLOT_TIMES[key.slot];
   if (!hallDef || !movieDef || !time) return undefined;
-  if (movieDef.status !== "NOW_SHOWING") return undefined;
+  // Like the real API: no screenings of ended movies, none before a movie's release day.
+  if (movieDef.status === "ENDED") return undefined;
+  if (key.dayIndex < dateToDayIndex(movieDef.releaseDate)) return undefined;
   if (movieIndexAt(key.hall, key.slot, key.dayIndex) !== key.movie) return undefined;
   const startsAt = `${dayIndexToDate(key.dayIndex)}T${time}:00+07:00`;
   const startMs = Date.parse(startsAt);
@@ -231,7 +236,8 @@ export function showtimesOnDay(dayIndex: number, movieIndex?: number): ShowtimeI
   return result.sort((a, b) => a.startMs - b.startMs);
 }
 
-export const SCHEDULE_DAYS = 7;
+/** `availableDates` covers today to +30 days (docs/openapi.yaml). */
+export const SCHEDULE_DAYS = 31;
 
 export interface SeatDef extends Omit<Seat, "status"> {
   priceBaht: number;

@@ -87,7 +87,11 @@
     "comingSoon": "Coming soon",
     "cardSeeShowtimes": "See showtimes",
     "cardViewDetails": "View details",
-    "cardReleasesOn": "In cinemas {date}"
+    "cardReleasesOn": "In cinemas {date}",
+    "pagination": "Pagination",
+    "previous": "Previous",
+    "next": "Next",
+    "pageOf": "Page {page} of {pages}"
   },
   "movie": {
     "back": "All movies",
@@ -105,7 +109,11 @@
     "fewLeft": "{count} left",
     "closed": "Closed",
     "releaseDate": "Released {date}",
-    "dateStrip": "Show dates"
+    "dateStrip": "Show dates",
+    "noShowtimesYet": "No showtimes yet",
+    "noShowtimesYetHint": "There are no showtimes open for booking right now. Please check back soon.",
+    "soldOut": "Sold out",
+    "fromPrice": "from {price}"
   },
   "seat": {
     "standard": "standard",
