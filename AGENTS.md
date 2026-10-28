@@ -55,6 +55,22 @@ dropped (S9).
 
 **Contract first:** if code and docs disagree, the docs win unless you can show they're wrong. Then report it.
 
+## 3a. Skills (load on demand, `.claude/skills/`)
+
+Claude loads a skill when its description matches the task; the lead also names them in every brief.
+
+| Skill                 | Load when                                                                             |
+| --------------------- | ------------------------------------------------------------------------------------- |
+| `agent-onboarding`    | a subagent starts a brief or is about to report (setup, ports, done, report format)   |
+| `lead-review`         | the lead briefs, reviews or merges                                                    |
+| `design-system`       | any UI change in apps/web (Marquee rules, when to use impeccable)                     |
+| `impeccable`          | deliberate design review/polish: `/impeccable critique`, `audit`, `harden`, `polish`  |
+| `database-workflow`   | schema, migrations, grants, seed, resets                                              |
+| `api-contract-change` | adding/changing an endpoint or field                                                  |
+| `codebase-graph`      | finding code across packages / tracing relationships (`npm run graph:build`, offline) |
+
+No always-on hooks: graphify and impeccable hooks were removed on purpose (product owner: "only when needed").
+
 ## 4. Repo map
 
 ```
@@ -122,6 +138,8 @@ npm run seed:fetch-movies -w api  # TMDB → prisma/seed/movies.json (needs TMDB
 npm run test:int -w api        # integration tests (Docker; not part of check)
 npm run api:generate -w web    # regenerate the orval client after docs/openapi.yaml changes
 npm run lint:openapi           # lint the contract
+npm run test:report            # every suite → reports/test-report.json → /test-report (-- --quick: unit only)
+npm run graph:build            # offline code graph for the codebase-graph skill
 ```
 
 Ports: web 3000 (lead preview) / 3100 (agents), api 4000, Postgres 5433, Prisma Studio 5555.
