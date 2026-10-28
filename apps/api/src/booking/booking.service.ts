@@ -180,7 +180,12 @@ export class BookingService {
     lines: { seatId: string; priceBaht: number }[];
     now: Date;
   }): Promise<CreateOutcome> {
-    const { userId, idempotencyKey, requestHash, showtimeId, lines, now } = input;
+    const { userId, idempotencyKey, requestHash, showtimeId, now } = input;
+    // Lock seats (and stale bookings) in one global order: two requests for overlapping seats sent in different
+    // orders would otherwise each lock one seat and wait for the other, and Postgres would kill one as a deadlock.
+    const lines = [...input.lines].sort((a, b) =>
+      a.seatId < b.seatId ? -1 : a.seatId > b.seatId ? 1 : 0,
+    );
     const seatIds = lines.map((line) => line.seatId);
 
     return this.prisma.$transaction(async (tx): Promise<CreateOutcome> => {
@@ -229,6 +234,7 @@ export class BookingService {
            AND bs.released_at IS NULL
            AND b.status = 'PENDING_PAYMENT'
            AND b.hold_expires_at <= ${now}
+         ORDER BY b.id
          FOR UPDATE OF b`;
       for (const id of new Set(stale.map((booking) => booking.id))) {
         await this.cancelStale(tx, id, now);

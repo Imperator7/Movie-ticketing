@@ -404,6 +404,22 @@ describe("bookings (real database)", () => {
         expect(results.some((res) => res.status === 201)).toBe(true);
       });
 
+      it("the same seats requested in opposite orders never deadlock (409, not 500)", async () => {
+        // Without a global lock order, [a, b] vs [b, a] can each lock one seat and wait for the other.
+        for (let round = 0; round < 5; round++) {
+          const show = await newShow({ seats: 2 });
+          const a = pick(show.seatIds, 0);
+          const b = pick(show.seatIds, 1);
+          const users = await Promise.all(Array.from({ length: 6 }, () => newUser()));
+
+          const results = await Promise.all(
+            users.map((user, i) => book(user, show, i % 2 === 0 ? [a, b] : [b, a])),
+          );
+
+          expect(results.map((res) => res.status).sort()).toEqual([201, 409, 409, 409, 409, 409]);
+        }
+      });
+
       it("takes over seats whose hold is over, cancelling the stale booking", async () => {
         const first = await newUser();
         const second = await newUser();
