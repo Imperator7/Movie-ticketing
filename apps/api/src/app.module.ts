@@ -4,6 +4,7 @@ import { ThrottlerModule } from "@nestjs/throttler";
 import { LoggerModule } from "nestjs-pino";
 import { AuthModule } from "./auth/auth.module.js";
 import { JwtAuthGuard } from "./auth/jwt-auth.guard.js";
+import { CatalogModule } from "./catalog/catalog.module.js";
 import { CommonModule } from "./common/common.module.js";
 import { buildLoggerParams } from "./common/logging/logger.config.js";
 import { AppThrottlerGuard, buildThrottlerOptions } from "./common/rate-limit/rate-limit.js";
@@ -33,6 +34,7 @@ import { PrismaModule } from "./prisma/prisma.module.js";
     CommonModule,
     HealthModule,
     AuthModule,
+    CatalogModule,
   ],
   providers: [
     // Order matters: rate limiting runs before authentication, so unauthenticated floods are cheap to reject.

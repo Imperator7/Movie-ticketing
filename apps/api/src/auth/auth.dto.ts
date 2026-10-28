@@ -3,7 +3,13 @@ import { z } from "zod";
 import { createStrictDto } from "../common/validation/strict-dto.js";
 import { normalizeEmail } from "./email.js";
 
-const email = z.string().max(254).transform(normalizeEmail).pipe(z.email());
+// Normalised (trimmed, lowercased) before validation; `.meta` keeps the documented schema `format: email`.
+const email = z
+  .string()
+  .max(254)
+  .transform(normalizeEmail)
+  .pipe(z.email())
+  .meta({ format: "email" });
 const locale = z.enum(["th", "en"]);
 
 export class RegisterDto extends createStrictDto({
@@ -25,10 +31,11 @@ export class LoginDto extends createStrictDto({
 
 const userSchema = z.object({
   id: z.uuid(),
-  email: z.email().nullable(),
+  email: z.email().nullable().optional(),
   displayName: z.string(),
-  avatarUrl: z.url().nullable(),
-  phone: z.string().nullable(),
+  avatarUrl: z.url().nullable().optional(),
+  // Plain nullable strings are mis-rendered as arrays by nestjs-zod on top-level DTO properties; the override pins them.
+  phone: z.string().nullable().optional().meta({ type: "string", nullable: true }),
   preferredLocale: locale,
   loginMethods: z.array(z.enum(["PASSWORD", "LINE"])),
 });

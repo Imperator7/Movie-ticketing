@@ -19,20 +19,26 @@ describe("seed (real database, as app_user)", () => {
   });
 
   it("creates the catalog, venues, showtimes and prices", async () => {
+    // Other specs share this database, so assert what the seed ADDED, not absolute totals.
+    const before = {
+      cinemas: await prisma.cinema.count(),
+      halls: await prisma.hall.count(),
+      seats: await prisma.seat.count(),
+      movies: await prisma.movie.count(),
+      genres: await prisma.genre.count(),
+      prices: await prisma.showtimePrice.count(),
+    };
     const summary = await runSeed(prisma, { now });
 
     const { movies } = loadMovies();
     const genres = new Set(movies.flatMap((movie) => movie.genres.map((genre) => genre.slug)));
-    expect(summary.counts).toMatchObject({
-      cinemas: 2,
-      halls: 6,
-      genres: genres.size,
-      movies: movies.length,
-    });
-    expect(summary.counts.seats).toBe(992);
-    expect(summary.counts.showtimes).toBeGreaterThan(6 * 31 * 3);
-    expect(summary.counts.showtime_prices).toBe((summary.counts.showtimes ?? 0) * 2);
-    expect(summary.showtimesAdded).toBe(summary.counts.showtimes);
+    expect(summary.counts.cinemas).toBe(before.cinemas + 2);
+    expect(summary.counts.halls).toBe(before.halls + 6);
+    expect(summary.counts.seats).toBe(before.seats + 992);
+    expect(summary.counts.movies).toBe(before.movies + movies.length);
+    expect(summary.counts.genres).toBe(before.genres + genres.size);
+    expect(summary.showtimesAdded).toBeGreaterThan(6 * 31 * 3);
+    expect(summary.counts.showtime_prices).toBe(before.prices + summary.showtimesAdded * 2);
   });
 
   it("is idempotent: running again changes nothing", async () => {

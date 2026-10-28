@@ -1,7 +1,8 @@
 import { Controller, Get, Res } from "@nestjs/common";
-import { ApiTags } from "@nestjs/swagger";
+import { ApiOkResponse, ApiResponse, ApiTags } from "@nestjs/swagger";
 import type { Response } from "express";
 import { Public } from "../auth/public.decorator.js";
+import { HealthStatusDto } from "./health.dto.js";
 import { HealthService, type HealthStatus } from "./health.service.js";
 
 @Public()
@@ -12,13 +13,16 @@ export class HealthController {
 
   /** getLiveness: the process is up. */
   @Get("live")
-  live(): HealthStatus {
+  @ApiOkResponse({ type: HealthStatusDto })
+  getLiveness(): HealthStatus {
     return this.health.liveness().body;
   }
 
   /** getReadiness: DB reachable and not draining. */
   @Get("ready")
-  async ready(@Res({ passthrough: true }) res: Response): Promise<HealthStatus> {
+  @ApiOkResponse({ type: HealthStatusDto })
+  @ApiResponse({ status: 503, type: HealthStatusDto })
+  async getReadiness(@Res({ passthrough: true }) res: Response): Promise<HealthStatus> {
     const { httpStatus, body } = await this.health.readiness();
     res.status(httpStatus);
     return body;

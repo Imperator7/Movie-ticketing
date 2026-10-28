@@ -1,9 +1,10 @@
 import type { INestApplication } from "@nestjs/common";
 import type { NestExpressApplication } from "@nestjs/platform-express";
-import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
+import { DocumentBuilder, SwaggerModule, type OpenAPIObject } from "@nestjs/swagger";
 import cookieParser from "cookie-parser";
 import helmet from "helmet";
 import { cleanupOpenApiDoc } from "nestjs-zod";
+import { noStoreByDefault } from "./common/http/cache-control.js";
 import { ConfigService } from "./config/config.service.js";
 
 export const GLOBAL_PREFIX = "api/v1";
@@ -21,6 +22,9 @@ export function configureApp(app: NestExpressApplication): void {
   const config = app.get(ConfigService);
 
   app.setGlobalPrefix(GLOBAL_PREFIX);
+
+  // Nothing is cacheable unless a route opts in with @CacheControl (auth, errors and health stay no-store).
+  app.use(noStoreByDefault);
 
   // Behind the ALB the real client IP is in X-Forwarded-For (API-14). 0 hops = trust no proxy.
   const hops = config.get("TRUST_PROXY_HOPS");
@@ -43,16 +47,26 @@ export function configureApp(app: NestExpressApplication): void {
   if (config.get("SWAGGER_ENABLED")) setupSwagger(app);
 }
 
-function setupSwagger(app: INestApplication): void {
+/**
+ * The OpenAPI document generated from the Nest controllers and Zod DTOs. Operation ids are the method names
+ * (`listMovies`), matching docs/openapi.yaml; the contract test compares the two.
+ */
+export function buildOpenApiDocument(app: INestApplication): OpenAPIObject {
   const document = SwaggerModule.createDocument(
     app,
     new DocumentBuilder()
       .setTitle("Movie Ticketing API")
       .setVersion("0.1.0")
-      .addBearerAuth()
+      .addBearerAuth({ type: "http", scheme: "bearer", bearerFormat: "JWT" }, "bearerAuth")
       .addCookieAuth("rt", { type: "apiKey", in: "cookie", name: "rt" }, "refreshCookie")
       .build(),
+    { operationIdFactory: (_controllerKey, methodKey) => methodKey },
   );
-  // Served at /api/docs (outside the global prefix). cleanupOpenApiDoc renders the Zod DTO schemas.
-  SwaggerModule.setup("api/docs", app, cleanupOpenApiDoc(document));
+  // cleanupOpenApiDoc renders the Zod DTO schemas.
+  return cleanupOpenApiDoc(document);
+}
+
+function setupSwagger(app: INestApplication): void {
+  // Served at /api/docs (outside the global prefix).
+  SwaggerModule.setup("api/docs", app, buildOpenApiDocument(app));
 }
