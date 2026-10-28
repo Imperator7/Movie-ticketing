@@ -55,6 +55,7 @@ import type {
   ListMyBookingsParams,
   NotFoundResponse,
   UnauthorizedResponse,
+  ValidationErrorResponse,
 } from "../../model";
 
 import { apiClient } from "../../../../lib/api-client";
@@ -378,10 +379,17 @@ export type listMyBookingsResponse401 = {
   status: 401;
 };
 
+export type listMyBookingsResponse422 = {
+  data: ValidationErrorResponse;
+  status: 422;
+};
+
 export type listMyBookingsResponseSuccess = listMyBookingsResponse200 & {
   headers: Headers;
 };
-export type listMyBookingsResponseError = listMyBookingsResponse401 & {
+export type listMyBookingsResponseError = (
+  listMyBookingsResponse401 | listMyBookingsResponse422
+) & {
   headers: Headers;
 };
 
@@ -402,7 +410,7 @@ export const getListMyBookingsUrl = (params?: ListMyBookingsParams) => {
 };
 
 /**
- * @summary My bookings (confirmed and cancelled)
+ * @summary My bookings (confirmed and cancelled; a pending one is `getActiveBooking`)
  */
 export const listMyBookings = async (
   params?: ListMyBookingsParams,
@@ -420,7 +428,7 @@ export const getListMyBookingsQueryKey = (params?: ListMyBookingsParams) => {
 
 export const getListMyBookingsQueryOptions = <
   TData = Awaited<ReturnType<typeof listMyBookings>>,
-  TError = UnauthorizedResponse,
+  TError = UnauthorizedResponse | ValidationErrorResponse,
 >(
   params?: ListMyBookingsParams,
   options?: {
@@ -443,11 +451,11 @@ export const getListMyBookingsQueryOptions = <
 };
 
 export type ListMyBookingsQueryResult = NonNullable<Awaited<ReturnType<typeof listMyBookings>>>;
-export type ListMyBookingsQueryError = UnauthorizedResponse;
+export type ListMyBookingsQueryError = UnauthorizedResponse | ValidationErrorResponse;
 
 export function useListMyBookings<
   TData = Awaited<ReturnType<typeof listMyBookings>>,
-  TError = UnauthorizedResponse,
+  TError = UnauthorizedResponse | ValidationErrorResponse,
 >(
   params: undefined | ListMyBookingsParams,
   options: {
@@ -466,7 +474,7 @@ export function useListMyBookings<
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 export function useListMyBookings<
   TData = Awaited<ReturnType<typeof listMyBookings>>,
-  TError = UnauthorizedResponse,
+  TError = UnauthorizedResponse | ValidationErrorResponse,
 >(
   params?: ListMyBookingsParams,
   options?: {
@@ -485,7 +493,7 @@ export function useListMyBookings<
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 export function useListMyBookings<
   TData = Awaited<ReturnType<typeof listMyBookings>>,
-  TError = UnauthorizedResponse,
+  TError = UnauthorizedResponse | ValidationErrorResponse,
 >(
   params?: ListMyBookingsParams,
   options?: {
@@ -495,12 +503,12 @@ export function useListMyBookings<
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 /**
- * @summary My bookings (confirmed and cancelled)
+ * @summary My bookings (confirmed and cancelled; a pending one is `getActiveBooking`)
  */
 
 export function useListMyBookings<
   TData = Awaited<ReturnType<typeof listMyBookings>>,
-  TError = UnauthorizedResponse,
+  TError = UnauthorizedResponse | ValidationErrorResponse,
 >(
   params?: ListMyBookingsParams,
   options?: {

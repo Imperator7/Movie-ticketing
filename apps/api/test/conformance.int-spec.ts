@@ -878,7 +878,6 @@ describe("OpenAPI conformance (what the running API returns vs docs/openapi.yaml
       name: "422 bad scope (spec lists no 422)",
       label: () => `GET ${PREFIX}/bookings/me?scope=future`,
       expected: 422,
-      undocumentedOk: "the spec lists no 422 for listMyBookings, but the query is strict",
       run: () => bookAuth("get", "/bookings/me?scope=future"),
     },
     {

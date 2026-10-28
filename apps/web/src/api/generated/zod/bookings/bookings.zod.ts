@@ -209,7 +209,7 @@ export const GetActiveBookingResponse = zod.object({
 });
 
 /**
- * @summary My bookings (confirmed and cancelled)
+ * @summary My bookings (confirmed and cancelled; a pending one is `getActiveBooking`)
  */
 export const listMyBookingsQueryScopeDefault = `upcoming`;
 export const listMyBookingsQueryPageDefault = 1;

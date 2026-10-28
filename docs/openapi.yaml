@@ -432,7 +432,7 @@ paths:
                     message: You already have a booking in progress
                     details: { bookingId: "3f1c2d4e-5a6b-4c7d-8e9f-0a1b2c3d4e5f" }
         "422":
-          description: "`VALIDATION_FAILED`, `TOO_MANY_SEATS`, `BOOKING_CLOSED` or `IDEMPOTENCY_KEY_REUSED` (same key, different body)"
+          description: "`VALIDATION_FAILED`, `TOO_MANY_SEATS`, `BOOKING_CLOSED`, `IDEMPOTENCY_KEY_MISSING` (no `Idempotency-Key` header) or `IDEMPOTENCY_KEY_REUSED` (same key, different body). Only successful creates are stored: after an error the same key runs again for real."
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
@@ -459,7 +459,7 @@ paths:
     get:
       tags: [Bookings]
       operationId: listMyBookings
-      summary: My bookings (confirmed and cancelled)
+      summary: My bookings (confirmed and cancelled; a pending one is `getActiveBooking`)
       parameters:
         - name: scope
           in: query
@@ -482,6 +482,7 @@ paths:
                         type: array
                         items: { $ref: "#/components/schemas/Booking" }
         "401": { $ref: "#/components/responses/Unauthorized" }
+        "422": { $ref: "#/components/responses/ValidationError" }
 
   /bookings/{bookingId}:
     get:

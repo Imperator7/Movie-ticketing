@@ -85,7 +85,7 @@ export class BookingController {
 
   @Get("me")
   @ApiOkResponse({ type: BookingPageDto })
-  @ApiErrors(401)
+  @ApiErrors(401, 422)
   listMyBookings(
     @CurrentUser() user: CurrentUserInfo,
     @Query() query: ListMyBookingsQueryDto,
