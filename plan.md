@@ -182,7 +182,7 @@ exists and is tested against the contract-faithful mock API. It's ticked only on
 
 - [ ] **LINE Login** (`startLineLogin`, `lineLoginCallback`), then Google
 - [ ] Email (AWS SES): verification, password reset, e-ticket email
-- [ ] Contract check in CI: NestJS-generated spec vs `docs/openapi.yaml`
+- [x] Contract check in CI: NestJS-generated spec vs `docs/openapi.yaml` (done in Phase 3, plus runtime conformance)
 - [ ] AWS: manual first (VPC, RDS, ECR, ECS Fargate, ALB, S3 + CloudFront + OAC, Route 53, ACM, WAF, budget alarm), then Terraform + GitHub OIDC deploys (OPS-5, DB-7)
 - [ ] OpenTelemetry tracing, CloudWatch dashboards and alarms
 - [ ] Account deletion (PDPA), active-sessions page
