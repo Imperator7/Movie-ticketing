@@ -124,7 +124,16 @@
     "selected": "selected",
     "legendSelected": "Selected",
     "mapLabel": "Seat map",
-    "screen": "SCREEN / จอภาพยนตร์"
+    "screen": "SCREEN / จอภาพยนตร์",
+    "rowSeat": "Row {row}, seat {number}",
+    "announceSelected": "{seat} selected. {count} of {max} seats chosen",
+    "announceDeselected": "{seat} removed. {count, plural, one {# seat} other {# seats}} chosen",
+    "announceLimit": "You can select up to {max} seats",
+    "zoomLabel": "Zoom the seat map",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "zoomReset": "Reset zoom",
+    "keyboardHint": "Use the arrow keys to move between seats. Press Enter or Space to select. Plus and minus zoom."
   },
   "summary": {
     "title": "Booking summary",

@@ -124,7 +124,16 @@
     "selected": "เลือกแล้ว",
     "legendSelected": "ที่เลือก",
     "mapLabel": "แผนผังที่นั่ง",
-    "screen": "SCREEN / จอภาพยนตร์"
+    "screen": "SCREEN / จอภาพยนตร์",
+    "rowSeat": "แถว {row} ที่นั่ง {number}",
+    "announceSelected": "เลือก{seat}แล้ว เลือกไว้ {count} จาก {max} ที่นั่ง",
+    "announceDeselected": "ยกเลิก{seat}แล้ว เลือกไว้ {count} ที่นั่ง",
+    "announceLimit": "เลือกได้สูงสุด {max} ที่นั่ง",
+    "zoomLabel": "ซูมแผนผังที่นั่ง",
+    "zoomIn": "ขยายแผนผัง",
+    "zoomOut": "ย่อแผนผัง",
+    "zoomReset": "ขนาดเริ่มต้น",
+    "keyboardHint": "ใช้ปุ่มลูกศรเลื่อนระหว่างที่นั่ง กด Enter หรือ Space เพื่อเลือก ปุ่ม + และ - ใช้ซูม"
   },
   "summary": {
     "title": "สรุปการจอง",

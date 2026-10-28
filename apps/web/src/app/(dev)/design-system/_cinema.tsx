@@ -106,7 +106,7 @@ export function CinemaShowcase() {
         <SeatStates />
       </Group>
 
-      <Group title="Interactive seat map (max 4 seats, try a 5th)">
+      <Group title="Interactive seat map (max 4 seats, try a 5th; zoom with + / − / reset, pinch on touch, arrow keys / Home / End / + / − from the keyboard)">
         <InteractiveSeatMap />
       </Group>
 

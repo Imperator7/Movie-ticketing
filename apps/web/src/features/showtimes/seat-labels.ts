@@ -12,6 +12,19 @@ export function useSeatCopy(continueBooking: boolean) {
     type: { STANDARD: seat("standard"), PREMIUM: seat("premium") },
     status: { AVAILABLE: seat("available"), HELD: seat("held"), BOOKED: seat("booked") },
     selected: seat("selected"),
+    seatName: (row, number) => seat("rowSeat", { row, number }),
+    announce: {
+      selected: (name, count, max) => seat("announceSelected", { seat: name, count, max }),
+      deselected: (name, count) => seat("announceDeselected", { seat: name, count }),
+      limit: (max) => seat("announceLimit", { max }),
+    },
+    zoom: {
+      label: seat("zoomLabel"),
+      in: seat("zoomIn"),
+      out: seat("zoomOut"),
+      reset: seat("zoomReset"),
+    },
+    keyboardHint: seat("keyboardHint"),
   };
   const legendLabels: SeatLegendLabels = {
     available: seat("available"),
