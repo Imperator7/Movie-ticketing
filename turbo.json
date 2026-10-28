@@ -6,7 +6,7 @@
       "outputs": ["src/generated/**"]
     },
     "build": {
-      "dependsOn": ["^build", "db:generate"],
+      "dependsOn": ["^build", "db:generate", "typecheck"],
       "inputs": ["$TURBO_DEFAULT$", "../../docs/**"],
       "outputs": ["dist/**", "out/**", ".next/**", "!.next/cache/**"]
     },
