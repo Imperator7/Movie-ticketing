@@ -151,12 +151,15 @@ export async function lockSeats(input: {
   seatIds: string[];
   state: "CONFIRMED" | "PENDING_IN_HOLD" | "PENDING_HOLD_OVER";
   released?: boolean;
-}): Promise<void> {
-  const userId = await createUser();
+  /** Book it for this user instead of a throwaway one. */
+  userId?: string;
+}): Promise<string> {
+  const userId = input.userId ?? (await createUser());
   const now = Date.now();
   const hold = input.state === "PENDING_HOLD_OVER" ? now - 60_000 : now + 6 * 60_000;
   const payment = input.state === "PENDING_HOLD_OVER" ? now - 120_000 : now + 5 * 60_000;
-  await testPrisma().booking.create({
+  const booking = await testPrisma().booking.create({
+    select: { id: true },
     data: {
       bookingCode: `FX-${token()}`.toUpperCase(),
       userId,
@@ -176,4 +179,5 @@ export async function lockSeats(input: {
       },
     },
   });
+  return booking.id;
 }

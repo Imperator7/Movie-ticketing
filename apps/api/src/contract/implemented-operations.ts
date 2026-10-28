@@ -26,4 +26,10 @@ export const IMPLEMENTED_OPERATIONS = [
   // Showtimes (Phase 4)
   "getShowtime",
   "getSeatMap",
+  // Bookings (Phase 4)
+  "createBooking",
+  "getActiveBooking",
+  "listMyBookings",
+  "getBooking",
+  "cancelBooking",
 ] as const;
