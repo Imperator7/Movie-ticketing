@@ -1,7 +1,7 @@
 "use client";
 
 import { Monitor, Moon, Sun } from "lucide-react";
-import { useTheme } from "next-themes";
+import { useTheme } from "@/components/theme-provider";
 import { useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { radii, tokenGroups } from "./_data";
@@ -38,7 +38,7 @@ const subscribeNothing = () => () => undefined;
 
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
-  // next-themes only knows the theme on the client, so render the pressed state after hydration.
+  // The stored theme is only known on the client, so render the pressed state after hydration.
   const mounted = useSyncExternalStore(
     subscribeNothing,
     () => true,
