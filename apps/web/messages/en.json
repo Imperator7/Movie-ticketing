@@ -84,7 +84,10 @@
     "clearFilters": "Clear filters",
     "loadError": "Could not load the movies.",
     "nowShowing": "Now showing",
-    "comingSoon": "Coming soon"
+    "comingSoon": "Coming soon",
+    "cardSeeShowtimes": "See showtimes",
+    "cardViewDetails": "View details",
+    "cardReleasesOn": "In cinemas {date}"
   },
   "movie": {
     "back": "All movies",

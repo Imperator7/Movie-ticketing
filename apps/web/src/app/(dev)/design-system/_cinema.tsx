@@ -163,10 +163,13 @@ export function CinemaShowcase() {
         </div>
       </Group>
 
-      <Group title="Movie cards">
+      <Group title="Movie cards (hover or focus a card to see the synopsis and call to action)">
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-          {demoMovies.map(({ id, ...movie }) => (
-            <MoviePosterCard key={id} {...movie} />
+          {demoMovies.map(({ id, note, ...movie }) => (
+            <div key={id} className="flex flex-col gap-1.5">
+              <MoviePosterCard {...movie} priority />
+              <p className="text-xs text-muted-foreground">{note}</p>
+            </div>
           ))}
         </div>
       </Group>

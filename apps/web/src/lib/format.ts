@@ -84,3 +84,13 @@ export function formatShowDateTime(iso: string, locale: Locale = "th"): string {
     timeZone: "Asia/Bangkok",
   }).format(new Date(iso));
 }
+
+/** Day and short month in Bangkok, e.g. "12 พ.ย." / "12 Nov". Takes "YYYY-MM-DD" or an ISO instant. */
+export function formatReleaseDate(value: string, locale: Locale = "th"): string {
+  const iso = /^\d{4}-\d{2}-\d{2}$/.test(value) ? `${value}T12:00:00+07:00` : value;
+  return new Intl.DateTimeFormat(INTL_LOCALE_FULL[locale], {
+    day: "numeric",
+    month: "short",
+    timeZone: "Asia/Bangkok",
+  }).format(new Date(iso));
+}
