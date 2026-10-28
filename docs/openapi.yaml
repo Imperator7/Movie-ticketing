@@ -313,6 +313,9 @@ paths:
       description: |
         Only `SCHEDULED` showtimes that are still bookable (now < starts_at + 30 min) are returned.
         `availableDates` lets the date picker show only days that have showtimes (today → +30 days).
+        The client picks the day: ask for today, then jump to `availableDates[0]` if today has nothing.
+        Cached `public, max-age=15, stale-while-revalidate=60` (shorter than the rest of the catalog,
+        because `seatsLeft` changes with every booking).
       security: []
       parameters:
         - $ref: "#/components/parameters/MovieSlug"
@@ -323,6 +326,7 @@ paths:
           schema: { type: string, format: date, examples: ["2026-10-28"] }
         - name: cinemaId
           in: query
+          description: Only this cinema. Also narrows `availableDates` to days this cinema shows the movie.
           schema: { type: string, format: uuid }
       responses:
         "200":

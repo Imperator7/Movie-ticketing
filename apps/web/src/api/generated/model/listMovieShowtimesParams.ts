@@ -37,5 +37,8 @@ export type ListMovieShowtimesParams = {
    * Bangkok calendar day
    */
   date: string;
+  /**
+   * Only this cinema. Also narrows `availableDates` to days this cinema shows the movie.
+   */
   cinemaId?: string;
 };

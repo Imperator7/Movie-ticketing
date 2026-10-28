@@ -636,6 +636,9 @@ export const getListMovieShowtimesUrl = (slug: string, params: ListMovieShowtime
 /**
  * Only `SCHEDULED` showtimes that are still bookable (now < starts_at + 30 min) are returned.
  * `availableDates` lets the date picker show only days that have showtimes (today → +30 days).
+ * The client picks the day: ask for today, then jump to `availableDates[0]` if today has nothing.
+ * Cached `public, max-age=15, stale-while-revalidate=60` (shorter than the rest of the catalog,
+ * because `seatsLeft` changes with every booking).
  * @summary Showtimes of a movie on one Bangkok calendar day, grouped by cinema
  */
 export const listMovieShowtimes = async (
