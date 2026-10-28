@@ -16,3 +16,6 @@ coverage/
 .turbo/
 # Prisma generated client
 apps/api/src/generated/
+
+# TypeScript incremental build state
+*.tsbuildinfo
