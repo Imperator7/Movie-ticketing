@@ -1,0 +1,240 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-10-28T09:02:49.034Z",
+  "git": {
+    "commit": "7594352",
+    "branch": "main",
+    "dirty": true
+  },
+  "quick": false,
+  "status": "failed",
+  "suites": [
+    {
+      "id": "api-unit",
+      "label": "API unit",
+      "command": "npm run test -w api",
+      "status": "failed",
+      "durationMs": 4967,
+      "totals": {
+        "total": 3,
+        "passed": 2,
+        "failed": 1,
+        "skipped": 0
+      },
+      "files": [
+        {
+          "file": "apps/api/prisma/seed/layout.spec.ts",
+          "status": "passed",
+          "tests": [
+            {
+              "name": "counts A..Z then AA, AB",
+              "ancestors": ["rowLabelFor"],
+              "status": "passed",
+              "durationMs": 1,
+              "failure": null
+            },
+            {
+              "name": "rejects more than 4 seats",
+              "ancestors": ["booking limits"],
+              "status": "passed",
+              "durationMs": 2,
+              "failure": null
+            }
+          ]
+        },
+        {
+          "file": "apps/api/src/catalog/catalog.spec.ts",
+          "status": "failed",
+          "tests": [
+            {
+              "name": "caps the page size at 50",
+              "ancestors": ["listMovies", "pagination"],
+              "status": "failed",
+              "durationMs": 12,
+              "failure": "AssertionError: expected 51 to be less than or equal to 50\n  at catalog.spec.ts:88:21"
+            }
+          ]
+        }
+      ],
+      "error": null
+    },
+    {
+      "id": "api-integration",
+      "label": "API integration (real Postgres, incl. OpenAPI conformance)",
+      "command": "npm run test:int -w api",
+      "status": "skipped",
+      "durationMs": 0,
+      "totals": {
+        "total": 0,
+        "passed": 0,
+        "failed": 0,
+        "skipped": 0
+      },
+      "files": [],
+      "error": null
+    },
+    {
+      "id": "web-unit",
+      "label": "Web unit",
+      "command": "npm run test -w web",
+      "status": "passed",
+      "durationMs": 12027,
+      "totals": {
+        "total": 2,
+        "passed": 2,
+        "failed": 0,
+        "skipped": 0
+      },
+      "files": [
+        {
+          "file": "apps/web/src/lib/format.test.ts",
+          "status": "passed",
+          "tests": [
+            {
+              "name": "formats whole baht",
+              "ancestors": ["formatBaht"],
+              "status": "passed",
+              "durationMs": 1,
+              "failure": null
+            },
+            {
+              "name": "parses seats",
+              "ancestors": ["parseSeatsParam"],
+              "status": "passed",
+              "durationMs": 1,
+              "failure": null
+            }
+          ]
+        }
+      ],
+      "error": null
+    },
+    {
+      "id": "db-verify",
+      "label": "Database constraints + privileges",
+      "command": "npm run db:verify",
+      "status": "failed",
+      "durationMs": 800,
+      "totals": {
+        "total": 0,
+        "passed": 0,
+        "failed": 0,
+        "skipped": 0
+      },
+      "files": [],
+      "error": "psql: error: connection to server at localhost (::1), port 5433 failed: Connection refused"
+    }
+  ],
+  "conformance": {
+    "specVersion": "0.1.0",
+    "operations": [
+      {
+        "operationId": "getLiveness",
+        "method": "GET",
+        "path": "/health/live",
+        "tag": "Health",
+        "implemented": true,
+        "status": "passed",
+        "checks": [
+          {
+            "name": "200 ok",
+            "request": "GET /api/v1/health/live",
+            "expectedStatus": 200,
+            "actualStatus": 200,
+            "status": "passed",
+            "errors": []
+          }
+        ]
+      },
+      {
+        "operationId": "listGenres",
+        "method": "GET",
+        "path": "/genres",
+        "tag": "Catalog",
+        "implemented": true,
+        "status": "passed",
+        "checks": [
+          {
+            "name": "200 list",
+            "request": "GET /api/v1/genres",
+            "expectedStatus": 200,
+            "actualStatus": 200,
+            "status": "passed",
+            "errors": []
+          }
+        ]
+      },
+      {
+        "operationId": "listMovies",
+        "method": "GET",
+        "path": "/movies",
+        "tag": "Catalog",
+        "implemented": true,
+        "status": "failed",
+        "checks": [
+          {
+            "name": "200 default page",
+            "request": "GET /api/v1/movies",
+            "expectedStatus": 200,
+            "actualStatus": 200,
+            "status": "passed",
+            "errors": []
+          },
+          {
+            "name": "422 pageSize too big",
+            "request": "GET /api/v1/movies?pageSize=99",
+            "expectedStatus": 422,
+            "actualStatus": 200,
+            "status": "failed",
+            "errors": ["status: expected 422, got 200", "response.items: expected at most 50 items"]
+          }
+        ]
+      },
+      {
+        "operationId": "getMovie",
+        "method": "GET",
+        "path": "/movies/{slug}",
+        "tag": "Catalog",
+        "implemented": true,
+        "status": "passed",
+        "checks": [
+          {
+            "name": "404 unknown slug",
+            "request": "GET /api/v1/movies/nope",
+            "expectedStatus": 404,
+            "actualStatus": 404,
+            "status": "passed",
+            "errors": []
+          }
+        ]
+      },
+      {
+        "operationId": "createBooking",
+        "method": "POST",
+        "path": "/bookings",
+        "tag": "Bookings",
+        "implemented": false,
+        "status": "skipped",
+        "checks": []
+      },
+      {
+        "operationId": "cancelBooking",
+        "method": "POST",
+        "path": "/bookings/{bookingId}/cancel",
+        "tag": "Bookings",
+        "implemented": false,
+        "status": "skipped",
+        "checks": []
+      },
+      {
+        "operationId": "stripeWebhook",
+        "method": "POST",
+        "path": "/payments/webhook",
+        "tag": "Payments",
+        "implemented": false,
+        "status": "skipped",
+        "checks": []
+      }
+    ]
+  }
+}

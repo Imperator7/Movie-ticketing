@@ -8,7 +8,13 @@ const out = path.join(import.meta.dirname, "..", "out");
 // public/mockServiceWorker.js is copied into the export by Next; it is only for `npm run dev`.
 rmSync(path.join(out, "mockServiceWorker.js"), { force: true });
 
-const forbiddenPaths = ["er-diagram", "openapi", "design-system", "mockServiceWorker.js"];
+const forbiddenPaths = [
+  "er-diagram",
+  "openapi",
+  "design-system",
+  "test-report",
+  "mockServiceWorker.js",
+];
 const problems = forbiddenPaths.filter(
   (p) => existsSync(path.join(out, p)) || existsSync(path.join(out, `${p}.html`)),
 );
