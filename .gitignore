@@ -22,3 +22,8 @@ apps/api/src/generated/
 
 # Generated test report (npm run test:report → /test-report)
 reports/
+
+# Code knowledge graph (npm run graph:build)
+graphify-out/
+# impeccable engine binary (19 MB): the skill launcher downloads it to ~/.impeccable/bin when missing
+.claude/skills/impeccable/scripts/bin/

@@ -1,0 +1,8 @@
+# Generated or vendored code: noise in the graph (regenerate from the sources instead).
+apps/web/src/api/generated/
+apps/api/src/generated/
+apps/web/src/components/ui/
+apps/web/src/mocks/movies.fixture.json
+apps/api/prisma/seed/movies*.json
+.claude/worktrees/
+reports/
