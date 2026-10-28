@@ -49,3 +49,13 @@ Not done / not verified: be explicit
 ```
 
 Then stop. Don't start the next plan item.
+
+## Token budget (product owner rule)
+
+Write like caveman: short. If the `caveman` skill is available, load it.
+
+- No narration between tool calls, no restating the brief.
+- Read only the lines you need (`grep`, `sed -n a,bp`); don't re-read files you've seen.
+- Long output (check, test:int, builds) goes to a log file; show only the summary line.
+- Browser/screenshots only for visual UI work, and as few as possible.
+- Report ≤ ~25 lines of bullets. Keep code-level precision, drop filler.
