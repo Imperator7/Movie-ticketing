@@ -1,6 +1,7 @@
 import { Controller, Get, Param, Query } from "@nestjs/common";
 import { ApiOkResponse, ApiParam, ApiTags } from "@nestjs/swagger";
 import { Public } from "../auth/public.decorator.js";
+import { SlugParamPipe } from "../common/validation/param-pipes.js";
 import { ApiErrors } from "../common/errors/api-errors.js";
 import { CATALOG_CACHE, CacheControl, SHOWTIMES_CACHE } from "../common/http/cache-control.js";
 import {
@@ -53,7 +54,7 @@ export class CatalogController {
   @ApiParam({ name: "slug", type: String })
   @ApiOkResponse({ type: MovieDetailDto })
   @ApiErrors(404)
-  getMovie(@Param("slug") slug: string): Promise<MovieDetailBody> {
+  getMovie(@Param("slug", SlugParamPipe) slug: string): Promise<MovieDetailBody> {
     return this.catalog.getMovie(slug);
   }
 
@@ -63,7 +64,7 @@ export class CatalogController {
   @ApiOkResponse({ type: MovieShowtimesDto })
   @ApiErrors(404, 422)
   listMovieShowtimes(
-    @Param("slug") slug: string,
+    @Param("slug", SlugParamPipe) slug: string,
     @Query() query: MovieShowtimesQueryDto,
   ): Promise<MovieShowtimesBody> {
     return this.catalog.listMovieShowtimes(slug, query);

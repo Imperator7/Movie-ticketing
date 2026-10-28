@@ -215,8 +215,8 @@ describe("API contract (docs/openapi.yaml vs the Nest code)", () => {
       expect(drift(contract, withoutGenres)).toMatch(
         /listGenres.*missing from IMPLEMENTED_OPERATIONS/,
       );
-      expect(drift(contract, [...IMPLEMENTED_OPERATIONS, "getSeatMap"])).toMatch(
-        /getSeatMap.*not implemented in code/,
+      expect(drift(contract, [...IMPLEMENTED_OPERATIONS, "createPaymentIntent"])).toMatch(
+        /createPaymentIntent.*not implemented in code/,
       );
     });
 

@@ -109,6 +109,7 @@ const CATALOG_OPERATIONS = new Set([
   "getMovie",
   "listMovieShowtimes",
 ]);
+const NIL_UUID = "00000000-0000-0000-0000-000000000000";
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** Everything the spec (and our caching notes) says about one response. Returns violations; [] = conforms. */
@@ -229,6 +230,7 @@ describe("OpenAPI conformance (what the running API returns vs docs/openapi.yaml
   let movieSlug = "";
   let showtimeDate = "";
   let thaiTitleFragment = "";
+  let showtimeId = "";
 
   const api = (target: NestExpressApplication = app): ReturnType<typeof request> =>
     request(target.getHttpServer());
@@ -255,11 +257,13 @@ describe("OpenAPI conformance (what the running API returns vs docs/openapi.yaml
     showtimeDate = addDays(bangkokDateOf(new Date()), 1);
     const hall = await createHall();
     const day = bangkokDayRange(showtimeDate).start.getTime();
-    await createShowtime({
-      movieId: movie.id,
-      hallId: hall.hallId,
-      startsAt: new Date(day + 10 * 3_600_000),
-    });
+    showtimeId = (
+      await createShowtime({
+        movieId: movie.id,
+        hallId: hall.hallId,
+        startsAt: new Date(day + 10 * 3_600_000),
+      })
+    ).id;
     await createShowtime({
       movieId: movie.id,
       hallId: hall.hallId,
@@ -282,6 +286,7 @@ describe("OpenAPI conformance (what the running API returns vs docs/openapi.yaml
     }
   });
 
+  const today = bangkokDateOf(new Date());
   const freshEmail = (): string => `conf-${token()}@example.com`;
   const registerBody = (value: string): Obj => ({
     email: value,
@@ -610,9 +615,9 @@ describe("OpenAPI conformance (what the running API returns vs docs/openapi.yaml
     {
       operationId: "listMovieShowtimes",
       name: "200 a day without showtimes",
-      label: () => `GET ${PREFIX}/movies/${movieSlug}/showtimes?date=2020-01-01`,
+      label: () => `GET ${PREFIX}/movies/${movieSlug}/showtimes?date=${today}`,
       expected: 200,
-      run: () => api().get(`${PREFIX}/movies/${movieSlug}/showtimes`).query({ date: "2020-01-01" }),
+      run: () => api().get(`${PREFIX}/movies/${movieSlug}/showtimes`).query({ date: today }),
     },
     {
       operationId: "listMovieShowtimes",
@@ -631,10 +636,58 @@ describe("OpenAPI conformance (what the running API returns vs docs/openapi.yaml
     },
     {
       operationId: "listMovieShowtimes",
+      name: "422 date outside the allowed window",
+      label: () => `GET ${PREFIX}/movies/${movieSlug}/showtimes?date=1999-01-01`,
+      expected: 422,
+      run: () => api().get(`${PREFIX}/movies/${movieSlug}/showtimes`).query({ date: "1999-01-01" }),
+    },
+    {
+      operationId: "listMovieShowtimes",
+      name: "404 malformed slug",
+      label: () => `GET ${PREFIX}/movies/Bad_Slug/showtimes?date=${showtimeDate}`,
+      expected: 404,
+      run: () => api().get(`${PREFIX}/movies/Bad_Slug/showtimes`).query({ date: showtimeDate }),
+    },
+    {
+      operationId: "listMovieShowtimes",
       name: "422 impossible date",
       label: () => `GET ${PREFIX}/movies/${movieSlug}/showtimes?date=2026-02-30`,
       expected: 422,
       run: () => api().get(`${PREFIX}/movies/${movieSlug}/showtimes`).query({ date: "2026-02-30" }),
+    },
+
+    // ---------------------------------------------------------------- Showtimes
+    {
+      operationId: "getShowtime",
+      name: "200 showtime detail",
+      label: () => `GET ${PREFIX}/showtimes/${showtimeId}`,
+      expected: 200,
+      run: () => api().get(`${PREFIX}/showtimes/${showtimeId}`),
+    },
+    {
+      operationId: "getShowtime",
+      name: "404 unknown / malformed id",
+      label: () => `GET ${PREFIX}/showtimes/not-a-uuid`,
+      expected: 404,
+      run: () => api().get(`${PREFIX}/showtimes/not-a-uuid`),
+    },
+    {
+      operationId: "getSeatMap",
+      name: "200 live seat map",
+      label: () => `GET ${PREFIX}/showtimes/${showtimeId}/seats`,
+      expected: 200,
+      run: () => api().get(`${PREFIX}/showtimes/${showtimeId}/seats`),
+      extra: (res) =>
+        (res.body as { seats: unknown[] }).seats.length === 10
+          ? []
+          : ["expected the 10 fixture seats"],
+    },
+    {
+      operationId: "getSeatMap",
+      name: "404 unknown showtime",
+      label: () => `GET ${PREFIX}/showtimes/${NIL_UUID}/seats`,
+      expected: 404,
+      run: () => api().get(`${PREFIX}/showtimes/${NIL_UUID}/seats`),
     },
   ];
 

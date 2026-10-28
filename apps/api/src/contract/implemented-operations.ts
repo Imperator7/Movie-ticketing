@@ -23,4 +23,7 @@ export const IMPLEMENTED_OPERATIONS = [
   "listMovies",
   "getMovie",
   "listMovieShowtimes",
+  // Showtimes (Phase 4)
+  "getShowtime",
+  "getSeatMap",
 ] as const;
