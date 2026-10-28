@@ -467,7 +467,7 @@ export type getMovieResponseError = getMovieResponse404 & {
 export type getMovieResponse = getMovieResponseSuccess | getMovieResponseError;
 
 export const getGetMovieUrl = (slug: string) => {
-  return `/movies/${slug}`;
+  return `/movies/${encodeURIComponent(String(slug))}`;
 };
 
 /**
@@ -629,8 +629,8 @@ export const getListMovieShowtimesUrl = (slug: string, params: ListMovieShowtime
   const stringifiedParams = normalizedParams.toString();
 
   return stringifiedParams.length > 0
-    ? `/movies/${slug}/showtimes?${stringifiedParams}`
-    : `/movies/${slug}/showtimes`;
+    ? `/movies/${encodeURIComponent(String(slug))}/showtimes?${stringifiedParams}`
+    : `/movies/${encodeURIComponent(String(slug))}/showtimes`;
 };
 
 /**

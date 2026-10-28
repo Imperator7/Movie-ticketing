@@ -92,7 +92,7 @@ export type createPaymentIntentResponse =
   createPaymentIntentResponseSuccess | createPaymentIntentResponseError;
 
 export const getCreatePaymentIntentUrl = (bookingId: string) => {
-  return `/bookings/${bookingId}/payment-intent`;
+  return `/bookings/${encodeURIComponent(String(bookingId))}/payment-intent`;
 };
 
 /**

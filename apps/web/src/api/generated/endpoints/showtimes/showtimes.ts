@@ -85,7 +85,7 @@ export type getShowtimeResponseError = getShowtimeResponse404 & {
 export type getShowtimeResponse = getShowtimeResponseSuccess | getShowtimeResponseError;
 
 export const getGetShowtimeUrl = (showtimeId: string) => {
-  return `/showtimes/${showtimeId}`;
+  return `/showtimes/${encodeURIComponent(String(showtimeId))}`;
 };
 
 /**
@@ -228,7 +228,7 @@ export type getSeatMapResponseError = getSeatMapResponse404 & {
 export type getSeatMapResponse = getSeatMapResponseSuccess | getSeatMapResponseError;
 
 export const getGetSeatMapUrl = (showtimeId: string) => {
-  return `/showtimes/${showtimeId}/seats`;
+  return `/showtimes/${encodeURIComponent(String(showtimeId))}/seats`;
 };
 
 /**

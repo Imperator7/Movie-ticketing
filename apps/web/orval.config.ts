@@ -13,6 +13,8 @@ export default defineConfig({
       schemas: "src/api/generated/model",
       mock: { generators: [{ type: "msw", delay: 150 }] },
       clean: true,
+      // Path params come from the URL (e.g. `?slug=`): encode them so `../` can never reach another endpoint.
+      urlEncodeParameters: true,
       override: {
         mutator: { path: "src/lib/api-client.ts", name: "apiClient" },
       },

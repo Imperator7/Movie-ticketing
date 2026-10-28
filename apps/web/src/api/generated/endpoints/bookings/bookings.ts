@@ -543,7 +543,7 @@ export type getBookingResponseError = (getBookingResponse401 | getBookingRespons
 export type getBookingResponse = getBookingResponseSuccess | getBookingResponseError;
 
 export const getGetBookingUrl = (bookingId: string) => {
-  return `/bookings/${bookingId}`;
+  return `/bookings/${encodeURIComponent(String(bookingId))}`;
 };
 
 /**
@@ -699,7 +699,7 @@ export type cancelBookingResponseError = (
 export type cancelBookingResponse = cancelBookingResponseSuccess | cancelBookingResponseError;
 
 export const getCancelBookingUrl = (bookingId: string) => {
-  return `/bookings/${bookingId}/cancel`;
+  return `/bookings/${encodeURIComponent(String(bookingId))}/cancel`;
 };
 
 /**
