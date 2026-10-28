@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { PageContainer } from "@/components/page-states";
+import { GuestOnly } from "./guest-only";
 import { LoginForm } from "./login-form";
 import { RegisterForm } from "./register-form";
 
@@ -15,15 +16,17 @@ function AuthCard({
   children: React.ReactNode;
 }) {
   return (
-    <PageContainer>
-      <div className="mx-auto flex w-full max-w-md flex-col gap-6 rounded-2xl border border-border bg-card p-6 shadow-lg">
-        <header className="flex flex-col gap-1">
-          <h1 className="text-2xl font-bold">{title}</h1>
-          <p className="text-sm text-muted-foreground">{subtitle}</p>
-        </header>
-        {children}
-      </div>
-    </PageContainer>
+    <GuestOnly>
+      <PageContainer>
+        <div className="mx-auto flex w-full max-w-md flex-col gap-6 rounded-2xl border border-border bg-card p-6 shadow-lg">
+          <header className="flex flex-col gap-1">
+            <h1 className="text-2xl font-bold">{title}</h1>
+            <p className="text-sm text-muted-foreground">{subtitle}</p>
+          </header>
+          {children}
+        </div>
+      </PageContainer>
+    </GuestOnly>
   );
 }
 
