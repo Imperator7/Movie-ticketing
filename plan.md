@@ -139,10 +139,10 @@ exists and is tested against the contract-faithful mock API. It's ticked only on
 - [x] Expiry job every 30 s with an advisory lock: cancel PaymentIntent → `PAYMENT_TIMEOUT` + unlock. Also cleans idempotency keys
       **WEB**
 - [x] Seat map component (every state on `/design-system`), keyboard navigation + aria labels, mobile pinch/zoom
-- [ ] 🧪 `/showtime?id=&seats=`: 10 s polling while visible, "seat just taken" UX (§6), price summary
-- [ ] 🧪 Buy → login if needed → `createBooking` (Idempotency-Key per click) → `/checkout`
-- [ ] 🧪 Active-booking banner, blocked back navigation (§6)
-- [ ] 🧪 **Optimistic seat map:** Buy previews your seats as held (polling paused, cache primed for checkout), cancel releases them instantly. Rollback on `SEAT_TAKEN` / errors. The DB stays the source of truth. On rollback: apology toast ("ขออภัย ที่นั่ง A5 มีผู้จองไปแล้ว"), and the taken seats show as occupied immediately
+- [x] `/showtime?id=&seats=`: 10 s polling while visible, "seat just taken" UX (§6), price summary
+- [x] Buy → login if needed → `createBooking` (Idempotency-Key per click) → `/checkout`
+- [x] Active-booking banner, blocked back navigation (§6)
+- [x] **Optimistic seat map:** Buy previews your seats as held (polling paused, cache primed for checkout), cancel releases them instantly. Rollback on `SEAT_TAKEN` / errors. The DB stays the source of truth. On rollback: apology toast ("ขออภัย ที่นั่ง A5 มีผู้จองไปแล้ว"), and the taken seats show as occupied immediately
 
 Phase 4 notes: seat locks are taken in sorted seat order (no deadlocks between overlapping requests, `2c5d7af`). Phase 5 must move the PaymentGateway call out of the createBooking transaction (a network call under row locks). Movie status is not checked when booking (open product question).
 
