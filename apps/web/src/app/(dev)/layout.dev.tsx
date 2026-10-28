@@ -6,10 +6,11 @@ const DEV_PAGES = [
   { href: "/design-system", label: "Design system" },
   { href: "/openapi", label: "API contract" },
   { href: "/er-diagram", label: "ER diagram" },
+  { href: "/flow", label: "Flow" },
   { href: "/test-report", label: "Test report" },
 ] as const;
 
-/** Document shell for the dev-only pages (/design-system, /openapi, /er-diagram, /test-report). Not part of production builds. */
+/** Document shell for the dev-only pages (/design-system, /openapi, /er-diagram, /test-report, /flow). Not part of production builds. */
 export default function DevLayout({ children }: { children: ReactNode }) {
   return (
     <RootDocument lang="th">

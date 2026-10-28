@@ -13,6 +13,7 @@ const forbiddenPaths = [
   "openapi",
   "design-system",
   "test-report",
+  "flow",
   "mockServiceWorker.js",
 ];
 const problems = forbiddenPaths.filter(
