@@ -68,6 +68,11 @@ export const envSchema = z
     // Racing tabs re-present a just-rotated token; within this window it is a plain 401, not theft (database-design §14).
     REFRESH_REUSE_GRACE_MS: z.coerce.number().int().min(0).max(60_000).default(10_000),
 
+    // --- Background jobs (database-design §18) ---
+    /** Runs the booking expiry job in this container. Tests turn it off. */
+    JOBS_ENABLED: booleanFlag.default(true),
+    JOB_INTERVAL_MS: z.coerce.number().int().min(100).max(3_600_000).default(30_000),
+
     // Rate limits (API-6), per minute. TODO(redis): in-memory counters are per container.
     RATE_LIMIT_GLOBAL_PER_MIN: z.coerce.number().int().min(1).default(300),
     RATE_LIMIT_AUTH_PER_MIN: z.coerce.number().int().min(1).default(10),

@@ -11,6 +11,8 @@ export function testEnv(overrides: Record<string, string> = {}): Record<string, 
     LOG_LEVEL: "silent",
     DATABASE_URL: inject("databaseUrl"),
     DB_POOL_MAX: "3",
+    // Background jobs stay off unless a spec opts in, so they never race with a spec's own assertions.
+    JOBS_ENABLED: "false",
     // High limits so flow tests are not throttled; the rate-limit spec overrides them.
     RATE_LIMIT_GLOBAL_PER_MIN: "100000",
     RATE_LIMIT_AUTH_PER_MIN: "100000",

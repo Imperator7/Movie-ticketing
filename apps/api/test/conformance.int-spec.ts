@@ -278,7 +278,7 @@ describe("OpenAPI conformance (what the running API returns vs docs/openapi.yaml
     bookingSeatIds = bookingHall.seatIds;
     bookingShowtimeId = (
       await createShowtime({
-        movieId: movie.id,
+        movieId: (await createMovie()).id,
         hallId: bookingHall.hallId,
         startsAt: new Date(day + 18 * 3_600_000),
       })
