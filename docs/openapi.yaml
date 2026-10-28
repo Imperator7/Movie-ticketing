@@ -815,11 +815,15 @@ components:
 
     MovieSummary:
       type: object
-      required: [id, slug, title, durationMin, rating, releaseDate, posterUrl, status, genres]
+      required:
+        [id, slug, title, synopsis, durationMin, rating, releaseDate, posterUrl, status, genres]
       properties:
         id: { type: string, format: uuid }
         slug: { type: string }
         title: { $ref: "#/components/schemas/LocalizedText" }
+        synopsis:
+          $ref: "#/components/schemas/LocalizedText"
+          description: Full synopsis. The movie card shows it clamped to 3 lines on hover/focus.
         durationMin: { type: integer, examples: [166] }
         rating: { $ref: "#/components/schemas/MovieRating" }
         releaseDate: { type: string, format: date }
@@ -836,9 +840,8 @@ components:
       allOf:
         - $ref: "#/components/schemas/MovieSummary"
         - type: object
-          required: [synopsis, originalLanguage]
+          required: [originalLanguage]
           properties:
-            synopsis: { $ref: "#/components/schemas/LocalizedText" }
             originalLanguage: { type: string, examples: [en] }
             backdropUrl: { type: [string, "null"], format: uri }
             trailerUrl: { type: [string, "null"], format: uri }

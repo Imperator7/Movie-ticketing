@@ -50,6 +50,10 @@ export const getGetShowtimeResponseMock = (
       th: faker.string.alpha({ length: { min: 10, max: 20 } }),
       en: faker.string.alpha({ length: { min: 10, max: 20 } }),
     },
+    synopsis: {
+      th: faker.string.alpha({ length: { min: 10, max: 20 } }),
+      en: faker.string.alpha({ length: { min: 10, max: 20 } }),
+    },
     durationMin: faker.number.int(),
     rating: faker.helpers.arrayElement(Object.values(MovieRating)),
     releaseDate: faker.date.past().toISOString().slice(0, 10),

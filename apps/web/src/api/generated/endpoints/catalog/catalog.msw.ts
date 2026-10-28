@@ -74,6 +74,10 @@ export const getListMoviesResponseMock = (): ListMovies200 => ({
           th: faker.string.alpha({ length: { min: 10, max: 20 } }),
           en: faker.string.alpha({ length: { min: 10, max: 20 } }),
         },
+        synopsis: {
+          th: faker.string.alpha({ length: { min: 10, max: 20 } }),
+          en: faker.string.alpha({ length: { min: 10, max: 20 } }),
+        },
         durationMin: faker.number.int(),
         rating: faker.helpers.arrayElement(Object.values(MovieRating)),
         releaseDate: faker.date.past().toISOString().slice(0, 10),
@@ -102,6 +106,10 @@ export const getGetMovieResponseMock = (): MovieDetail => ({
       th: faker.string.alpha({ length: { min: 10, max: 20 } }),
       en: faker.string.alpha({ length: { min: 10, max: 20 } }),
     },
+    synopsis: {
+      th: faker.string.alpha({ length: { min: 10, max: 20 } }),
+      en: faker.string.alpha({ length: { min: 10, max: 20 } }),
+    },
     durationMin: faker.number.int(),
     rating: faker.helpers.arrayElement(Object.values(MovieRating)),
     releaseDate: faker.date.past().toISOString().slice(0, 10),
@@ -119,10 +127,6 @@ export const getGetMovieResponseMock = (): MovieDetail => ({
     ),
   },
   ...{
-    synopsis: {
-      th: faker.string.alpha({ length: { min: 10, max: 20 } }),
-      en: faker.string.alpha({ length: { min: 10, max: 20 } }),
-    },
     originalLanguage: faker.string.alpha({ length: { min: 10, max: 20 } }),
     backdropUrl: faker.helpers.arrayElement([faker.internet.url(), null]),
     trailerUrl: faker.helpers.arrayElement([faker.internet.url(), null]),

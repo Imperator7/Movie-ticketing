@@ -1,7 +1,7 @@
 "use client";
 
 import { useLocale, useTranslations } from "next-intl";
-import type { MovieDetail, MovieSummary } from "@/api/generated/model";
+import type { MovieSummary } from "@/api/generated/model";
 import { MoviePosterCard } from "@/components/cinema/movie-poster-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "@/i18n/navigation";
@@ -12,7 +12,7 @@ export function MovieCard({
   movie,
   priority = false,
 }: {
-  movie: MovieSummary & Partial<Pick<MovieDetail, "synopsis">>;
+  movie: MovieSummary;
   priority?: boolean;
 }) {
   const t = useTranslations("movies");
@@ -34,7 +34,7 @@ export function MovieCard({
         durationMinutes={movie.durationMin}
         genres={movie.genres.map((g) => pickText(g.name, locale))}
         locale={locale}
-        synopsis={movie.synopsis ? pickText(movie.synopsis, locale) : undefined}
+        synopsis={pickText(movie.synopsis, locale) || undefined}
         ctaLabel={comingSoon ? t("cardViewDetails") : t("cardSeeShowtimes")}
         releaseLabel={
           comingSoon

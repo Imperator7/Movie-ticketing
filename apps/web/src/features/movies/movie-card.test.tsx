@@ -23,6 +23,7 @@ const movie: MovieSummary = {
   id: "m1",
   slug: "clayface",
   title: { th: "เคลย์เฟซ", en: "Clayface" },
+  synopsis: { th: "เรื่องย่อ", en: "A shape-shifting actor loses control." },
   durationMin: 109,
   rating: "AGE_15",
   releaseDate: "2026-11-12",

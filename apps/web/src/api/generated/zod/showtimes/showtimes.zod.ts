@@ -49,6 +49,12 @@ export const GetShowtimeResponse = zod.object({
       th: zod.string(),
       en: zod.string(),
     }),
+    synopsis: zod
+      .object({
+        th: zod.string(),
+        en: zod.string(),
+      })
+      .describe("Full synopsis. The movie card shows it clamped to 3 lines on hover/focus."),
     durationMin: zod.int(),
     rating: zod
       .enum(["PROMOTED", "GENERAL", "AGE_13", "AGE_15", "AGE_18", "AGE_20"])

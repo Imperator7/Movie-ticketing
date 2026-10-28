@@ -101,6 +101,12 @@ export const ListMoviesResponse = zod
             th: zod.string(),
             en: zod.string(),
           }),
+          synopsis: zod
+            .object({
+              th: zod.string(),
+              en: zod.string(),
+            })
+            .describe("Full synopsis. The movie card shows it clamped to 3 lines on hover/focus."),
           durationMin: zod.int(),
           rating: zod
             .enum(["PROMOTED", "GENERAL", "AGE_13", "AGE_15", "AGE_18", "AGE_20"])
@@ -145,6 +151,12 @@ export const GetMovieResponse = zod
       th: zod.string(),
       en: zod.string(),
     }),
+    synopsis: zod
+      .object({
+        th: zod.string(),
+        en: zod.string(),
+      })
+      .describe("Full synopsis. The movie card shows it clamped to 3 lines on hover/focus."),
     durationMin: zod.int(),
     rating: zod
       .enum(["PROMOTED", "GENERAL", "AGE_13", "AGE_15", "AGE_18", "AGE_20"])
@@ -172,10 +184,6 @@ export const GetMovieResponse = zod
   })
   .and(
     zod.object({
-      synopsis: zod.object({
-        th: zod.string(),
-        en: zod.string(),
-      }),
       originalLanguage: zod.string(),
       backdropUrl: zod.url().nullish(),
       trailerUrl: zod.url().nullish(),

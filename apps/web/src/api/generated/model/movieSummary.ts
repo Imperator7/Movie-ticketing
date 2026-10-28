@@ -40,6 +40,8 @@ export interface MovieSummary {
   id: string;
   slug: string;
   title: LocalizedText;
+  /** Full synopsis. The movie card shows it clamped to 3 lines on hover/focus. */
+  synopsis: LocalizedText;
   durationMin: number;
   rating: MovieRating;
   releaseDate: string;

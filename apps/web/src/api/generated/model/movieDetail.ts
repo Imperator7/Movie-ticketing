@@ -31,11 +31,9 @@
  *
  * OpenAPI spec version: 0.1.0
  */
-import type { LocalizedText } from "./localizedText";
 import type { MovieSummary } from "./movieSummary";
 
 export type MovieDetail = MovieSummary & {
-  synopsis: LocalizedText;
   originalLanguage: string;
   /** @nullable */
   backdropUrl?: string | null;
