@@ -4,11 +4,16 @@ import { PrismaClient } from "../src/generated/prisma/client.js";
 
 let client: PrismaClient | undefined;
 
-/** A small raw-SQL helper (as app_user) for asserting what is really stored. */
-export async function queryOne<T>(sql: string, params: unknown[]): Promise<T | undefined> {
+/** A shared client (as app_user) for fixtures and for asserting what is really stored. */
+export function testPrisma(): PrismaClient {
   client ??= new PrismaClient({
-    adapter: new PrismaPg({ connectionString: inject("databaseUrl"), max: 2 }),
+    adapter: new PrismaPg({ connectionString: inject("databaseUrl"), max: 3 }),
   });
-  const rows = await client.$queryRawUnsafe<T[]>(sql, ...params);
+  return client;
+}
+
+/** A small raw-SQL helper for asserting what is really stored. */
+export async function queryOne<T>(sql: string, params: unknown[]): Promise<T | undefined> {
+  const rows = await testPrisma().$queryRawUnsafe<T[]>(sql, ...params);
   return rows[0];
 }

@@ -42,3 +42,9 @@ export function bangkokDateOf(instant: Date): string {
   const shifted = new Date(instant.getTime() + BANGKOK_UTC_OFFSET_MINUTES * MS_PER_MINUTE);
   return shifted.toISOString().slice(0, 10);
 }
+
+/** `YYYY-MM-DD` plus n calendar days (pure calendar arithmetic, no timezone involved). */
+export function addDays(date: string, days: number): string {
+  const [year, month, day] = date.split("-").map(Number) as [number, number, number];
+  return new Date(Date.UTC(year, month - 1, day + days)).toISOString().slice(0, 10);
+}
