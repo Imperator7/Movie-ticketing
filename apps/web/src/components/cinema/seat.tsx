@@ -6,8 +6,11 @@ import { PersonIcon } from "./person-icon";
 import { seatLabelsTh, type SeatLabels } from "./labels";
 
 export interface SeatProps {
-  /** Seat name, e.g. "A5". */
+  /** Seat name, e.g. "A5" (shown on the seat). */
   label: string;
+  /** With `number`, the accessible name is spoken as "Row A, seat 5" (localized); else `label` is used. */
+  row?: string;
+  number?: number;
   type: SeatType;
   status: SeatStatus;
   selected?: boolean;
@@ -30,6 +33,8 @@ export interface SeatProps {
 /** One cinema chair: a rounded back with an armrest bar. Colours come only from the seat tokens. */
 export function Seat({
   label,
+  row,
+  number,
   type,
   status,
   selected = false,
@@ -45,7 +50,8 @@ export function Seat({
   // A selected seat that was taken meanwhile can still be clicked to leave the selection.
   const inert = unavailable && !selected;
   const stateText = selected ? labels.selected : labels.status[status];
-  const ariaLabel = `${label}, ${labels.type[type]}, ${formatBaht(priceBaht)}, ${stateText}`;
+  const name = row !== undefined && number !== undefined ? labels.seatName(row, number) : label;
+  const ariaLabel = `${name}, ${labels.type[type]}, ${formatBaht(priceBaht)}, ${stateText}`;
 
   return (
     <button
