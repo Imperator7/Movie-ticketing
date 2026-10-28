@@ -4,6 +4,7 @@ import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import cookieParser from "cookie-parser";
 import helmet from "helmet";
 import { cleanupOpenApiDoc } from "nestjs-zod";
+import { noStoreByDefault } from "./common/http/cache-control.js";
 import { ConfigService } from "./config/config.service.js";
 
 export const GLOBAL_PREFIX = "api/v1";
@@ -21,6 +22,9 @@ export function configureApp(app: NestExpressApplication): void {
   const config = app.get(ConfigService);
 
   app.setGlobalPrefix(GLOBAL_PREFIX);
+
+  // Nothing is cacheable unless a route opts in with @CacheControl (auth, errors and health stay no-store).
+  app.use(noStoreByDefault);
 
   // Behind the ALB the real client IP is in X-Forwarded-For (API-14). 0 hops = trust no proxy.
   const hops = config.get("TRUST_PROXY_HOPS");

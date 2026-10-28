@@ -10,6 +10,7 @@ import type { Response } from "express";
 import { ZodValidationException } from "nestjs-zod";
 import { ZodError } from "zod";
 import { Prisma } from "../../generated/prisma/client.js";
+import { NO_STORE } from "../http/cache-control.js";
 import { AppException } from "./app.exception.js";
 import { ErrorCode, type ErrorBody } from "./error-code.js";
 
@@ -155,6 +156,8 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     const response = host.switchToHttp().getResponse<Response>();
     if (response.headersSent) return;
+    // An error must never be cached, even on a route that opted in to caching for its success response.
+    response.setHeader("Cache-Control", NO_STORE);
     response.status(body.statusCode).json(body);
   }
 }

@@ -1,6 +1,7 @@
 import { Controller, Get, Param, Query } from "@nestjs/common";
 import { ApiOkResponse, ApiParam, ApiTags } from "@nestjs/swagger";
 import { Public } from "../auth/public.decorator.js";
+import { CATALOG_CACHE, CacheControl, SHOWTIMES_CACHE } from "../common/http/cache-control.js";
 import {
   CinemaDto,
   GenreDto,
@@ -25,24 +26,28 @@ export class CatalogController {
   constructor(private readonly catalog: CatalogService) {}
 
   @Get("genres")
+  @CacheControl(CATALOG_CACHE)
   @ApiOkResponse({ type: GenreDto, isArray: true })
   listGenres(): Promise<GenreBody[]> {
     return this.catalog.listGenres();
   }
 
   @Get("cinemas")
+  @CacheControl(CATALOG_CACHE)
   @ApiOkResponse({ type: CinemaDto, isArray: true })
   listCinemas(): Promise<CinemaBody[]> {
     return this.catalog.listCinemas();
   }
 
   @Get("movies")
+  @CacheControl(CATALOG_CACHE)
   @ApiOkResponse({ type: MoviePageDto })
   listMovies(@Query() query: ListMoviesQueryDto): Promise<MoviePageBody> {
     return this.catalog.listMovies(query);
   }
 
   @Get("movies/:slug")
+  @CacheControl(CATALOG_CACHE)
   @ApiParam({ name: "slug", type: String })
   @ApiOkResponse({ type: MovieDetailDto })
   getMovie(@Param("slug") slug: string): Promise<MovieDetailBody> {
@@ -50,6 +55,7 @@ export class CatalogController {
   }
 
   @Get("movies/:slug/showtimes")
+  @CacheControl(SHOWTIMES_CACHE)
   @ApiParam({ name: "slug", type: String })
   @ApiOkResponse({ type: MovieShowtimesDto })
   listMovieShowtimes(
