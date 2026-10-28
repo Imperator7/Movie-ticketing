@@ -19,3 +19,6 @@ apps/api/src/generated/
 
 # TypeScript incremental build state
 *.tsbuildinfo
+
+# Generated test report (npm run test:report → /test-report)
+reports/
