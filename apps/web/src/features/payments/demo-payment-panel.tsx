@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatBaht } from "@/lib/format";
+import { ApiError } from "@/lib/api-client";
 import { demoPay } from "./demo-pay";
 import type { PaymentMethodPanelProps } from "./payment-method-panel";
 
@@ -40,6 +41,8 @@ export function DemoPaymentPanel({
   });
 
   const declined = pay.data === "declined";
+  // The real API has no /__demo/pay (Stripe comes in Phase 5): say so instead of failing silently.
+  const unavailable = pay.error instanceof ApiError && pay.error.status === 404;
   const busy = pay.isPending || pay.data === "processing";
   const amount = formatBaht(amountBaht, locale);
 
@@ -104,6 +107,13 @@ export function DemoPaymentPanel({
           </Button>
         </TabsContent>
       </Tabs>
+
+      {unavailable ? (
+        <Alert role="status">
+          <FlaskConical aria-hidden />
+          <AlertDescription>{t("paymentUnavailable")}</AlertDescription>
+        </Alert>
+      ) : null}
 
       {declined ? (
         <Alert variant="destructive" role="alert">

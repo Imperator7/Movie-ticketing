@@ -1,5 +1,6 @@
 "use client";
 
+import { keepPreviousData } from "@tanstack/react-query";
 import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
 import { useListMyBookings } from "@/api/generated/endpoints/bookings/bookings";
@@ -43,10 +44,18 @@ function BookingRow({ booking }: { booking: Booking }) {
   );
 }
 
+export const BOOKINGS_PAGE_SIZE = 10;
+
 function BookingList({ scope }: { scope: "upcoming" | "past" }) {
   const t = useTranslations("bookings");
-  const query = useListMyBookings({ scope });
-  const items = dataOf(query.data)?.items;
+  const [page, setPage] = useState(1);
+  const query = useListMyBookings(
+    { scope, page, pageSize: BOOKINGS_PAGE_SIZE },
+    { query: { placeholderData: keepPreviousData } },
+  );
+  const result = dataOf(query.data);
+  const items = result?.items;
+  const pages = result ? Math.max(1, Math.ceil(result.total / BOOKINGS_PAGE_SIZE)) : 1;
 
   if (query.isPending) {
     return (
@@ -74,11 +83,38 @@ function BookingList({ scope }: { scope: "upcoming" | "past" }) {
     );
   }
   return (
-    <ul className="flex flex-col gap-3">
-      {items.map((booking) => (
-        <BookingRow key={booking.id} booking={booking} />
-      ))}
-    </ul>
+    <div className="flex flex-col gap-4">
+      <ul className="flex flex-col gap-3">
+        {items.map((booking) => (
+          <BookingRow key={booking.id} booking={booking} />
+        ))}
+      </ul>
+      {pages > 1 ? (
+        <nav aria-label={t("pagination")} className="flex items-center justify-center gap-3">
+          <Button
+            variant="outline"
+            disabled={page <= 1}
+            onClick={() => {
+              setPage(page - 1);
+            }}
+          >
+            {t("previous")}
+          </Button>
+          <span className="text-sm text-muted-foreground tabular">
+            {t("pageOf", { page, pages })}
+          </span>
+          <Button
+            variant="outline"
+            disabled={page >= pages}
+            onClick={() => {
+              setPage(page + 1);
+            }}
+          >
+            {t("next")}
+          </Button>
+        </nav>
+      ) : null}
+    </div>
   );
 }
 

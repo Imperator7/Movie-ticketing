@@ -302,6 +302,96 @@ describe("useCreateBookingOptimistic", () => {
   });
 });
 
+describe("Idempotency-Key and retries", () => {
+  const keysSeen: (string | null)[] = [];
+  const record = () =>
+    http.post("*/bookings", ({ request }) => {
+      keysSeen.push(request.headers.get("Idempotency-Key"));
+      return HttpResponse.json(booking, { status: 201 });
+    });
+
+  beforeEach(() => {
+    keysSeen.length = 0;
+  });
+
+  it("sends the click's key, and a different click sends a different key", async () => {
+    server.use(record());
+    const { result } = renderHook(() => useCreateBookingOptimistic(ST), { wrapper });
+    act(() => {
+      result.current.mutate({ ...buyVars, idempotencyKey: "click-1" });
+    });
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+    act(() => {
+      result.current.mutate({ ...buyVars, idempotencyKey: "click-2" });
+    });
+    await waitFor(() => {
+      expect(keysSeen).toEqual(["click-1", "click-2"]);
+    });
+  });
+
+  it("retries a network failure of the same click with the SAME key", async () => {
+    let attempts = 0;
+    server.use(
+      http.post("*/bookings", ({ request }) => {
+        keysSeen.push(request.headers.get("Idempotency-Key"));
+        attempts += 1;
+        return attempts === 1 ? HttpResponse.error() : HttpResponse.json(booking, { status: 201 });
+      }),
+    );
+    const { result } = renderHook(() => useCreateBookingOptimistic(ST), { wrapper });
+    act(() => {
+      result.current.mutate({ ...buyVars, idempotencyKey: "same-click" });
+    });
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+    expect(keysSeen).toEqual(["same-click", "same-click"]);
+    // The preview stayed in place during the retry and the booking is primed.
+    expect(statusOf("A1")).toBe("HELD");
+  });
+
+  it("retries a 5xx but never a 4xx answer", async () => {
+    let calls = 0;
+    server.use(
+      http.post("*/bookings", () => {
+        calls += 1;
+        return error(503, "INTERNAL_ERROR", undefined);
+      }),
+    );
+    const failing = renderHook(() => useCreateBookingOptimistic(ST), { wrapper });
+    act(() => {
+      failing.result.current.mutate(buyVars);
+    });
+    await waitFor(
+      () => {
+        expect(failing.result.current.isError).toBe(true);
+      },
+      { timeout: 5000 },
+    );
+    expect(calls).toBe(3); // first try + 2 retries
+    failing.unmount();
+
+    calls = 0;
+    server.use(
+      http.post("*/bookings", () => {
+        calls += 1;
+        return error(422, "BOOKING_CLOSED");
+      }),
+    );
+    const closed = renderHook(() => useCreateBookingOptimistic(ST), { wrapper });
+    act(() => {
+      closed.result.current.mutate(buyVars);
+    });
+    await waitFor(() => {
+      expect(closed.result.current.isError).toBe(true);
+    });
+    expect(calls).toBe(1);
+    expect(statusOf("A1")).toBe("AVAILABLE");
+  });
+});
+
 describe("useCancelBookingOptimistic", () => {
   beforeEach(() => {
     client.setQueryData(getGetActiveBookingQueryKey(), okResponse(booking));
