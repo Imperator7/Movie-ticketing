@@ -110,8 +110,8 @@ exists and is tested against the contract-faithful mock API. It's ticked only on
 - [x] Origin check on cookie endpoints (API-5), rate limits (API-6)
       **WEB**
 - [x] `useAuthStore` (memory), session restore on load, single-flight refresh (WEB-4) + cross-tab Web Locks
-- [ ] 🧪 `/login?next=`, `/register?next=` (RHF + Zod from orval, server errors mapped to fields), safe `next` (WEB-5)
-- [ ] 🧪 Header user menu, logout, `RequireAuth` wrapper
+- [x] `/login?next=`, `/register?next=` (RHF + Zod from orval, server errors mapped to fields), safe `next` (WEB-5)
+- [x] Header user menu, logout, `RequireAuth` + `GuestOnly` wrappers. Verified against the real API (`npm run dev:api -w web`)
 
 ### Phase 3: Catalog
 

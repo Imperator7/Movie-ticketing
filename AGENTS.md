@@ -20,11 +20,12 @@ improvements inside a task are applied without asking, but **summarize and ask b
 | Design system      | ✅ "Marquee" theme + cinema components, **approved** (`/design-system`)                                                                                                                                                                                                    |
 | Database           | ✅ Prisma schema, hand-written constraints, roles (`migrator` / `app_user`) with **grants in a migration**, 26/26 constraint checks. ✅ Seeded with **18 real TMDB movies** (`movies.json`), 2 cinemas, 6 halls, 992 seats, 913 showtimes (31 days), demo user             |
 | API foundation     | ✅ Validated env, PrismaService (app_user, pool), pino + request id + redaction, contract error filter, strict nestjs-zod validation, Swagger (dev), helmet/CORS/limits, health live/ready + graceful drain, Testcontainers harness                                        |
-| Auth API (Phase 2) | ✅ register / login / refresh / logout / me, argon2id, JWT (jose, HS256 pinned), rotating refresh cookie + family revocation (10 s racing-tab grace), Origin guard, rate limits                                                                                            |
+| Auth API (Phase 2) | ✅ register / login / refresh / logout / me, argon2id, JWT (jose, HS256 pinned), rotating refresh cookie + family revocation (10 s racing-tab grace), Origin guard, rate limits. **Verified end to end with the real web** (`dev:api`)                                     |
 | Clickable demo     | ✅ Every customer screen on a stateful, contract-faithful **mock API** (TH/EN): browse → seats → login → checkout (demo card / PromptPay) → ticket QR → my bookings, active-booking banner, back-block, time's up, seat taken, cross-tab refresh lock, Demo controls panel |
 | Tests              | 202 api unit · 32 api integration (real Postgres) · 264 web unit · 26 DB checks. All green                                                                                                                                                                                 |
 
-**Phase 1 + 2 wrapped up (2026-10-28).** Last merge added real TMDB posters in the demo (one movie source:
+**Phase 1 + 2 wrapped up (2026-10-28).** Auth was then walked in the browser against the real API (register, reload
+restore, two tabs, logout, wrong password, duplicate email); this added `GuestOnly` on /login and /register. Last merge added real TMDB posters in the demo (one movie source:
 `movies.json` → `npm run mocks:sync-movies -w web` → `src/mocks/movies.fixture.json`; root `npm run movies:fetch`
 does fetch + sync + seed) and the **optimistic seat map** (`features/bookings/use-booking-mutations.ts`,
 `features/showtimes/seat-cache.ts`): Buy previews seats as held, rollback + apology toast on `SEAT_TAKEN`, occupied
@@ -108,6 +109,7 @@ npm ci                         # install (Node 24, see .nvmrc)
 npm run check                  # format + spec lint + lint + typecheck + test + build (all workspaces)
 npm run dev:mock -w web        # web on :3000 with the mock API (what the product owner looks at)
 npm run dev:web                # web on :3000 without mocks (agents: append -- -p 3100)
+npm run dev:api -w web         # web on :3000 talking to the real API on :4000 (start it: npm run dev -w api)
 npm run db:up                  # Postgres on 127.0.0.1:5433, waits until healthy
 npm run db:migrate             # prisma migrate dev (as migrator)
 npm run db:seed                # idempotent seed (only adds; never changes/deletes showtimes)
@@ -168,6 +170,10 @@ reset` drops the `public` schema and its grants. Any new role/privilege must be 
   `PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION="<their exact consent text>"`. Never on anything but the local dev DB.
 - The seed **only adds** (it never changes or deletes showtimes, which could have bookings). Replacing the movie set
   therefore needs a dev DB reset (above) and then `npm run db:seed`.
+- `apps/api/.env` is copied once and then drifts: when the API exits with "Invalid environment configuration", add
+  the missing keys from `.env.example` (generate secrets with `openssl rand -base64 48`). Don't add an empty
+  `TMDB_API_KEY=` there: dotenv won't override it, so it hides the root `.env` key.
+- Catalog/booking screens show "could not load" under `dev:api` until Phases 3–4 ship those endpoints. Expected.
 - `fetch-movies` reads `apps/api/.env` and then the root `.env`. TMDB's Thai title falls back to the original title
   (e.g. Chinese/Hindi); `readableForThai()` treats non-Thai/non-Latin text as missing → English.
 - `movies.poster_url` is nullable; no poster → the web's own placeholder. Images only from `image.tmdb.org` (future CSP).
