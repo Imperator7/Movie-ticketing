@@ -18,6 +18,7 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 import type { Request, Response } from "express";
+import { ApiErrors } from "../common/errors/api-errors.js";
 import { ConfigService } from "../config/config.service.js";
 import {
   AuthResponseDto,
@@ -48,6 +49,7 @@ export class AuthController {
   @Public()
   @Post("register")
   @ApiCreatedResponse({ type: AuthResponseDto })
+  @ApiErrors(409, 422, 429)
   async register(
     @Body() dto: RegisterDto,
     @Req() req: Request,
@@ -60,6 +62,7 @@ export class AuthController {
   @Post("login")
   @HttpCode(HttpStatus.OK)
   @ApiOkResponse({ type: AuthResponseDto })
+  @ApiErrors(401, 422, 429)
   async login(
     @Body() dto: LoginDto,
     @Req() req: Request,
@@ -74,6 +77,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiCookieAuth("refreshCookie")
   @ApiOkResponse({ type: AuthResponseDto })
+  @ApiErrors(401)
   async refresh(
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
@@ -94,9 +98,10 @@ export class AuthController {
   }
 
   @Get("me")
-  @ApiBearerAuth()
+  @ApiBearerAuth("bearerAuth")
   @ApiOkResponse({ type: UserDto })
-  me(@CurrentUser() current: CurrentUserInfo): Promise<UserBody> {
+  @ApiErrors(401)
+  getMe(@CurrentUser() current: CurrentUserInfo): Promise<UserBody> {
     return this.auth.me(current.userId);
   }
 

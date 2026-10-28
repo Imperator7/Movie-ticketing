@@ -2,11 +2,8 @@ import { Injectable } from "@nestjs/common";
 import { ConfigService } from "../config/config.service.js";
 import { PrismaService } from "../prisma/prisma.service.js";
 
-/** Matches `components.schemas.HealthStatus` in docs/openapi.yaml. */
-export interface HealthStatus {
-  status: "ok" | "error" | "shutting_down";
-  checks?: Record<string, "up" | "down">;
-}
+export type { HealthStatus } from "./health.dto.js";
+import type { HealthStatus } from "./health.dto.js";
 
 export interface HealthResult {
   httpStatus: 200 | 503;

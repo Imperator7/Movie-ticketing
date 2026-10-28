@@ -1,6 +1,7 @@
 import { Controller, Get, Param, Query } from "@nestjs/common";
 import { ApiOkResponse, ApiParam, ApiTags } from "@nestjs/swagger";
 import { Public } from "../auth/public.decorator.js";
+import { ApiErrors } from "../common/errors/api-errors.js";
 import { CATALOG_CACHE, CacheControl, SHOWTIMES_CACHE } from "../common/http/cache-control.js";
 import {
   CinemaDto,
@@ -42,6 +43,7 @@ export class CatalogController {
   @Get("movies")
   @CacheControl(CATALOG_CACHE)
   @ApiOkResponse({ type: MoviePageDto })
+  @ApiErrors(422)
   listMovies(@Query() query: ListMoviesQueryDto): Promise<MoviePageBody> {
     return this.catalog.listMovies(query);
   }
@@ -50,6 +52,7 @@ export class CatalogController {
   @CacheControl(CATALOG_CACHE)
   @ApiParam({ name: "slug", type: String })
   @ApiOkResponse({ type: MovieDetailDto })
+  @ApiErrors(404)
   getMovie(@Param("slug") slug: string): Promise<MovieDetailBody> {
     return this.catalog.getMovie(slug);
   }
@@ -58,6 +61,7 @@ export class CatalogController {
   @CacheControl(SHOWTIMES_CACHE)
   @ApiParam({ name: "slug", type: String })
   @ApiOkResponse({ type: MovieShowtimesDto })
+  @ApiErrors(404, 422)
   listMovieShowtimes(
     @Param("slug") slug: string,
     @Query() query: MovieShowtimesQueryDto,

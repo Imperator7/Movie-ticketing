@@ -18,7 +18,8 @@ const calendarDate = z
       parsed.getUTCMonth() === month - 1 &&
       parsed.getUTCDate() === day
     );
-  }, "invalid calendar date");
+  }, "invalid calendar date")
+  .meta({ format: "date" });
 
 export const MAX_PAGE_SIZE = 50;
 export const DEFAULT_PAGE_SIZE = 20;

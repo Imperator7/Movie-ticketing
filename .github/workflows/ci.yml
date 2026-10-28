@@ -30,6 +30,23 @@ jobs:
       - run: npx turbo run lint typecheck test build
       - run: npm audit --audit-level=high --omit=dev
 
+  # Real Postgres 17 via Testcontainers (Docker is preinstalled on ubuntu runners). Applies the committed
+  # migrations as `migrator`, then runs the API as `app_user`. A separate job so it runs parallel to `check`.
+  integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Generate the Prisma client
+        run: npm run db:generate -w api
+      - name: API integration tests
+        run: npm run test:int -w api
+
   secrets:
     runs-on: ubuntu-latest
     steps:
