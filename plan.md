@@ -117,14 +117,15 @@ exists and is tested against the contract-faithful mock API. It's ticked only on
 
 **API**
 
-- [ ] `listGenres`, `listCinemas`, `listMovies` (filters, search across TH/EN, pagination), `getMovie`, `listMovieShowtimes` (Bangkok-day grouping, `availableDates`, `seatsLeft`)
-- [ ] `Cache-Control` for public catalog responses (short max-age), so CloudFront can cache later
-- [ ] **Contract test:** NestJS-generated OpenAPI vs `docs/openapi.yaml` (paths, methods, schemas) fails CI on drift (code review #1)
-- [ ] **CI integration job:** `npm run test:int -w api` on GitHub Actions (Docker available on runners) (code review #2)
+- [x] `listGenres`, `listCinemas`, `listMovies` (filters, search across TH/EN, pagination), `getMovie`, `listMovieShowtimes` (Bangkok-day grouping, `availableDates`, `seatsLeft`)
+- [x] `Cache-Control` for public catalog responses (60 s; showtimes 15 s because `seatsLeft` changes), errors/authed `no-store`
+- [x] **Contract test:** NestJS-generated OpenAPI vs `docs/openapi.yaml` (paths, methods, schemas) fails CI on drift (code review #1)
+- [x] **CI integration job:** `npm run test:int -w api` on GitHub Actions (Docker available on runners) (code review #2). Written + actionlint-clean; first run when the repo is on GitHub
       **WEB**
-- [ ] 🧪 Home (now showing / coming soon), `/movies` (genre + search in URL), `/movie?slug=` (date picker, showtimes by cinema)
-- [ ] Switch catalog screens from mocks to the real API (`NEXT_PUBLIC_API_MOCKING` off for these routes), so the 🧪 items above become [x]
-- [ ] 🧪 Localized dates (Thai Buddhist calendar on `/th`), ฿ formatting, poster images with sizes and placeholders
+- [x] Home (now showing / coming soon), `/movies` (genre + search in URL), `/movie?slug=` (date picker, showtimes by cinema)
+- [x] Switch catalog screens from mocks to the real API (`NEXT_PUBLIC_API_MOCKING` off for these routes), so the 🧪 items above become [x]
+- [x] ฿ formatting, poster images with sizes and placeholders, localized day/month labels
+- [ ] Thai Buddhist-calendar years on `/th` wherever a year is shown (tickets, Phase 6)
 
 ### Phase 4: Seats and booking
 

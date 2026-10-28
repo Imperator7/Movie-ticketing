@@ -13,16 +13,17 @@ improvements inside a task are applied without asking, but **summarize and ask b
 
 ## 2. Current status (update when an item is merged)
 
-| Area               | State                                                                                                                                                                                                                                                                      |
-| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Phase 0: Design    | ✅ ER diagram, DB design, OpenAPI contract, security doc, decisions log                                                                                                                                                                                                    |
-| Repo / DevOps      | ✅ Turborepo, shared TS + ESLint configs, Prettier, Husky, commitlint, CI workflow + Dependabot (**written, never run: repo not on GitHub yet**)                                                                                                                           |
-| Design system      | ✅ "Marquee" theme + cinema components, **approved** (`/design-system`)                                                                                                                                                                                                    |
-| Database           | ✅ Prisma schema, hand-written constraints, roles (`migrator` / `app_user`) with **grants in a migration**, 26/26 constraint checks. ✅ Seeded with **18 real TMDB movies** (`movies.json`), 2 cinemas, 6 halls, 992 seats, 913 showtimes (31 days), demo user             |
-| API foundation     | ✅ Validated env, PrismaService (app_user, pool), pino + request id + redaction, contract error filter, strict nestjs-zod validation, Swagger (dev), helmet/CORS/limits, health live/ready + graceful drain, Testcontainers harness                                        |
-| Auth API (Phase 2) | ✅ register / login / refresh / logout / me, argon2id, JWT (jose, HS256 pinned), rotating refresh cookie + family revocation (10 s racing-tab grace), Origin guard, rate limits. **Verified end to end with the real web** (`dev:api`)                                     |
-| Clickable demo     | ✅ Every customer screen on a stateful, contract-faithful **mock API** (TH/EN): browse → seats → login → checkout (demo card / PromptPay) → ticket QR → my bookings, active-booking banner, back-block, time's up, seat taken, cross-tab refresh lock, Demo controls panel |
-| Tests              | 202 api unit · 32 api integration (real Postgres) · 264 web unit · 26 DB checks. All green                                                                                                                                                                                 |
+| Area               | State                                                                                                                                                                                                                                                                                           |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Phase 0: Design    | ✅ ER diagram, DB design, OpenAPI contract, security doc, decisions log                                                                                                                                                                                                                         |
+| Repo / DevOps      | ✅ Turborepo, shared TS + ESLint configs, Prettier, Husky, commitlint, CI workflow + Dependabot (**written, never run: repo not on GitHub yet**)                                                                                                                                                |
+| Design system      | ✅ "Marquee" theme + cinema components, **approved** (`/design-system`)                                                                                                                                                                                                                         |
+| Database           | ✅ Prisma schema, hand-written constraints, roles (`migrator` / `app_user`) with **grants in a migration**, 26/26 constraint checks. ✅ Seeded with **18 real TMDB movies** (`movies.json`), 2 cinemas, 6 halls, 992 seats, 913 showtimes (31 days), demo user                                  |
+| API foundation     | ✅ Validated env, PrismaService (app_user, pool), pino + request id + redaction, contract error filter, strict nestjs-zod validation, Swagger (dev), helmet/CORS/limits, health live/ready + graceful drain, Testcontainers harness                                                             |
+| Auth API (Phase 2) | ✅ register / login / refresh / logout / me, argon2id, JWT (jose, HS256 pinned), rotating refresh cookie + family revocation (10 s racing-tab grace), Origin guard, rate limits. **Verified end to end with the real web** (`dev:api`)                                                          |
+| Clickable demo     | ✅ Every customer screen on a stateful, contract-faithful **mock API** (TH/EN): browse → seats → login → checkout (demo card / PromptPay) → ticket QR → my bookings, active-booking banner, back-block, time's up, seat taken, cross-tab refresh lock, Demo controls panel                      |
+| Catalog (Phase 3)  | ✅ genres / cinemas / movies (filters, TH+EN search, pages) / movie / showtimes (Bangkok days, `seatsLeft`), Cache-Control, **contract test** (allowlist in `apps/api/src/contract/implemented-operations.ts`, add ids each phase), CI integration job. Web catalog screens run on the real API |
+| Tests              | 261 api unit · 68 api integration (real Postgres) · 318 web unit · 26 DB checks. All green                                                                                                                                                                                                      |
 
 **Phase 1 + 2 wrapped up (2026-10-28).** Auth was then walked in the browser against the real API (register, reload
 restore, two tabs, logout, wrong password, duplicate email); this added `GuestOnly` on /login and /register. Last merge added real TMDB posters in the demo (one movie source:
@@ -32,11 +33,13 @@ does fetch + sync + seed) and the **optimistic seat map** (`features/bookings/us
 seats use the person icon (S8), Demo control "Slow network (1.5 s)". The product owner may come back to revise these
 phases.
 
-**Next (needs product-owner go-ahead):** Phase 3 catalog API (`listGenres`, `listCinemas`, `listMovies`,
-`getMovie`, `listMovieShowtimes`) + the **contract test** (Nest OpenAPI vs `docs/openapi.yaml`) + a **CI integration
-job**, then switch the catalog screens from mocks to the real API. Then Phase 4 (booking API), 5 (Stripe), 6 (tickets).
+**Next (needs product-owner go-ahead):** Phase 4 seats + booking API (`getShowtime`, `getSeatMap`, `createBooking`,
+active/my/one booking, cancel, expiry job), add their ids to the contract allowlist, then switch the seat map, checkout
+hold and bookings screens off the mock. Then Phase 5 (Stripe), 6 (tickets).
 
-**Open questions for the product owner:** when to push to a private GitHub repo (so CI runs). Storybook was
+**Open questions for the product owner:** when to push to a private GitHub repo (so CI runs). Seed data: movie
+`status` doesn't match showtimes (a COMING_SOON movie has showtimes today). "Can't reach the server" message
+instead of the generic error? Storybook was
 dropped (S9).
 
 ## 3. Source of truth
