@@ -30,9 +30,12 @@ import {
 
 /** Date picker horizon: today .. today + 30 days. */
 const AVAILABLE_DAYS_AHEAD = 30;
+/** Accepted `date` window: yesterday .. today + 31 (Bangkok), a day of slack either side of the picker. */
+export const DATE_WINDOW_DAYS_BACK = 1;
+export const DATE_WINDOW_DAYS_AHEAD = 31;
 
-const genreSelect = { id: true, slug: true, nameTh: true, nameEn: true } as const;
-const cinemaSelect = {
+export const genreSelect = { id: true, slug: true, nameTh: true, nameEn: true } as const;
+export const cinemaSelect = {
   id: true,
   nameTh: true,
   nameEn: true,
@@ -40,7 +43,7 @@ const cinemaSelect = {
   addressEn: true,
   city: true,
 } as const;
-const movieSummarySelect = {
+export const movieSummarySelect = {
   id: true,
   slug: true,
   titleTh: true,
@@ -132,6 +135,22 @@ export class CatalogService {
     query: MovieShowtimesQueryDto,
     now: Date = new Date(),
   ): Promise<MovieShowtimesBody> {
+    // Only a window around today is queryable, so arbitrary dates cannot mint endless uncached keys.
+    const today = bangkokDateOf(now);
+    if (
+      query.date < addDays(today, -DATE_WINDOW_DAYS_BACK) ||
+      query.date > addDays(today, DATE_WINDOW_DAYS_AHEAD)
+    ) {
+      throw new AppException(
+        ErrorCode.VALIDATION_FAILED,
+        HttpStatus.UNPROCESSABLE_ENTITY,
+        "Validation failed",
+        {
+          fields: { date: ["out_of_range"] },
+        },
+      );
+    }
+
     const movie = await this.prisma.movie.findUnique({ where: { slug }, select: { id: true } });
     if (!movie) throw this.notFound("Movie not found");
 

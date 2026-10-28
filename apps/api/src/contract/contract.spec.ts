@@ -20,6 +20,7 @@ const PREFIX = `/${GLOBAL_PREFIX}`;
 const TEST_ENV: Record<string, string> = {
   NODE_ENV: "test",
   LOG_LEVEL: "silent",
+  JOBS_ENABLED: "false",
   // Never connects: the document is generated from decorators only.
   DATABASE_URL: "postgresql://app_user:unused@localhost:1/unused",
   JWT_SECRET: "contract_test_jwt_secret_0123456789abcdef0123",
@@ -215,8 +216,8 @@ describe("API contract (docs/openapi.yaml vs the Nest code)", () => {
       expect(drift(contract, withoutGenres)).toMatch(
         /listGenres.*missing from IMPLEMENTED_OPERATIONS/,
       );
-      expect(drift(contract, [...IMPLEMENTED_OPERATIONS, "getSeatMap"])).toMatch(
-        /getSeatMap.*not implemented in code/,
+      expect(drift(contract, [...IMPLEMENTED_OPERATIONS, "createPaymentIntent"])).toMatch(
+        /createPaymentIntent.*not implemented in code/,
       );
     });
 

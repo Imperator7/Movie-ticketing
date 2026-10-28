@@ -11,6 +11,8 @@ import { AppThrottlerGuard, buildThrottlerOptions } from "./common/rate-limit/ra
 import { ConfigModule } from "./config/config.module.js";
 import { ConfigService } from "./config/config.service.js";
 import { HealthModule } from "./health/health.module.js";
+import { BookingModule } from "./booking/booking.module.js";
+import { ShowtimesModule } from "./showtimes/showtimes.module.js";
 import { PrismaModule } from "./prisma/prisma.module.js";
 
 @Module({
@@ -35,6 +37,8 @@ import { PrismaModule } from "./prisma/prisma.module.js";
     HealthModule,
     AuthModule,
     CatalogModule,
+    ShowtimesModule,
+    BookingModule,
   ],
   providers: [
     // Order matters: rate limiting runs before authentication, so unauthenticated floods are cheap to reject.

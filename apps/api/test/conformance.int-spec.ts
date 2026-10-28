@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -109,6 +110,7 @@ const CATALOG_OPERATIONS = new Set([
   "getMovie",
   "listMovieShowtimes",
 ]);
+const NIL_UUID = "00000000-0000-0000-0000-000000000000";
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** Everything the spec (and our caching notes) says about one response. Returns violations; [] = conforms. */
@@ -229,6 +231,11 @@ describe("OpenAPI conformance (what the running API returns vs docs/openapi.yaml
   let movieSlug = "";
   let showtimeDate = "";
   let thaiTitleFragment = "";
+  let showtimeId = "";
+  let bookingToken = "";
+  let bookingShowtimeId = "";
+  let bookingSeatIds: string[] = [];
+  let bookingId = "";
 
   const api = (target: NestExpressApplication = app): ReturnType<typeof request> =>
     request(target.getHttpServer());
@@ -255,16 +262,35 @@ describe("OpenAPI conformance (what the running API returns vs docs/openapi.yaml
     showtimeDate = addDays(bangkokDateOf(new Date()), 1);
     const hall = await createHall();
     const day = bangkokDayRange(showtimeDate).start.getTime();
-    await createShowtime({
-      movieId: movie.id,
-      hallId: hall.hallId,
-      startsAt: new Date(day + 10 * 3_600_000),
-    });
+    showtimeId = (
+      await createShowtime({
+        movieId: movie.id,
+        hallId: hall.hallId,
+        startsAt: new Date(day + 10 * 3_600_000),
+      })
+    ).id;
     await createShowtime({
       movieId: movie.id,
       hallId: hall.hallId,
       startsAt: new Date(day + 14 * 3_600_000),
     });
+    const bookingHall = await createHall();
+    bookingSeatIds = bookingHall.seatIds;
+    bookingShowtimeId = (
+      await createShowtime({
+        movieId: (await createMovie()).id,
+        hallId: bookingHall.hallId,
+        startsAt: new Date(day + 18 * 3_600_000),
+      })
+    ).id;
+    const registered = await request(app.getHttpServer())
+      .post(`${PREFIX}/auth/register`)
+      .send({
+        email: `bk-${token()}@example.com`,
+        password: "correct-horse-battery",
+        displayName: "B",
+      });
+    bookingToken = (registered.body as { accessToken: string }).accessToken;
   }, 120_000);
 
   afterAll(async () => {
@@ -282,6 +308,20 @@ describe("OpenAPI conformance (what the running API returns vs docs/openapi.yaml
     }
   });
 
+  const today = bangkokDateOf(new Date());
+  const replayKey = randomUUID();
+  const bookAuth = (method: "get" | "post", route: string): Promise<Response> =>
+    api()[method](`${PREFIX}${route}`).set("Authorization", `Bearer ${bookingToken}`);
+  const createBooking = (
+    seatIds: string[],
+    key: string = replayKey,
+    showtime?: string,
+  ): Promise<Response> =>
+    api()
+      .post(`${PREFIX}/bookings`)
+      .set("Authorization", `Bearer ${bookingToken}`)
+      .set("Idempotency-Key", key)
+      .send({ showtimeId: showtime ?? bookingShowtimeId, seatIds });
   const freshEmail = (): string => `conf-${token()}@example.com`;
   const registerBody = (value: string): Obj => ({
     email: value,
@@ -610,9 +650,9 @@ describe("OpenAPI conformance (what the running API returns vs docs/openapi.yaml
     {
       operationId: "listMovieShowtimes",
       name: "200 a day without showtimes",
-      label: () => `GET ${PREFIX}/movies/${movieSlug}/showtimes?date=2020-01-01`,
+      label: () => `GET ${PREFIX}/movies/${movieSlug}/showtimes?date=${today}`,
       expected: 200,
-      run: () => api().get(`${PREFIX}/movies/${movieSlug}/showtimes`).query({ date: "2020-01-01" }),
+      run: () => api().get(`${PREFIX}/movies/${movieSlug}/showtimes`).query({ date: today }),
     },
     {
       operationId: "listMovieShowtimes",
@@ -631,10 +671,251 @@ describe("OpenAPI conformance (what the running API returns vs docs/openapi.yaml
     },
     {
       operationId: "listMovieShowtimes",
+      name: "422 date outside the allowed window",
+      label: () => `GET ${PREFIX}/movies/${movieSlug}/showtimes?date=1999-01-01`,
+      expected: 422,
+      run: () => api().get(`${PREFIX}/movies/${movieSlug}/showtimes`).query({ date: "1999-01-01" }),
+    },
+    {
+      operationId: "listMovieShowtimes",
+      name: "404 malformed slug",
+      label: () => `GET ${PREFIX}/movies/Bad_Slug/showtimes?date=${showtimeDate}`,
+      expected: 404,
+      run: () => api().get(`${PREFIX}/movies/Bad_Slug/showtimes`).query({ date: showtimeDate }),
+    },
+    {
+      operationId: "listMovieShowtimes",
       name: "422 impossible date",
       label: () => `GET ${PREFIX}/movies/${movieSlug}/showtimes?date=2026-02-30`,
       expected: 422,
       run: () => api().get(`${PREFIX}/movies/${movieSlug}/showtimes`).query({ date: "2026-02-30" }),
+    },
+
+    // ---------------------------------------------------------------- Showtimes
+    {
+      operationId: "getShowtime",
+      name: "200 showtime detail",
+      label: () => `GET ${PREFIX}/showtimes/${showtimeId}`,
+      expected: 200,
+      run: () => api().get(`${PREFIX}/showtimes/${showtimeId}`),
+    },
+    {
+      operationId: "getShowtime",
+      name: "404 unknown / malformed id",
+      label: () => `GET ${PREFIX}/showtimes/not-a-uuid`,
+      expected: 404,
+      run: () => api().get(`${PREFIX}/showtimes/not-a-uuid`),
+    },
+    {
+      operationId: "getSeatMap",
+      name: "200 live seat map",
+      label: () => `GET ${PREFIX}/showtimes/${showtimeId}/seats`,
+      expected: 200,
+      run: () => api().get(`${PREFIX}/showtimes/${showtimeId}/seats`),
+      extra: (res) =>
+        (res.body as { seats: unknown[] }).seats.length === 10
+          ? []
+          : ["expected the 10 fixture seats"],
+    },
+    {
+      operationId: "getSeatMap",
+      name: "404 unknown showtime",
+      label: () => `GET ${PREFIX}/showtimes/${NIL_UUID}/seats`,
+      expected: 404,
+      run: () => api().get(`${PREFIX}/showtimes/${NIL_UUID}/seats`),
+    },
+
+    // ---------------------------------------------------------------- Bookings (in lifecycle order)
+    {
+      operationId: "getActiveBooking",
+      name: "204 none yet",
+      label: () => `GET ${PREFIX}/bookings/active`,
+      expected: 204,
+      run: () => bookAuth("get", "/bookings/active"),
+    },
+    {
+      operationId: "getActiveBooking",
+      name: "401 without a token",
+      label: () => `GET ${PREFIX}/bookings/active`,
+      expected: 401,
+      run: () => api().get(`${PREFIX}/bookings/active`),
+    },
+    {
+      operationId: "createBooking",
+      name: "201 locks seats",
+      label: () => `POST ${PREFIX}/bookings`,
+      expected: 201,
+      run: () => createBooking(bookingSeatIds.slice(0, 2)),
+      extra: (res) => {
+        bookingId = (res.body as { id: string }).id;
+        return (res.body as { totalBaht: number }).totalBaht === 440
+          ? []
+          : ["totalBaht should be 2 x 220"];
+      },
+    },
+    {
+      operationId: "createBooking",
+      name: "201 replay with the same Idempotency-Key",
+      label: () => `POST ${PREFIX}/bookings (replay)`,
+      expected: 201,
+      run: () => createBooking(bookingSeatIds.slice(0, 2), replayKey),
+      extra: (res) =>
+        res.headers["idempotent-replayed"] === "true" ? [] : ["Idempotent-Replayed header missing"],
+    },
+    {
+      operationId: "createBooking",
+      name: "409 a booking is already in progress",
+      label: () => `POST ${PREFIX}/bookings`,
+      expected: 409,
+      run: () => createBooking(bookingSeatIds.slice(5, 6), randomUUID()),
+      extra: (res) =>
+        (res.body as { code?: string }).code === "ACTIVE_BOOKING_EXISTS"
+          ? []
+          : ["code is not ACTIVE_BOOKING_EXISTS"],
+    },
+    {
+      operationId: "createBooking",
+      name: "401 without a token",
+      label: () => `POST ${PREFIX}/bookings`,
+      expected: 401,
+      run: () =>
+        api()
+          .post(`${PREFIX}/bookings`)
+          .set("Idempotency-Key", randomUUID())
+          .send({ showtimeId: bookingShowtimeId, seatIds: bookingSeatIds.slice(0, 1) }),
+    },
+    {
+      operationId: "createBooking",
+      name: "404 unknown showtime",
+      label: () => `POST ${PREFIX}/bookings`,
+      expected: 404,
+      run: () => createBooking(bookingSeatIds.slice(0, 1), randomUUID(), NIL_UUID),
+      extra: (res) =>
+        (res.body as { code?: string }).code === "SHOWTIME_NOT_FOUND"
+          ? []
+          : ["code is not SHOWTIME_NOT_FOUND"],
+    },
+    {
+      operationId: "createBooking",
+      name: "422 no seats",
+      label: () => `POST ${PREFIX}/bookings`,
+      expected: 422,
+      run: () => createBooking([]),
+    },
+    {
+      operationId: "createBooking",
+      name: "422 too many seats",
+      label: () => `POST ${PREFIX}/bookings`,
+      expected: 422,
+      run: () => createBooking(bookingSeatIds.slice(0, 5), randomUUID()),
+      extra: (res) =>
+        (res.body as { code?: string }).code === "TOO_MANY_SEATS"
+          ? []
+          : ["code is not TOO_MANY_SEATS"],
+    },
+    {
+      operationId: "createBooking",
+      name: "422 same key, different body",
+      label: () => `POST ${PREFIX}/bookings`,
+      expected: 422,
+      run: () => createBooking(bookingSeatIds.slice(3, 4), replayKey),
+      extra: (res) =>
+        (res.body as { code?: string }).code === "IDEMPOTENCY_KEY_REUSED"
+          ? []
+          : ["code is not IDEMPOTENCY_KEY_REUSED"],
+    },
+    {
+      operationId: "getActiveBooking",
+      name: "200 the booking in progress",
+      label: () => `GET ${PREFIX}/bookings/active`,
+      expected: 200,
+      run: () => bookAuth("get", "/bookings/active"),
+    },
+    {
+      operationId: "getBooking",
+      name: "200 own booking",
+      label: () => `GET ${PREFIX}/bookings/${bookingId}`,
+      expected: 200,
+      run: () => bookAuth("get", `/bookings/${bookingId}`),
+    },
+    {
+      operationId: "getBooking",
+      name: "401 without a token",
+      label: () => `GET ${PREFIX}/bookings/${bookingId}`,
+      expected: 401,
+      run: () => api().get(`${PREFIX}/bookings/${bookingId}`),
+    },
+    {
+      operationId: "getBooking",
+      name: "404 unknown id",
+      label: () => `GET ${PREFIX}/bookings/${NIL_UUID}`,
+      expected: 404,
+      run: () => bookAuth("get", `/bookings/${NIL_UUID}`),
+    },
+    {
+      operationId: "listMyBookings",
+      name: "200 upcoming (default)",
+      label: () => `GET ${PREFIX}/bookings/me`,
+      expected: 200,
+      run: () => bookAuth("get", "/bookings/me"),
+    },
+    {
+      operationId: "listMyBookings",
+      name: "200 past scope with paging",
+      label: () => `GET ${PREFIX}/bookings/me?scope=past&page=1&pageSize=5`,
+      expected: 200,
+      run: () => bookAuth("get", "/bookings/me?scope=past&page=1&pageSize=5"),
+    },
+    {
+      operationId: "listMyBookings",
+      name: "401 without a token",
+      label: () => `GET ${PREFIX}/bookings/me`,
+      expected: 401,
+      run: () => api().get(`${PREFIX}/bookings/me`),
+    },
+    {
+      operationId: "listMyBookings",
+      name: "422 bad scope (spec lists no 422)",
+      label: () => `GET ${PREFIX}/bookings/me?scope=future`,
+      expected: 422,
+      undocumentedOk: "the spec lists no 422 for listMyBookings, but the query is strict",
+      run: () => bookAuth("get", "/bookings/me?scope=future"),
+    },
+    {
+      operationId: "cancelBooking",
+      name: "401 without a token",
+      label: () => `POST ${PREFIX}/bookings/${bookingId}/cancel`,
+      expected: 401,
+      run: () => api().post(`${PREFIX}/bookings/${bookingId}/cancel`),
+    },
+    {
+      operationId: "cancelBooking",
+      name: "404 unknown id",
+      label: () => `POST ${PREFIX}/bookings/${NIL_UUID}/cancel`,
+      expected: 404,
+      run: () => bookAuth("post", `/bookings/${NIL_UUID}/cancel`),
+    },
+    {
+      operationId: "cancelBooking",
+      name: "200 cancels a pending booking",
+      label: () => `POST ${PREFIX}/bookings/${bookingId}/cancel`,
+      expected: 200,
+      run: () => bookAuth("post", `/bookings/${bookingId}/cancel`),
+      extra: (res) =>
+        (res.body as { status?: string; cancelReason?: string }).cancelReason === "USER_CANCELLED"
+          ? []
+          : ["cancelReason is not USER_CANCELLED"],
+    },
+    {
+      operationId: "cancelBooking",
+      name: "409 already cancelled",
+      label: () => `POST ${PREFIX}/bookings/${bookingId}/cancel`,
+      expected: 409,
+      run: () => bookAuth("post", `/bookings/${bookingId}/cancel`),
+      extra: (res) =>
+        (res.body as { code?: string }).code === "BOOKING_NOT_PENDING"
+          ? []
+          : ["code is not BOOKING_NOT_PENDING"],
     },
   ];
 

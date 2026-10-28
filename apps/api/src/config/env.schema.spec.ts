@@ -154,3 +154,24 @@ describe("validateEnv", () => {
     });
   });
 });
+
+describe("background job settings", () => {
+  const raw = {
+    DATABASE_URL: "postgresql://app_user:pw@localhost:5433/movie_ticketing?schema=public",
+    JWT_SECRET: "k8Jx2mQ9vLw4RtZ7bNc1HfYp6sDg3UaE0oXiKjVn5MqT",
+    REFRESH_TOKEN_PEPPER: "Zr7wQ1pLm9xVc3Hn5BtYd8JkF2sGa6UeOi0XoKvNqMjA",
+    TICKET_QR_SECRET: "Ty4uI8oP1aS5dF9gH3jK7lZ2xC6vB0nMqWeRtYuIoPaS",
+  };
+
+  it("runs the expiry job every 30 s by default and can be switched off", () => {
+    expect(validateEnv(raw)).toMatchObject({ JOBS_ENABLED: true, JOB_INTERVAL_MS: 30_000 });
+    expect(validateEnv({ ...raw, JOBS_ENABLED: "false", JOB_INTERVAL_MS: "250" })).toMatchObject({
+      JOBS_ENABLED: false,
+      JOB_INTERVAL_MS: 250,
+    });
+  });
+
+  it("rejects an absurdly small interval", () => {
+    expect(() => validateEnv({ ...raw, JOB_INTERVAL_MS: "5" })).toThrow(/JOB_INTERVAL_MS/);
+  });
+});

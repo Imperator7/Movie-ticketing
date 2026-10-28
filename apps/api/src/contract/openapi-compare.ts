@@ -66,9 +66,7 @@ export function normalizeSchema(schema: unknown, doc: Obj, depth = 0): NormSchem
   const union = schema.anyOf ?? schema.oneOf;
   if (Array.isArray(union)) {
     const variants = union.map((variant) => normalizeSchema(variant, doc, depth + 1));
-    const nonNull = variants.filter(
-      (variant) => !(variant.type === "null" && Object.keys(variant).length === 1),
-    );
+    const nonNull = variants.filter((variant) => variant.type !== "null");
     const hasNull = nonNull.length !== variants.length;
     if (nonNull.length === 1 && nonNull[0]) {
       return hasNull ? { ...nonNull[0], nullable: true } : nonNull[0];
@@ -90,8 +88,11 @@ export function normalizeSchema(schema: unknown, doc: Obj, depth = 0): NormSchem
 
   if (typeof schema.format === "string") result.format = schema.format;
 
-  if (Array.isArray(schema.enum)) result.enum = sortedUnique(schema.enum as unknown[]);
-  else if ("const" in schema) result.enum = [schema.const];
+  if (Array.isArray(schema.enum)) {
+    const values = (schema.enum as unknown[]).filter((value) => value !== null);
+    if (values.length !== schema.enum.length) result.nullable = true; // OpenAPI 3.0 style: null listed in the enum
+    result.enum = sortedUnique(values);
+  } else if ("const" in schema) result.enum = [schema.const];
 
   if (isObj(schema.properties)) {
     result.type ??= "object";
