@@ -38,24 +38,39 @@ describe("buildCatalog", () => {
     expect(catalog.movies[1]?.posterUrl).toBeNull();
   });
 
-  it.each([1, 3, 6, 11])("rotates over any number of now-showing movies (%i)", (count) => {
-    const catalog = buildCatalog(fixtureWith(count, 2));
-    const seen = new Set<number>();
-    for (let day = 0; day < 40; day++) {
-      for (let hall = 0; hall < 3; hall++) {
-        for (let slot = 0; slot < 5; slot++) {
-          const index = rotationMovieIndex(catalog, hall, slot, day);
-          expect(catalog.movies[index]?.status).toBe("NOW_SHOWING");
-          seen.add(index);
-        }
-      }
-    }
-    // Every now-showing movie gets screenings, coming-soon ones never do.
-    expect(seen.size).toBe(count);
+  it("playable means not ended (now showing and coming soon)", () => {
+    const fixture = fixtureWith(2, 2);
+    const first = fixture.movies[0];
+    if (first) fixture.movies.push({ ...first, id: "x", slug: "old", status: "ENDED" });
+    const catalog = buildCatalog(fixture);
+    expect(catalog.playable.map((m) => m.slug)).toEqual([
+      "movie-0",
+      "movie-1",
+      "movie-2",
+      "movie-3",
+    ]);
   });
 
-  it("has no screenings when nothing is showing", () => {
-    expect(rotationMovieIndex(buildCatalog(fixtureWith(0, 2)), 0, 0, 0)).toBe(-1);
+  it.each([1, 3, 6, 11])(
+    "rotates over any number of playable movies (%i now showing + 2 coming soon)",
+    (count) => {
+      const catalog = buildCatalog(fixtureWith(count, 2));
+      const seen = new Set<number>();
+      for (let day = 0; day < 60; day++) {
+        for (let hall = 0; hall < 3; hall++) {
+          for (let slot = 0; slot < 4; slot++) {
+            const index = rotationMovieIndex(catalog, hall, slot, day);
+            expect(catalog.movies[index]?.status).not.toBe("ENDED");
+            seen.add(index);
+          }
+        }
+      }
+      expect(seen.size).toBe(count + 2);
+    },
+  );
+
+  it("has no screenings when nothing can play", () => {
+    expect(rotationMovieIndex(buildCatalog(fixtureWith(0, 0)), 0, 0, 0)).toBe(-1);
   });
 });
 

@@ -290,7 +290,11 @@ export function getMovieShowtimes(
   const today = bangkokDayIndex(now);
   const availableDates: string[] = [];
   for (let d = today; d < today + SCHEDULE_DAYS; d++) {
-    if (showtimesOnDay(d, movieIndex).some((s) => isBookable(s, now))) {
+    const shown = showtimesOnDay(d, movieIndex).some(
+      (s) => isBookable(s, now) && (!cinemaId || cinemas[s.hallDef.cinemaIndex]?.id === cinemaId),
+    );
+    // `cinemaId` also narrows `availableDates` to days this cinema shows the movie.
+    if (shown) {
       availableDates.push(dayIndexToDate(d));
     }
   }
