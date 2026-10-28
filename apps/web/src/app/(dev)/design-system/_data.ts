@@ -116,48 +116,67 @@ export const demoSeats: SeatMapSeat[] = ROW_LETTERS.flatMap((row, r) =>
 
 export const demoMovies: {
   id: string;
+  /** What the card demonstrates (shown under it on the review page). */
+  note: string;
   title: string;
   subtitle: string;
   posterUrl: string | null;
   rating: ThaiRating;
   durationMinutes: number;
   genres: string[];
+  synopsis: string;
+  ctaLabel: string;
+  releaseLabel?: string;
 }[] = [
   {
     id: "m1",
-    title: "เงาแห่งรัตติกาล",
-    subtitle: "Shadow of the Night",
-    posterUrl: null,
-    rating: "AGE_18",
-    durationMinutes: 126,
-    genres: ["ระทึกขวัญ", "ลึกลับ"],
+    note: "Now showing, real TMDB poster",
+    title: "เคลย์เฟซ",
+    subtitle: "Clayface",
+    posterUrl: "https://image.tmdb.org/t/p/w500/9l1NuFjel2j89hiuiJbsxfblqjy.jpg",
+    rating: "AGE_15",
+    durationMinutes: 109,
+    genres: ["สยองขวัญ", "ไซไฟ", "ระทึกขวัญ"],
+    synopsis:
+      "นักแสดงผู้ถูกทำลายใบหน้าค้นพบพลังที่เปลี่ยนร่างกายของเขาให้เป็นดินเหนียว และต้องเลือกระหว่างความแค้นกับความเป็นคน",
+    ctaLabel: "ดูรอบฉาย",
   },
   {
     id: "m2",
-    title: "ดาวเคราะห์สุดท้าย",
-    subtitle: "The Last Planet",
+    note: "Coming soon: release date chip, no poster (placeholder)",
+    title: "สัญญาณใต้ทะเลลึก",
+    subtitle: "Deep Signal",
     posterUrl: null,
     rating: "AGE_13",
-    durationMinutes: 166,
-    genres: ["ไซไฟ", "ผจญภัย"],
+    durationMinutes: 141,
+    genres: ["ไซไฟ"],
+    synopsis: "นักสมุทรศาสตร์จับสัญญาณประหลาดจากใต้ร่องลึกก้นทะเลอันดามัน",
+    ctaLabel: "ดูรายละเอียด",
+    releaseLabel: "เข้าฉาย 19 ธ.ค.",
   },
   {
     id: "m3",
+    note: "Poster fails to load: falls back to the placeholder",
     title: "บ้านหลังฝน",
     subtitle: "House After the Rain",
-    posterUrl: null,
+    posterUrl: "https://image.tmdb.org/t/p/w500/this-poster-does-not-exist.jpg",
     rating: "GENERAL",
     durationMinutes: 98,
-    genres: ["ครอบครัว"],
+    genres: ["ครอบครัว", "ดราม่า", "ตลก"],
+    synopsis: "เด็กหญิงกับคุณยายซ่อมบ้านเก่าริมคลองในหน้าฝนที่ยาวนานที่สุดของปี",
+    ctaLabel: "ดูรอบฉาย",
   },
   {
     id: "m4",
-    title: "สารคดีป่าฝนไทย",
-    subtitle: "Thai Rainforest",
+    note: "Title equals the subtitle (subtitle hidden), long title clamps to 2 lines",
+    title: "Whalefall: ปฏิบัติการใต้ทะเลลึกที่ไม่มีใครเคยเห็นมาก่อนในประวัติศาสตร์",
+    subtitle: "Whalefall: ปฏิบัติการใต้ทะเลลึกที่ไม่มีใครเคยเห็นมาก่อนในประวัติศาสตร์",
     posterUrl: null,
-    rating: "PROMOTED",
-    durationMinutes: 75,
-    genres: ["สารคดี"],
+    rating: "AGE_18",
+    durationMinutes: 106,
+    genres: ["ระทึกขวัญ"],
+    synopsis: "นักดำน้ำถูกวาฬกลืนลงไปทั้งตัวและมีออกซิเจนเหลือไม่ถึงชั่วโมง",
+    ctaLabel: "ดูรอบฉาย",
   },
 ];
 

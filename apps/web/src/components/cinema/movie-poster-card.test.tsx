@@ -71,4 +71,71 @@ describe("MoviePosterCard", () => {
       "https://image.tmdb.org/t/p/w342/ok.jpg",
     );
   });
+
+  describe("full-bleed details", () => {
+    it("writes title, subtitle and the duration · genres line on the card", () => {
+      render(
+        <MoviePosterCard
+          {...base}
+          genres={["ระทึกขวัญ", "ดราม่า"]}
+          synopsis="เรื่องย่อ"
+          ctaLabel="ดูรอบฉาย"
+          posterUrl="https://image.tmdb.org/t/p/w500/p.jpg"
+        />,
+      );
+      expect(screen.getByRole("heading", { name: base.title })).toBeInTheDocument();
+      expect(screen.getByText("Bangkok After Midnight")).toBeInTheDocument();
+      expect(screen.getByText("1 ชม. 58 นาที · ระทึกขวัญ · ดราม่า")).toBeInTheDocument();
+      expect(screen.getByText("เรื่องย่อ")).toBeInTheDocument();
+      expect(screen.getByText("ดูรอบฉาย")).toBeInTheDocument();
+    });
+
+    it("hides the subtitle when it is the same as the title (ignoring case and spaces)", () => {
+      render(<MoviePosterCard {...base} title="Whalefall" subtitle=" whalefall " />);
+      expect(screen.getAllByText(/whalefall/i)).toHaveLength(1);
+    });
+
+    it("shows at most two genres", () => {
+      render(<MoviePosterCard {...base} genres={["A", "B", "C", "D"]} />);
+      expect(screen.getByText(/ · A · B$/)).toBeInTheDocument();
+      expect(screen.queryByText(/C/)).not.toBeInTheDocument();
+    });
+
+    it("shows the release chip only when given (coming soon)", () => {
+      const { rerender } = render(<MoviePosterCard {...base} />);
+      expect(screen.queryByText("เข้าฉาย 12 พ.ย.")).not.toBeInTheDocument();
+      rerender(<MoviePosterCard {...base} releaseLabel="เข้าฉาย 12 พ.ย." />);
+      expect(screen.getByText("เข้าฉาย 12 พ.ย.")).toBeInTheDocument();
+    });
+
+    it("the title clamps to two lines and the synopsis to three", () => {
+      render(<MoviePosterCard {...base} synopsis="ยาวมาก" />);
+      expect(screen.getByRole("heading", { name: base.title })).toHaveClass("line-clamp-2");
+      expect(screen.getByText("ยาวมาก")).toHaveClass("line-clamp-3");
+    });
+
+    it("showDetails={false} leaves only the poster and the rating (movie page hero)", () => {
+      render(<MoviePosterCard {...base} showDetails={false} releaseLabel="เข้าฉาย" />);
+      expect(screen.queryByRole("heading")).not.toBeInTheDocument();
+      expect(screen.queryByText("เข้าฉาย")).not.toBeInTheDocument();
+      expect(screen.getByText("น15+")).toBeInTheDocument();
+    });
+
+    it("the placeholder under the overlay does not repeat the title", () => {
+      const { container } = render(<MoviePosterCard {...base} posterUrl={null} />);
+      expect(container.querySelectorAll("h3")).toHaveLength(1);
+      expect(container.querySelector('[role="img"] span')).toBeNull();
+    });
+
+    it("keeps the placeholder in the same 2:3 box when an image fails", () => {
+      const { container } = render(
+        <MoviePosterCard {...base} posterUrl="https://image.tmdb.org/t/p/w500/x.jpg" />,
+      );
+      const img = container.querySelector("img");
+      if (img) fireEvent.error(img);
+      expect(container.querySelector("img")).toBeNull();
+      expect(container.querySelector("article")).toHaveClass("aspect-[2/3]");
+      expect(screen.getByRole("heading", { name: base.title })).toBeInTheDocument();
+    });
+  });
 });

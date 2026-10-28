@@ -73,6 +73,10 @@
   --color-seat-taken: var(--seat-taken);
   --color-screen: var(--screen);
 
+  /* Scrim: the always-dark overlay under text on posters. Same in both themes, so text on it is always light. */
+  --color-scrim: var(--scrim);
+  --color-scrim-foreground: var(--scrim-foreground);
+
   /* Movie ratings (Thai rating system) */
   --color-rating-general: var(--rating-general);
   --color-rating-13: var(--rating-13);
@@ -155,6 +159,9 @@
   --seat-booked: oklch(0.8 0.008 285);
   --seat-taken: var(--destructive);
   --screen: oklch(0.6 0.03 285);
+  /* Scrim contrast: oklch(0.98) on oklch(0.12) is about 17:1 (WCAG AA needs 4.5:1), light and dark theme alike. */
+  --scrim: oklch(0.12 0.01 285);
+  --scrim-foreground: oklch(0.98 0.003 285);
 
   --rating-general: oklch(0.58 0.15 155);
   --rating-13: oklch(0.6 0.15 230);
@@ -218,6 +225,8 @@
   --seat-booked: oklch(0.24 0.012 285);
   --seat-taken: var(--destructive);
   --screen: oklch(0.85 0.03 285);
+  --scrim: oklch(0.12 0.01 285);
+  --scrim-foreground: oklch(0.98 0.003 285);
 
   --rating-general: oklch(0.72 0.16 155);
   --rating-13: oklch(0.72 0.13 230);

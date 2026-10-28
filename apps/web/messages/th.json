@@ -84,7 +84,10 @@
     "clearFilters": "ล้างตัวกรอง",
     "loadError": "โหลดรายการภาพยนตร์ไม่สำเร็จ",
     "nowShowing": "กำลังฉาย",
-    "comingSoon": "เร็ว ๆ นี้"
+    "comingSoon": "เร็ว ๆ นี้",
+    "cardSeeShowtimes": "ดูรอบฉาย",
+    "cardViewDetails": "ดูรายละเอียด",
+    "cardReleasesOn": "เข้าฉาย {date}"
   },
   "movie": {
     "back": "ภาพยนตร์ทั้งหมด",

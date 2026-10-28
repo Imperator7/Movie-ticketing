@@ -2,7 +2,7 @@
 
 import { Monitor, Moon, Sun } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useTheme } from "next-themes";
+import { useTheme } from "@/components/theme-provider";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -31,7 +31,7 @@ export function ThemeMenu() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuRadioGroup value={theme ?? "dark"} onValueChange={setTheme}>
+        <DropdownMenuRadioGroup value={theme} onValueChange={setTheme}>
           {OPTIONS.map(({ value, Icon }) => (
             <DropdownMenuRadioItem key={value} value={value}>
               <Icon aria-hidden className="size-4" />

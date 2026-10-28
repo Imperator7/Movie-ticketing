@@ -127,6 +127,7 @@ export function MovieView() {
               title={title}
               posterUrl={movie.posterUrl}
               priority
+              showDetails={false}
               sizes={POSTER_HERO_SIZES}
               rating={movie.rating}
               durationMinutes={movie.durationMin}

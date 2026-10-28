@@ -5,6 +5,7 @@ import {
   formatBaht,
   formatCountdown,
   formatDuration,
+  formatReleaseDate,
   formatShowDate,
   formatShowDateTime,
   formatShowtime,
@@ -83,5 +84,15 @@ describe("Bangkok date helpers", () => {
 
   it("formatShowDateTime includes the Bangkok clock time", () => {
     expect(formatShowDateTime("2026-10-28T19:30:00+07:00", "en")).toMatch(/19:30/);
+  });
+});
+
+describe("formatReleaseDate", () => {
+  it("is day + short month in Bangkok", () => {
+    expect(formatReleaseDate("2026-11-12", "en")).toBe("12 Nov");
+    expect(formatReleaseDate("2026-11-12", "th")).toMatch(/^12 /);
+    expect(formatReleaseDate("2026-11-12", "th")).toMatch(/[\u0E00-\u0E7F]/);
+    // 23:00 UTC on the 11th is already the 12th in Bangkok.
+    expect(formatReleaseDate("2026-11-11T23:00:00Z", "en")).toBe("12 Nov");
   });
 });
