@@ -464,11 +464,9 @@ describe("OpenAPI conformance (what the running API returns vs docs/openapi.yaml
     },
     {
       operationId: "refresh",
-      name: "403 foreign Origin (documented only in the spec's prose)",
+      name: "403 foreign Origin",
       label: () => `POST ${PREFIX}/auth/refresh`,
       expected: 403,
-      undocumentedOk:
-        "the spec describes the Origin check in prose but lists no 403 response for refresh",
       run: () =>
         api()
           .post(`${PREFIX}/auth/refresh`)
@@ -497,11 +495,9 @@ describe("OpenAPI conformance (what the running API returns vs docs/openapi.yaml
     },
     {
       operationId: "logout",
-      name: "403 foreign Origin (documented only in the spec's prose)",
+      name: "403 foreign Origin",
       label: () => `POST ${PREFIX}/auth/logout`,
       expected: 403,
-      undocumentedOk:
-        "the spec describes the Origin check in prose but lists no 403 response for logout",
       run: () => api().post(`${PREFIX}/auth/logout`).set("Origin", "https://evil.example.com"),
       extra: (res) =>
         (res.body as { code?: string }).code === "FORBIDDEN" ? [] : ["code is not FORBIDDEN"],

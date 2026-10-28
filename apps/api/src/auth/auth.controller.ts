@@ -77,7 +77,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiCookieAuth("refreshCookie")
   @ApiOkResponse({ type: AuthResponseDto })
-  @ApiErrors(401)
+  @ApiErrors(401, 403)
   async refresh(
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
@@ -92,6 +92,7 @@ export class AuthController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiCookieAuth("refreshCookie")
   @ApiNoContentResponse()
+  @ApiErrors(403)
   async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response): Promise<void> {
     await this.auth.logout(cookieOf(req));
     res.clearCookie(REFRESH_COOKIE_NAME, clearCookieOptions(this.cookieSecure));

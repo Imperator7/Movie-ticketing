@@ -50,6 +50,7 @@ import type {
 import type {
   AuthResponse,
   Error,
+  ForbiddenOriginResponse,
   LineLoginCallbackParams,
   LoginRequest,
   RateLimitedResponse,
@@ -360,10 +361,15 @@ export type refreshResponse401 = {
   status: 401;
 };
 
+export type refreshResponse403 = {
+  data: ForbiddenOriginResponse;
+  status: 403;
+};
+
 export type refreshResponseSuccess = refreshResponse200 & {
   headers: Headers;
 };
-export type refreshResponseError = refreshResponse401 & {
+export type refreshResponseError = (refreshResponse401 | refreshResponse403) & {
   headers: Headers;
 };
 
@@ -389,7 +395,10 @@ export const refresh = async (
 
 export const getRefreshMutationKey = () => ["refresh"] as const;
 
-export const getRefreshMutationOptions = <TError = Error, TContext = unknown>(options?: {
+export const getRefreshMutationOptions = <
+  TError = Error | ForbiddenOriginResponse,
+  TContext = unknown,
+>(options?: {
   mutation?: UseMutationOptions<Awaited<ReturnType<typeof refresh>>, TError, void, TContext>;
   request?: SecondParameter<typeof apiClient>;
 }): UseMutationOptions<Awaited<ReturnType<typeof refresh>>, TError, void, TContext> => {
@@ -409,12 +418,12 @@ export const getRefreshMutationOptions = <TError = Error, TContext = unknown>(op
 
 export type RefreshMutationResult = NonNullable<Awaited<ReturnType<typeof refresh>>>;
 
-export type RefreshMutationError = Error;
+export type RefreshMutationError = Error | ForbiddenOriginResponse;
 
 /**
  * @summary Exchange the refresh cookie for a new access token (rotates the cookie)
  */
-export const useRefresh = <TError = Error, TContext = unknown>(
+export const useRefresh = <TError = Error | ForbiddenOriginResponse, TContext = unknown>(
   options?: {
     mutation?: UseMutationOptions<Awaited<ReturnType<typeof refresh>>, TError, void, TContext>;
     request?: SecondParameter<typeof apiClient>;
@@ -428,10 +437,19 @@ export type logoutResponse204 = {
   status: 204;
 };
 
+export type logoutResponse403 = {
+  data: ForbiddenOriginResponse;
+  status: 403;
+};
+
 export type logoutResponseSuccess = logoutResponse204 & {
   headers: Headers;
 };
-export type logoutResponse = logoutResponseSuccess;
+export type logoutResponseError = logoutResponse403 & {
+  headers: Headers;
+};
+
+export type logoutResponse = logoutResponseSuccess | logoutResponseError;
 
 export const getLogoutUrl = () => {
   return `/auth/logout`;
@@ -451,7 +469,10 @@ export const logout = async (
 
 export const getLogoutMutationKey = () => ["logout"] as const;
 
-export const getLogoutMutationOptions = <TError = unknown, TContext = unknown>(options?: {
+export const getLogoutMutationOptions = <
+  TError = ForbiddenOriginResponse,
+  TContext = unknown,
+>(options?: {
   mutation?: UseMutationOptions<Awaited<ReturnType<typeof logout>>, TError, void, TContext>;
   request?: SecondParameter<typeof apiClient>;
 }): UseMutationOptions<Awaited<ReturnType<typeof logout>>, TError, void, TContext> => {
@@ -471,12 +492,12 @@ export const getLogoutMutationOptions = <TError = unknown, TContext = unknown>(o
 
 export type LogoutMutationResult = NonNullable<Awaited<ReturnType<typeof logout>>>;
 
-export type LogoutMutationError = unknown;
+export type LogoutMutationError = ForbiddenOriginResponse;
 
 /**
  * @summary Revoke the current refresh token (this device only) and clear the cookie
  */
-export const useLogout = <TError = unknown, TContext = unknown>(
+export const useLogout = <TError = ForbiddenOriginResponse, TContext = unknown>(
   options?: {
     mutation?: UseMutationOptions<Awaited<ReturnType<typeof logout>>, TError, void, TContext>;
     request?: SecondParameter<typeof apiClient>;

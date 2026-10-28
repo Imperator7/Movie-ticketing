@@ -161,6 +161,7 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
+        "403": { $ref: "#/components/responses/ForbiddenOrigin" }
 
   /auth/logout:
     post:
@@ -172,6 +173,7 @@ paths:
       responses:
         "204":
           description: Logged out (also returned when already logged out)
+        "403": { $ref: "#/components/responses/ForbiddenOrigin" }
 
   /auth/me:
     get:
@@ -659,6 +661,11 @@ components:
             details: { fields: { email: ["invalid_format"], extra: ["unrecognized_key"] } }
     Unauthorized:
       description: "`UNAUTHORIZED` (missing or expired access token). The web refreshes once and retries."
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    ForbiddenOrigin:
+      description: "`FORBIDDEN`: the request's `Origin` is not an allowed web origin (cookie endpoints only, CSRF defence)."
       content:
         application/json:
           schema: { $ref: "#/components/schemas/Error" }

@@ -44,6 +44,7 @@ export * from "./createBookingRequest";
 export * from "./error";
 export * from "./errorCode";
 export * from "./errorDetails";
+export * from "./forbiddenOriginResponse";
 export * from "./genre";
 export * from "./healthStatus";
 export * from "./healthStatusChecks";
