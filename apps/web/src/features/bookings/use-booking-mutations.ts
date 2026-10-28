@@ -9,6 +9,7 @@ import { getGetSeatMapQueryKey } from "@/api/generated/endpoints/showtimes/showt
 import type { Booking } from "@/api/generated/model";
 import { dataOf } from "@/api/unwrap";
 import { ApiError } from "@/lib/api-client";
+import { shouldRetry } from "@/lib/query-client";
 import {
   noActiveBookingResponse,
   okResponse,
@@ -42,6 +43,10 @@ export function useCreateBookingOptimistic(showtimeId: string) {
 
   return useMutation<Awaited<ReturnType<typeof createBooking>>, unknown, BuyVariables, BuyContext>({
     mutationKey: seatMutationKey(showtimeId),
+    // Network errors and 5xx are retried with the SAME variables, so the same Idempotency-Key: the API
+    // replays the stored booking instead of creating a second one. 4xx answers are final.
+    retry: shouldRetry,
+    retryDelay: 500,
     mutationFn: ({ seatIds, idempotencyKey }) =>
       createBooking({ showtimeId, seatIds }, { headers: { "Idempotency-Key": idempotencyKey } }),
 

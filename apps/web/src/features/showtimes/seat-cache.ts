@@ -42,6 +42,14 @@ export function noActiveBookingResponse(headers: Headers = new Headers()) {
   return { data: undefined, status: 204 as const, headers };
 }
 
+/**
+ * Query options of the live seat map: polled every `interval` ms, but never in a hidden tab
+ * (`refetchIntervalInBackground: false`), and always treated as stale.
+ */
+export function seatMapPolling(interval: number | false) {
+  return { refetchInterval: interval, refetchIntervalInBackground: false, staleTime: 0 } as const;
+}
+
 /** Polling interval for the seat map: paused while a seat-changing mutation is in flight. */
 export function useSeatMapRefetchInterval(): number | false {
   const busy = useIsMutating({ mutationKey: SEAT_MUTATION_PREFIX }) > 0;

@@ -59,6 +59,32 @@ function withUser(ctx: Ctx, run: (user: MockUser) => MockResult): MockResult {
   return user ? run(user) : fail(401, "UNAUTHORIZED", "Missing or expired access token");
 }
 
+/**
+ * Query validation like the real API (422 VALIDATION_FAILED, `details.fields`): `page` >= 1,
+ * `pageSize` 1..50, and for /bookings/me a `scope` of upcoming | past.
+ */
+export function pagingIssues(
+  params: URLSearchParams,
+  options: { scope?: boolean } = {},
+): { path: PropertyKey[]; code: string }[] {
+  const issues: { path: PropertyKey[]; code: string }[] = [];
+  const integer = (name: string, min: number, max: number) => {
+    const raw = params.get(name);
+    if (raw === null) return;
+    const n = Number(raw);
+    if (!Number.isInteger(n)) issues.push({ path: [name], code: "invalid_type" });
+    else if (n < min) issues.push({ path: [name], code: "too_small" });
+    else if (n > max) issues.push({ path: [name], code: "too_big" });
+  };
+  integer("page", 1, Number.MAX_SAFE_INTEGER);
+  integer("pageSize", 1, 50);
+  const scope = params.get("scope");
+  if (options.scope && scope !== null && scope !== "upcoming" && scope !== "past") {
+    issues.push({ path: ["scope"], code: "invalid_value" });
+  }
+  return issues;
+}
+
 async function jsonBody(request: Request): Promise<unknown> {
   try {
     return await request.json();
@@ -74,6 +100,8 @@ export const handlers: RequestHandler[] = [
   route("get", "*/genres", () => ({ status: 200, body: genres })),
   route("get", "*/cinemas", () => ({ status: 200, body: cinemas })),
   route("get", "*/movies", ({ url }) => {
+    const bad = pagingIssues(url.searchParams);
+    if (bad.length > 0) return service.validationFailed(bad);
     const status = url.searchParams.get("status");
     const genre = url.searchParams.get("genre");
     const q = url.searchParams.get("q")?.trim().toLowerCase();
@@ -174,16 +202,18 @@ export const handlers: RequestHandler[] = [
     withUser(ctx, (user) => service.getActiveBooking(ctx.db, user)),
   ),
   route("get", "*/bookings/me", (ctx) =>
-    withUser(ctx, (user) =>
-      service.listMyBookings(
+    withUser(ctx, (user) => {
+      const bad = pagingIssues(ctx.url.searchParams, { scope: true });
+      if (bad.length > 0) return service.validationFailed(bad);
+      return service.listMyBookings(
         ctx.db,
         user,
         ctx.url.searchParams.get("scope") === "past" ? "past" : "upcoming",
         Math.max(1, Number(ctx.url.searchParams.get("page") ?? 1)),
         Math.min(50, Math.max(1, Number(ctx.url.searchParams.get("pageSize") ?? 20))),
         ctx.now,
-      ),
-    ),
+      );
+    }),
   ),
   route("post", "*/bookings/:bookingId/cancel", (ctx) =>
     withUser(ctx, (user) => service.cancelBooking(ctx.db, user, param(ctx, "bookingId"), ctx.now)),

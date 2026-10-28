@@ -221,7 +221,8 @@
     "announceMinute": "One minute left to pay",
     "announceSeconds": "{seconds} seconds left to pay",
     "notPending": "This booking is no longer waiting for payment.",
-    "viewResult": "View booking"
+    "viewResult": "View booking",
+    "paymentUnavailable": "Payment is not connected to the real API yet (coming in Phase 5). Cancel the booking, or use the mock demo."
   },
   "complete": {
     "confirming": "Confirming payment…",
@@ -248,7 +249,11 @@
     "view": "View ticket",
     "seats": "Seats {seats}",
     "loadError": "Could not load your bookings.",
-    "browse": "Browse movies"
+    "browse": "Browse movies",
+    "pagination": "Pagination",
+    "previous": "Previous",
+    "next": "Next",
+    "pageOf": "Page {page} of {pages}"
   },
   "ticket": {
     "title": "Movie ticket",

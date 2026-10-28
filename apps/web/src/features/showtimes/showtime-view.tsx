@@ -22,9 +22,10 @@ import { formatShowDateTime } from "@/lib/format";
 import { pickText, toLocale } from "@/lib/localized";
 import { MAX_SEATS_PER_BOOKING } from "@/lib/seat";
 import { formatSeatList } from "@/lib/seat-list";
+import { buyErrorAction } from "./buy-error";
 import { parseSeatsParam, showtimePath } from "./seat-params";
 import { useSeatCopy } from "./seat-labels";
-import { useSeatMapRefetchInterval, withoutOwnSeats } from "./seat-cache";
+import { seatMapPolling, useSeatMapRefetchInterval, withoutOwnSeats } from "./seat-cache";
 import { useTakenSeatDetector } from "./use-taken-seats";
 import { useCreateBookingOptimistic } from "@/features/bookings/use-booking-mutations";
 
@@ -46,12 +47,7 @@ export function ShowtimeView() {
   const pollInterval = useSeatMapRefetchInterval();
   const showtimeQuery = useGetShowtime(id, { query: { enabled: id !== "" } });
   const seatMapQuery = useGetSeatMap(id, {
-    query: {
-      enabled: id !== "",
-      refetchInterval: pollInterval,
-      refetchIntervalInBackground: false,
-      staleTime: 0,
-    },
+    query: { enabled: id !== "", ...seatMapPolling(pollInterval) },
   });
   const activeQuery = useGetActiveBooking({ query: { enabled: ready && isAuthenticated } });
 
@@ -164,20 +160,15 @@ export function ShowtimeView() {
           if (booking) router.push(`/checkout?bookingId=${booking.id}`);
         },
         onError: (error) => {
-          if (error instanceof ApiError && error.code === "SEAT_TAKEN") {
-            const takenIds = Array.isArray(error.details?.seatIds)
-              ? error.details.seatIds.filter((x): x is string => typeof x === "string")
-              : [];
-            const labels = takenIds.flatMap((tid) => labelById.get(tid) ?? []);
-            handleTaken(labels.length > 0 ? labels : validLabels, takenIds);
+          const action = buyErrorAction(error);
+          if (action.type === "seat-taken") {
+            const labels = action.seatIds.flatMap((tid) => labelById.get(tid) ?? []);
+            handleTaken(labels.length > 0 ? labels : validLabels, action.seatIds);
             return;
           }
-          if (error instanceof ApiError && error.code === "ACTIVE_BOOKING_EXISTS") {
-            const bookingId = error.details?.bookingId;
-            if (typeof bookingId === "string") {
-              router.push(`/checkout?bookingId=${bookingId}`);
-              return;
-            }
+          if (action.type === "go-to-booking") {
+            router.push(`/checkout?bookingId=${action.bookingId}`);
+            return;
           }
           const message = errorMessage(error);
           toast.error(message);
