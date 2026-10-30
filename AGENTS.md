@@ -24,7 +24,10 @@ improvements inside a task are applied without asking, but **summarize and ask b
 | Clickable demo     | ✅ Every customer screen on a stateful, contract-faithful **mock API** (TH/EN): browse → seats → login → checkout (demo card / PromptPay) → ticket QR → my bookings, active-booking banner, back-block, time's up, seat taken, cross-tab refresh lock, Demo controls panel                                                                                                                                                     |
 | Catalog (Phase 3)  | ✅ genres / cinemas / movies (filters, TH+EN search, pages) / movie / showtimes (Bangkok days, `seatsLeft`), Cache-Control, **contract test** (allowlist in `apps/api/src/contract/implemented-operations.ts`, add ids each phase), CI integration job. Web catalog screens run on the real API                                                                                                                                |
 | Booking (Phase 4)  | ✅ API: showtime detail, live seat map, createBooking (Idempotency-Key, one transaction, sorted seat locks, server pricing, events), active/my/one booking, cancel (PaymentGateway port, no-op until Stripe), expiry job (30 s, advisory lock). ✅ Seat map keyboard, labels, pinch/zoom. ✅ Web seat map, checkout hold, banner and bookings run on the real API (walked by the lead: book → held for others → cancel → free) |
-| Tests              | 296 api unit · 190 api integration (incl. **runtime OpenAPI conformance** on the 19 live operations and real concurrency tests) · 422 web unit · 26 DB checks. All green. `npm run test:report` → `/test-report`                                                                                                                                                                                                               |
+| Payments (Phase 5) | ✅ createPaymentIntent (reused per booking, provider idempotency key), signed webhook (`stripe_events` dedupe, amount check, guarded confirm, late/duplicate payment → refund, failed/canceled), PaymentGateway on the provider. `PAYMENTS_PROVIDER` = `stripe` or `fake`; the fake runs `/__demo/pay` through the same webhook handler. Web: Stripe Payment Element for a `pk_` key, demo panel otherwise                     |
+| Tickets (Phase 6)  | ✅ Ticket QR, `/bookings`, `/booking?id=` on the real API (walked: seats → login → pay → ticket → my bookings)                                                                                                                                                                                                                                                                                                                 |
+| Stack (Phase 7–8)  | ✅ `apps/api/Dockerfile`, `apps/web/Dockerfile` (nginx, CSP, `/api` proxy), compose `stack` profile (`npm run stack:up` → :8080), Playwright `e2e/` (8 passing), README, `docs/deploy-aws.md` (EC2 + CloudFront fast path). Sentry not wired yet                                                                                                                                                                               |
+| Tests              | 305 api unit · 208 api integration · 425 web unit · 8 e2e (api integration incl. **runtime OpenAPI conformance** on the 21 live operations and real concurrency tests) · 26 DB checks. All green. `npm run test:report` → `/test-report`                                                                                                                                                                                       |
 
 **Phase 1 + 2 wrapped up (2026-10-28).** Auth was then walked in the browser against the real API (register, reload
 restore, two tabs, logout, wrong password, duplicate email); this added `GuestOnly` on /login and /register. Last merge added real TMDB posters in the demo (one movie source:
@@ -34,9 +37,12 @@ does fetch + sync + seed) and the **optimistic seat map** (`features/bookings/us
 seats use the person icon (S8), Demo control "Slow network (1.5 s)". The product owner may come back to revise these
 phases.
 
-**Phase 4 done (2026-10-28).** **Next (needs product-owner go-ahead):** Phase 5 Stripe (move the PaymentGateway
-call out of the booking transaction; checkout shows "payment not connected" on the real API until then), 6 (tickets). Dev map of screens, pipeline and
-live operations: `/flow`.
+**Phases 5–8 done (2026-10-30)** on branch `feat/mvp-phase-5-8`, except Sentry and real Stripe keys. Images were
+not built in the session that wrote them (no Docker Hub there): the first `npm run stack:up` is their real test.
+
+**Phase 4 done (2026-10-28).** Dev map of screens, pipeline and live operations: `/flow`.
+
+**Next:** deploy (`docs/deploy-aws.md`), Stripe test keys, Sentry, then the AWS production layout (plan.md).
 
 **Open questions for the product owner:** when to push to a private GitHub repo (so CI runs). Seed data: movie
 `status` doesn't match showtimes (a COMING_SOON movie has showtimes today). "Can't reach the server" message

@@ -67,9 +67,9 @@ services:
       JWT_SECRET: ${JWT_SECRET:?run npm run stack:secrets}
       REFRESH_TOKEN_PEPPER: ${REFRESH_TOKEN_PEPPER:?run npm run stack:secrets}
       TICKET_QR_SECRET: ${TICKET_QR_SECRET:?run npm run stack:secrets}
-      WEB_ORIGINS: http://localhost:${WEB_HOST_PORT:-8080}
-      # nginx in the web container is the one proxy in front of the API.
-      TRUST_PROXY_HOPS: "1"
+      WEB_ORIGINS: ${PUBLIC_ORIGIN:-http://localhost:8080}
+      # nginx = 1 proxy. Behind CloudFront too (docs/deploy-aws.md) it is 2.
+      TRUST_PROXY_HOPS: ${TRUST_PROXY_HOPS:-1}
       # The e2e suite logs in a lot from one IP: run it with RATE_LIMIT_AUTH_PER_MIN=100 npm run stack:up.
       RATE_LIMIT_AUTH_PER_MIN: ${RATE_LIMIT_AUTH_PER_MIN:-10}
       PAYMENTS_PROVIDER: ${PAYMENTS_PROVIDER:-fake}
@@ -88,7 +88,8 @@ services:
     environment:
       API_UPSTREAM: http://api:4000
     ports:
-      - "127.0.0.1:${WEB_HOST_PORT:-8080}:8080"
+      # WEB_BIND=0.0.0.0 on a server that CloudFront reaches (docs/deploy-aws.md); loopback only by default.
+      - "${WEB_BIND:-127.0.0.1}:${WEB_HOST_PORT:-8080}:8080"
     depends_on:
       api: { condition: service_healthy }
 
