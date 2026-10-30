@@ -30,16 +30,21 @@ Context for a new Claude session continuing the AWS demo work. Read this, then `
 
 - ✅ Phase 0: Bangkok enabled, budget, `tf-learning` admin.
 - ✅ Phase 1 applied: `infra/envs/demo` (versions, providers, variables, main, outputs) on the remote state.
-- 🟡 Phase 2: file 1 of 2 `infra/envs/demo/network.tf` written (VPC 10.20.0.0/16, public 10.20.0.0/24 zone a,
-  app 10.20.10.0/24 + 10.20.11.0/24, db 10.20.20.0/24 + 10.20.21.0/24, IGW, route tables, S3 gateway endpoint).
-  **Not applied yet.**
-- ⏭ Next: Phase 2 file 2 `security-groups.tf`:
-  `alb` ← CloudFront (VPC origin) on 80 · `api` ← `alb` on 4000 · `db` ← `api` and an `ops` task SG on 5432.
-  Then the product owner applies Phase 2. Then Phase 3 (RDS), Phase 4 (ECR, ECS, ALB), Phase 5 (S3, CloudFront, WAF).
+- ✅ Phase 2 applied (2026-10-30): `network.tf` (VPC 10.20.0.0/16, public 10.20.0.0/24 zone a, app 10.20.10.0/24 +
+  10.20.11.0/24, db 10.20.20.0/24 + 10.20.21.0/24, IGW, route tables, S3 gateway endpoint) and `security-groups.tf`
+  (`alb` → `api` on 4000 · `api` ← `alb` · `db` ← `api` and `ops` on 5432 · `api`/`ops` out on 443 · default SG
+  emptied). **The ALB has no inbound rule yet**: CloudFront's VPC-origin SG only exists after Phase 5 creates the
+  VPC origin, so Phase 5 adds `alb` ← that SG on 80.
+- ⏭ Next: Phase 3 (RDS), then Phase 4 (ECR, ECS, ALB), Phase 5 (S3, CloudFront, WAF).
 
 ## On a new machine
 
+The default AWS CLI profile may be another user (on the Windows machine it is `aws-portfolio`, which can't run
+this). Use the `movie-demo` profile (`tf-learning` keys) in the shell that runs Terraform:
+
 ```bash
 git switch feat/infra-demo
+export AWS_PROFILE=movie-demo   # PowerShell: $env:AWS_PROFILE = "movie-demo"
+aws sts get-caller-identity     # must say user/tf-learning
 cd infra/envs/demo && terraform init
 ```
