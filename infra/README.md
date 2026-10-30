@@ -49,19 +49,13 @@ Analyzer) is recommended but can wait.
 Creates **nothing** in AWS. It connects `infra/envs/demo` to your state bucket and proves both providers
 (`ap-southeast-7` and `us-east-1`) can authenticate.
 
-1. Point the backend at your bucket:
+1. The backend is in `versions.tf`: bucket `state-bucket-portfolio-project`, region `ap-southeast-7`, key
+   `movie-ticketing/demo/terraform.tfstate` (the portfolio uses a different key, so its state is untouched).
+
+2. Initialise:
 
    ```bash
-   cd infra/envs/demo && cp backend.hcl.example backend.hcl
-   ```
-
-   Edit `backend.hcl`: `bucket` = your existing state bucket, `region` = the region that bucket is in (it can be
-   any region; it doesn't have to be Bangkok).
-
-2. Initialise (downloads the AWS provider pinned in `.terraform.lock.hcl`, creates no state yet):
-
-   ```bash
-   terraform init -backend-config=backend.hcl
+   cd infra/envs/demo && terraform init
    ```
 
 3. Plan and apply (no resources, only reads your account id and the Bangkok AZs, and writes the first state file):

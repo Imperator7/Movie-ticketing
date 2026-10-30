@@ -7,12 +7,12 @@ terraform {
     }
   }
 
-  # Remote state in the product owner's existing state bucket (shared with the portfolio, separate key).
-  # Bucket and region come from backend.hcl (git-ignored, copy backend.hcl.example):
-  #   terraform init -backend-config=backend.hcl
+  # Same state bucket as the portfolio, but its own key, so the two states never touch.
   backend "s3" {
+    bucket       = "state-bucket-portfolio-project"
     key          = "movie-ticketing/demo/terraform.tfstate"
+    region       = "ap-southeast-7"
     encrypt      = true
-    use_lockfile = true # S3 native lock file, no DynamoDB table
+    use_lockfile = true
   }
 }
