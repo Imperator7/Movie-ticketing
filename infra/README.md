@@ -5,8 +5,8 @@ the lead; **the product owner applies it** and reports back the output asked for
 
 | Phase | What                                   | Applied by you | Status  |
 | ----- | -------------------------------------- | -------------- | ------- |
-| 0     | Prerequisites (region, budget, CLI)    | ☐              | written |
-| 1     | Terraform skeleton on the remote state | ☐              | written |
+| 0     | Prerequisites (region, budget, CLI)    | ☑              | done    |
+| 1     | Terraform skeleton on the remote state | ☑              | applied |
 | 2     | Network (VPC)                          | ☐              | –       |
 | 3     | Database (RDS)                         | ☐              | –       |
 | 4     | Container platform (ECR, ECS, ALB)     | ☐              | –       |
