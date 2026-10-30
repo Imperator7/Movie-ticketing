@@ -56,6 +56,16 @@ Context for a new Claude session continuing the AWS demo work. Read this, then `
   `infra/scripts/db-bootstrap.sh` (sent as the command of a `postgres:17-alpine` task) and
   `infra/scripts/run-task.sh` (run a one-off task, wait, print logs and exit code).
 
+- Phase 4 step 3 applied: `alb.tf` (internal ALB), `service.tf` (api on Fargate Spot, created with 0 tasks;
+  `wake.sh` / `sleep.sh` set the count), `schedule.tf` (seed daily 03:00 Bangkok). TLS fixes: busybox wget can't
+  reach the RDS truststore (bootstrap uses curl); Prisma Migrate reads only the first cert of `sslcert`, so the
+  runtime image extracts the Bangkok RSA2048 G1 CA to `/app/certs/rds-prisma-ca.pem`.
+- Phase 5 written (not applied): `edge.tf` (private S3 + OAC, CloudFront VPC origin → ALB, ALB ingress from
+  `CloudFront-VPCOrigins-Service-SG`, `.html` rewrite function, security headers policy, `/api/*` uncached) and
+  `waf.tf` (us-east-1: IP reputation, common rule set with body-size as count, 2000/5 min rate limit). API gets
+  `WEB_ORIGINS=https://<distribution>`. `infra/scripts/deploy-web.sh` builds the export and syncs it. No custom
+  error pages: they apply to `/api/*` too and would replace API 403/404 JSON, so unknown URLs show S3's XML 404.
+
 ## On a new machine
 
 The default AWS CLI profile may be another user (on the Windows machine it is `aws-portfolio`, which can't run

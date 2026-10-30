@@ -258,7 +258,8 @@ resource "aws_ecs_task_definition" "api" {
       # CloudFront + the ALB in front = 2 proxies, so the real client IP is found for rate limits.
       { name = "TRUST_PROXY_HOPS", value = "2" },
       { name = "PAYMENTS_PROVIDER", value = var.payments_provider },
-      # WEB_ORIGINS (the CloudFront address) is added in Phase 5.
+      # The site's address. Login refresh / logout only accept requests from it (CSRF defence, API-5).
+      { name = "WEB_ORIGINS", value = "https://${aws_cloudfront_distribution.main.domain_name}" },
     ]
     secrets = concat(
       [{ name = "DATABASE_URL", valueFrom = local.ssm.database_url }],

@@ -42,3 +42,18 @@ output "alb_dns_name" {
   description = "Private address, only reachable inside the VPC (CloudFront reaches it from Phase 5)."
   value       = aws_lb.api.dns_name
 }
+
+# ---- Phase 5 ----
+
+output "site_url" {
+  description = "The demo. Open this."
+  value       = "https://${aws_cloudfront_distribution.main.domain_name}"
+}
+
+output "web_bucket" {
+  value = aws_s3_bucket.web.bucket
+}
+
+output "cloudfront_distribution_id" {
+  value = aws_cloudfront_distribution.main.id
+}
