@@ -66,6 +66,15 @@ Context for a new Claude session continuing the AWS demo work. Read this, then `
   `WEB_ORIGINS=https://<distribution>`. `infra/scripts/deploy-web.sh` builds the export and syncs it. No custom
   error pages: they apply to `/api/*` too and would replace API 403/404 JSON, so unknown URLs show S3's XML 404.
 
+- ✅ **Live 2026-10-30: https://d2d95bxlk5dsty.cloudfront.net** (Phases 4–5 applied, db-bootstrap / migrate / seed
+  ran, 18 movies). Next 16 prefetch: the router requests `__next.$d$locale.movie.__PAGE__.txt`, the export writes
+  `__next.$d$locale/movie/__PAGE__.txt`; the CloudFront function maps dots to folders.
+- Phase 6 written: `github.tf` (deploy role via the account's existing GitHub OIDC provider, `main` only) and
+  `.github/workflows/deploy.yml` (after CI on main: build ARM64 on `ubuntu-24.04-arm`, register task definitions,
+  migrate, roll api, deploy web). Needs `terraform apply` + the `github_actions_variables` output copied into
+  GitHub repo variables + merge to main.
+- Gotcha: a stale `node_modules` (Next 15 / TypeScript 7) breaks `next build` with "reading 'fileExists'": `npm ci`.
+
 ## On a new machine
 
 The default AWS CLI profile may be another user (on the Windows machine it is `aws-portfolio`, which can't run

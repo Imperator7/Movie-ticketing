@@ -99,19 +99,31 @@ resource "aws_vpc_security_group_ingress_rule" "alb_from_cloudfront" {
 
 # ---- Behaviour pieces --------------------------------------------------------------------------------------------
 
-# The static export writes /th/movies.html; visitors ask for /th/movies. nginx did `try_files $uri $uri.html`.
+# Maps what the browser asks for to the files the static export wrote:
+#   /th/movies                          → /th/movies.html   (nginx did `try_files $uri $uri.html`)
+#   /dir/                               → /dir/index.html
+#   /th/movie/__next.$d$locale.movie.__PAGE__.txt → /th/movie/__next.$d$locale/movie/__PAGE__.txt
+#     Next's prefetch files: the router asks with dots, `next build` writes nested folders.
 resource "aws_cloudfront_function" "html_rewrite" {
   name    = "${local.name}-html-rewrite"
   runtime = "cloudfront-js-2.0"
-  comment = "/x -> /x.html, /dir/ -> /dir/index.html"
+  comment = "/x -> /x.html, /dir/ -> /dir/index.html, Next prefetch dots -> folders"
   publish = true
   code    = <<-JS
     function handler(event) {
       var request = event.request;
       var uri = request.uri;
-      if (uri.endsWith("/")) {
+      var slash = uri.lastIndexOf("/");
+      var name = uri.substring(slash + 1);
+      if (name.indexOf("__next.") === 0 && name.slice(-4) === ".txt") {
+        var parts = name.slice(0, -4).split(".");
+        if (parts.length > 2) {
+          request.uri = uri.substring(0, slash + 1) + parts[0] + "." + parts[1] + "/" +
+            parts.slice(2).join("/") + ".txt";
+        }
+      } else if (uri.endsWith("/")) {
         request.uri = uri + "index.html";
-      } else if (uri.split("/").pop().indexOf(".") === -1) {
+      } else if (name.indexOf(".") === -1) {
         request.uri = uri + ".html";
       }
       return request;
