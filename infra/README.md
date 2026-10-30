@@ -8,7 +8,7 @@ the lead; **the product owner applies it** and reports back the output asked for
 | 0     | Prerequisites (region, budget, CLI)    | ☑              | done     |
 | 1     | Terraform skeleton on the remote state | ☑              | applied  |
 | 2     | Network (VPC)                          | ☑              | applied  |
-| 3     | Database (RDS)                         | ☑              | applying |
+| 3     | Database (RDS)                         | ☑              | applied  |
 | 4     | Container platform (ECR, ECS, ALB)     | ☐              | –        |
 | 5     | Edge (S3, OAC, CloudFront, WAF)        | ☐              | –        |
 | 6     | CI/CD (GitHub OIDC)                    | ☐              | –        |

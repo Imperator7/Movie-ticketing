@@ -36,7 +36,7 @@ Context for a new Claude session continuing the AWS demo work. Read this, then `
   (`alb` → `api` on 4000 · `api` ← `alb` · `db` ← `api` and `ops` on 5432 · `api`/`ops` out on 443 · default SG
   emptied). **The ALB has no inbound rule yet**: CloudFront's VPC-origin SG only exists after Phase 5 creates the
   VPC origin, so Phase 5 adds `alb` ← that SG on 80.
-- 🟡 Phase 3 (applying 2026-10-30): `database.tf` (RDS PostgreSQL 17 `db.t4g.micro`, zone a, gp3 20 GB, private,
+- ✅ Phase 3 applied (2026-10-30): `database.tf` (RDS PostgreSQL 17 `db.t4g.micro`, zone a, gp3 20 GB, private,
   `rds.force_ssl`, 1-day backups, deletion protection, final snapshot) and `secrets.tf` (`random_password` →
   SSM `SecureString` under `/movie/demo/...`: db master / migrator / app_user passwords, `api/database-url`,
   `api/migration-database-url`, JWT / pepper / QR secrets). The database is **empty** until Phase 4 runs the

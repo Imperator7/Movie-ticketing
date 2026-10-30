@@ -13,10 +13,12 @@ resource "aws_db_parameter_group" "main" {
   name   = "${var.project}-${var.env}-pg17"
   family = "postgres17"
 
-  # Refuse any connection that is not encrypted (TLS).
+  # Refuse any connection that is not encrypted (TLS). A "static" setting: AWS applies it on restart, and the
+  # database already started with it. Without apply_method, every plan would try to change it back.
   parameter {
-    name  = "rds.force_ssl"
-    value = "1"
+    name         = "rds.force_ssl"
+    value        = "1"
+    apply_method = "pending-reboot"
   }
 
   # Log every query slower than 500 ms, so slow spots show up in the logs.
