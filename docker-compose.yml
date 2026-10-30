@@ -36,7 +36,7 @@ services:
     profiles: [stack]
     build: { context: ., dockerfile: apps/api/Dockerfile, target: runtime }
     image: movie-ticketing-api
-    command: ["npx", "prisma", "migrate", "deploy"]
+    command: ["./node_modules/.bin/prisma", "migrate", "deploy"]
     environment:
       MIGRATION_DATABASE_URL: postgresql://migrator:${MIGRATOR_PASSWORD}@postgres:5432/${APP_DB:-movie_ticketing}?schema=public
     depends_on:

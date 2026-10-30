@@ -20,16 +20,22 @@ RUN --mount=type=cache,target=/root/.npm npm ci --workspace api --include-worksp
 COPY apps/api apps/api
 RUN npm run db:generate -w api && npm run build -w api
 
-# Runtime dependencies only.
+# Runtime dependencies only. npm nests some of them (the Prisma CLI among them) in apps/api/node_modules when the
+# root needs another version, so the runtime keeps the monorepo layout instead of flattening it.
 FROM base AS prod-deps
 RUN --mount=type=cache,target=/root/.npm npm ci --workspace api --omit=dev --ignore-scripts
+# Download Prisma's schema engine now, so `prisma migrate deploy` never needs the internet at run time.
+COPY apps/api/prisma.config.ts apps/api/
+COPY apps/api/prisma apps/api/prisma
+RUN cd apps/api && ./node_modules/.bin/prisma version
 
 FROM ${NODE_IMAGE} AS runtime
 ENV NODE_ENV=production
 # openssl: Prisma's schema engine (used by the one-off `prisma migrate deploy`).
 RUN apk add --no-cache openssl
-WORKDIR /app
-COPY --from=prod-deps --chown=node:node /repo/node_modules ./node_modules
+WORKDIR /repo/apps/api
+COPY --from=prod-deps --chown=node:node /repo/node_modules /repo/node_modules
+COPY --from=prod-deps --chown=node:node /repo/apps/api/node_modules ./node_modules
 COPY --from=build --chown=node:node /repo/apps/api/dist ./dist
 COPY --chown=node:node apps/api/package.json apps/api/prisma.config.ts ./
 COPY --chown=node:node apps/api/prisma ./prisma
@@ -37,5 +43,6 @@ USER node
 EXPOSE 4000
 HEALTHCHECK --interval=10s --timeout=3s --start-period=20s --retries=5 \
   CMD wget -qO- http://127.0.0.1:4000/api/v1/health/live >/dev/null || exit 1
-# Migrations run as a separate one-off (same image): npx prisma migrate deploy (as migrator).
+# Migrations: same image, command `./node_modules/.bin/prisma migrate deploy` (as migrator). Never `npx prisma`:
+# if the binary is not found npx silently downloads the latest Prisma instead.
 CMD ["node", "dist/main.js"]
