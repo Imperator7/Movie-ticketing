@@ -7,12 +7,13 @@ export MSYS_NO_PATHCONV=1 # Git Bash: don't turn /ecs/... into a Windows path
 
 TASK="${1:?usage: run-task.sh <db-bootstrap|migrate|seed>}"
 REGION="${AWS_REGION:-ap-southeast-7}"
-cd "$(git rev-parse --show-toplevel)/infra/envs/demo"
 
-out() { terraform output -raw "$1"; }
-CLUSTER=$(out ecs_cluster)
-SUBNET=$(out public_subnet_id)
-SG=$(out ops_security_group_id)
+# Locally the ids come from Terraform; in GitHub Actions from the environment (ECS_CLUSTER, ECS_SUBNET,
+# ECS_SECURITY_GROUP), so the workflow needs no access to the Terraform state.
+out() { (cd "$(git rev-parse --show-toplevel)/infra/envs/demo" && terraform output -raw "$1"); }
+CLUSTER="${ECS_CLUSTER:-$(out ecs_cluster)}"
+SUBNET="${ECS_SUBNET:-$(out public_subnet_id)}"
+SG="${ECS_SECURITY_GROUP:-$(out ops_security_group_id)}"
 FAMILY="$CLUSTER-$TASK"
 
 echo "Starting $FAMILY"

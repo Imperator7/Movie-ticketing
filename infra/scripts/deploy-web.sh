@@ -8,11 +8,12 @@ set -euo pipefail
 export MSYS_NO_PATHCONV=1 # Git Bash: don't turn "/*" into a Windows path
 
 ROOT="$(git rev-parse --show-toplevel)"
-cd "$ROOT/infra/envs/demo"
-BUCKET=$(terraform output -raw web_bucket)
-DIST=$(terraform output -raw cloudfront_distribution_id)
-URL=$(terraform output -raw site_url)
 cd "$ROOT"
+# Locally from Terraform; in GitHub Actions from the environment (WEB_BUCKET, CLOUDFRONT_DISTRIBUTION_ID, SITE_URL).
+out() { (cd "$ROOT/infra/envs/demo" && terraform output -raw "$1"); }
+BUCKET="${WEB_BUCKET:-$(out web_bucket)}"
+DIST="${CLOUDFRONT_DISTRIBUTION_ID:-$(out cloudfront_distribution_id)}"
+URL="${SITE_URL:-$(out site_url)}"
 
 echo "Building the website"
 # Same origin as the page: CloudFront sends /api/* to the API.
