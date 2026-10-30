@@ -47,8 +47,14 @@ Context for a new Claude session continuing the AWS demo work. Read this, then `
   service + daily seed schedule + sleep/wake scripts.
 - TLS in the URLs: node-postgres (API, seed) uses `sslmode=verify-full&sslrootcert=…`; Prisma Migrate's engine
   doesn't know `verify-full`, so the migration URL uses `sslmode=require&sslcert=…&sslaccept=strict`.
-- Payments: `PAYMENTS_PROVIDER=fake` until Stripe test keys exist. Must be `stripe` before Phase 5 makes the API
-  public (`/__demo/pay` must never be public, D5).
+- **Product owner, 2026-10-30: focus = hosted on AWS + GitHub Actions deploys.** Payments stay `fake` (demo pay
+  button, public in the demo is accepted for now; overrides D5 until Stripe keys exist). Stripe (Phase 7) and
+  observability (Phase 8) come later, when the product owner asks. Order now: Phase 4 steps 2–3 → Phase 5 (edge)
+  → Phase 6 (GitHub Actions, needs the repo on GitHub).
+- Phase 4 step 2 written: `ecs.tf` (cluster, Spot capacity, 7-day logs, execution role reading only `/movie/demo/*`,
+  empty task role, task definitions db-bootstrap / migrate / seed / api pinned to the newest ECR image digest),
+  `infra/scripts/db-bootstrap.sh` (sent as the command of a `postgres:17-alpine` task) and
+  `infra/scripts/run-task.sh` (run a one-off task, wait, print logs and exit code).
 
 ## On a new machine
 
