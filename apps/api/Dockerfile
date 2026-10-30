@@ -48,7 +48,9 @@ ARG RDS_PRISMA_CA="Amazon RDS ap-southeast-7 Root CA RSA2048 G1"
 RUN cd /app/certs \
   && awk '/BEGIN CERT/{n++} {print > ("part" n ".pem")}' rds-global-bundle.pem \
   && for f in part*.pem; do \
-       if openssl x509 -in "$f" -noout -subject | grep -q "CN = $RDS_PRISMA_CA,"; then mv "$f" rds-prisma-ca.pem; fi; \
+       if openssl x509 -in "$f" -noout -subject | grep -qE "CN ?= ?$RDS_PRISMA_CA(,|\$)"; then \
+         mv "$f" rds-prisma-ca.pem; \
+       fi; \
      done \
   && rm -f part*.pem && test -s rds-prisma-ca.pem
 COPY --from=prod-deps --chown=node:node /repo/node_modules /repo/node_modules
