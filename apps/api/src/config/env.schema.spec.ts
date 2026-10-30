@@ -204,5 +204,10 @@ describe("background job settings", () => {
       });
       expect(env.PAYMENTS_PROVIDER).toBe("stripe");
     });
+
+    it("treats empty Stripe values as unset (docker compose passes KEY=)", () => {
+      const env = validateEnv({ ...base, STRIPE_SECRET_KEY: "", STRIPE_WEBHOOK_SECRET: "" });
+      expect(env.STRIPE_SECRET_KEY).toBeUndefined();
+    });
   });
 });

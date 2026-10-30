@@ -3,7 +3,8 @@
   "private": true,
   "workspaces": [
     "apps/*",
-    "packages/*"
+    "packages/*",
+    "e2e"
   ],
   "scripts": {
     "dev:web": "npm run dev -w web",
@@ -19,6 +20,11 @@
     "check": "npm run format:check && npm run lint:openapi && turbo run lint typecheck test build",
     "db:up": "docker compose up -d --wait postgres",
     "db:down": "docker compose down",
+    "stack:secrets": "bash scripts/stack-secrets.sh",
+    "stack:up": "npm run stack:secrets && docker compose --profile stack up -d --build",
+    "stack:down": "docker compose --profile stack down",
+    "stack:logs": "docker compose --profile stack logs -f api web",
+    "e2e": "npm run e2e -w e2e",
     "db:migrate": "npm run db:migrate -w api",
     "db:reset": "npm run db:reset -w api",
     "db:studio": "npm run db:studio -w api",

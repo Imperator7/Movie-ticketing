@@ -1,0 +1,14 @@
+**/node_modules
+**/.next
+**/out
+**/dist
+**/.turbo
+**/*.tsbuildinfo
+.git
+.claude
+graphify-out
+reports
+**/.env
+**/.env.*
+!**/.env.example
+apps/api/src/generated

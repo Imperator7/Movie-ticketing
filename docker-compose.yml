@@ -29,5 +29,78 @@ services:
       retries: 10
       start_period: 10s
 
+  # ---- Full stack (`npm run stack:up`): migrate -> seed -> api -> web on http://localhost:8080 ----------------
+  # The services below are in the "stack" profile, so `npm run db:up` still starts only Postgres for development.
+
+  migrate:
+    profiles: [stack]
+    build: { context: ., dockerfile: apps/api/Dockerfile, target: runtime }
+    image: movie-ticketing-api
+    command: ["npx", "prisma", "migrate", "deploy"]
+    environment:
+      MIGRATION_DATABASE_URL: postgresql://migrator:${MIGRATOR_PASSWORD}@postgres:5432/${APP_DB:-movie_ticketing}?schema=public
+    depends_on:
+      postgres: { condition: service_healthy }
+    restart: "no"
+
+  seed:
+    profiles: [stack]
+    build: { context: ., dockerfile: apps/api/Dockerfile, target: build }
+    image: movie-ticketing-api-build
+    command: ["npm", "run", "seed", "-w", "api"]
+    environment:
+      DATABASE_URL: postgresql://app_user:${APP_USER_PASSWORD}@postgres:5432/${APP_DB:-movie_ticketing}?schema=public
+      SEED_DEMO_PASSWORD: ${SEED_DEMO_PASSWORD:-demo-password-123}
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+    restart: "no"
+
+  api:
+    profiles: [stack]
+    image: movie-ticketing-api
+    build: { context: ., dockerfile: apps/api/Dockerfile, target: runtime }
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      LOG_LEVEL: info
+      DATABASE_URL: postgresql://app_user:${APP_USER_PASSWORD}@postgres:5432/${APP_DB:-movie_ticketing}?schema=public
+      JWT_SECRET: ${JWT_SECRET:?run npm run stack:secrets}
+      REFRESH_TOKEN_PEPPER: ${REFRESH_TOKEN_PEPPER:?run npm run stack:secrets}
+      TICKET_QR_SECRET: ${TICKET_QR_SECRET:?run npm run stack:secrets}
+      WEB_ORIGINS: http://localhost:${WEB_HOST_PORT:-8080}
+      # nginx in the web container is the one proxy in front of the API.
+      TRUST_PROXY_HOPS: "1"
+      # The e2e suite logs in a lot from one IP: run it with RATE_LIMIT_AUTH_PER_MIN=100 npm run stack:up.
+      RATE_LIMIT_AUTH_PER_MIN: ${RATE_LIMIT_AUTH_PER_MIN:-10}
+      PAYMENTS_PROVIDER: ${PAYMENTS_PROVIDER:-fake}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      seed: { condition: service_completed_successfully }
+
+  web:
+    profiles: [stack]
+    image: movie-ticketing-web
+    build: { context: ., dockerfile: apps/web/Dockerfile }
+    restart: unless-stopped
+    environment:
+      API_UPSTREAM: http://api:4000
+    ports:
+      - "127.0.0.1:${WEB_HOST_PORT:-8080}:8080"
+    depends_on:
+      api: { condition: service_healthy }
+
+  # Forwards Stripe test webhooks to the API: `docker compose --profile stack --profile stripe up`.
+  # Put the `whsec_...` it prints (`docker compose logs stripe-cli`) into STRIPE_WEBHOOK_SECRET.
+  stripe-cli:
+    profiles: [stripe]
+    image: stripe/stripe-cli:v1.30.0
+    command: ["listen", "--forward-to", "http://api:4000/api/v1/payments/webhook"]
+    environment:
+      STRIPE_API_KEY: ${STRIPE_SECRET_KEY:-}
+    depends_on: [api]
+
 volumes:
   postgres_data:

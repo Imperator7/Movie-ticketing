@@ -47,6 +47,38 @@ jobs:
       - name: API integration tests
         run: npm run test:int -w api
 
+  # The real images (Dockerfiles, nginx, migrate, seed) and the Playwright journey against them.
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Start the stack
+        run: |
+          RATE_LIMIT_AUTH_PER_MIN=100 npm run stack:up
+          for i in $(seq 1 60); do
+            curl -fsS http://localhost:8080/api/v1/health/ready && exit 0
+            sleep 5
+          done
+          docker compose --profile stack logs
+          exit 1
+      - run: npx -w e2e playwright install --with-deps chromium
+      - run: npm run e2e
+        env:
+          CI: "true"
+      - if: failure()
+        run: docker compose --profile stack logs
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: reports/e2e
+
   secrets:
     runs-on: ubuntu-latest
     steps:

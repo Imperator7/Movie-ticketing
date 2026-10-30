@@ -1,0 +1,47 @@
+# Serves the static export and forwards /api to the NestJS API (same origin: no CORS, first-party cookie).
+server {
+  listen 8080;
+  server_name _;
+  root /usr/share/nginx/html;
+  server_tokens off;
+  client_max_body_size 128k;
+
+  # Security headers (WEB-2, WEB-3). Next's static export uses inline bootstrap scripts, hence 'unsafe-inline'.
+  # Stripe.js + Payment Element need js.stripe.com / *.stripe.com; posters come from image.tmdb.org.
+  set $csp "default-src 'self'; script-src 'self' 'unsafe-inline' https://js.stripe.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://image.tmdb.org https://*.stripe.com; font-src 'self'; connect-src 'self' https://api.stripe.com; frame-src https://js.stripe.com https://hooks.stripe.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'";
+  add_header Content-Security-Policy $csp always;
+  add_header X-Content-Type-Options nosniff always;
+  add_header Referrer-Policy strict-origin-when-cross-origin always;
+  add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self \"https://js.stripe.com\")" always;
+  add_header X-Frame-Options DENY always;
+
+  location /api/ {
+    proxy_pass ${API_UPSTREAM};
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Request-Id $request_id;
+    proxy_read_timeout 30s;
+  }
+
+  # Hashed build assets: cache for a year.
+  location /_next/static/ {
+    add_header Cache-Control "public, max-age=31536000, immutable" always;
+    add_header Content-Security-Policy $csp always;
+    add_header X-Content-Type-Options nosniff always;
+    try_files $uri =404;
+  }
+
+  # /en/showtime -> /en/showtime.html (static export), / -> index.html (redirects to /th).
+  location / {
+    add_header Cache-Control "no-cache" always;
+    add_header Content-Security-Policy $csp always;
+    add_header X-Content-Type-Options nosniff always;
+    add_header Referrer-Policy strict-origin-when-cross-origin always;
+    add_header X-Frame-Options DENY always;
+    try_files $uri $uri.html $uri/index.html =404;
+  }
+
+  error_page 404 /404.html;
+}

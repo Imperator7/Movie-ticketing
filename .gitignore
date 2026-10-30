@@ -27,3 +27,7 @@ reports/
 graphify-out/
 # impeccable engine binary (19 MB): the skill launcher downloads it to ~/.impeccable/bin when missing
 .claude/skills/impeccable/scripts/bin/
+
+# Playwright
+e2e/test-results/
+reports/e2e/

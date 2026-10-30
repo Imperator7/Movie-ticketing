@@ -17,6 +17,13 @@ const booleanFlag = z
   .enum(["true", "false", "1", "0"])
   .transform((value) => value === "true" || value === "1");
 
+/** Optional Stripe key with its prefix; an empty value (`KEY=` in compose) counts as unset. */
+const stripeKey = (prefix: string) =>
+  z.preprocess(
+    (value) => (value === "" ? undefined : value),
+    z.string().startsWith(prefix).optional(),
+  );
+
 const SECRET_KEYS = ["JWT_SECRET", "REFRESH_TOKEN_PEPPER", "TICKET_QR_SECRET"] as const;
 
 export const envSchema = z
@@ -85,9 +92,9 @@ export const envSchema = z
      * work and demos without a Stripe account. Production must choose explicitly.
      */
     PAYMENTS_PROVIDER: z.enum(["stripe", "fake"]).optional(),
-    STRIPE_SECRET_KEY: z.string().startsWith("sk_").optional(),
-    STRIPE_PUBLISHABLE_KEY: z.string().startsWith("pk_").optional(),
-    STRIPE_WEBHOOK_SECRET: z.string().startsWith("whsec_").optional(),
+    STRIPE_SECRET_KEY: stripeKey("sk_"),
+    STRIPE_PUBLISHABLE_KEY: stripeKey("pk_"),
+    STRIPE_WEBHOOK_SECRET: stripeKey("whsec_"),
 
     SHUTDOWN_DRAIN_MS: z.coerce.number().int().min(0).max(120_000).default(5000),
     HEALTH_DB_TIMEOUT_MS: z.coerce.number().int().min(50).max(30_000).default(2000),
