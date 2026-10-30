@@ -16,7 +16,8 @@ Context for a new Claude session continuing the AWS demo work. Read this, then `
 - Region `ap-southeast-7` (Bangkok). WAF/ACM for CloudFront in `us-east-1`.
 - State: existing bucket `state-bucket-portfolio-project` (`ap-southeast-7`), key
   `movie-ticketing/demo/terraform.tfstate` (inline in `infra/envs/demo/versions.tf`).
-- AWS CLI user: IAM user `tf-learning` (account 703705584185), now has `AdministratorAccess`.
+- AWS CLI user: IAM user `tf-learning` (account 703705584185), `AdministratorAccess` (re-attached 2026-10-30; it
+  was missing). Temporary: switch to IAM Identity Center (SSO) and delete its access key later.
 - Layout: S3 + OAC + CloudFront + **WAF** (kept) → `/api/*` via CloudFront VPC origin → **internal ALB** →
   1 ECS Fargate Spot task (0.25 vCPU / 0.5 GB, ARM64) → RDS PostgreSQL 17 `db.t4g.micro` single-AZ.
 - **Everything runs in one zone (zone a).** App and db subnets also exist in zone b, empty, only because AWS requires
@@ -35,7 +36,19 @@ Context for a new Claude session continuing the AWS demo work. Read this, then `
   (`alb` → `api` on 4000 · `api` ← `alb` · `db` ← `api` and `ops` on 5432 · `api`/`ops` out on 443 · default SG
   emptied). **The ALB has no inbound rule yet**: CloudFront's VPC-origin SG only exists after Phase 5 creates the
   VPC origin, so Phase 5 adds `alb` ← that SG on 80.
-- ⏭ Next: Phase 3 (RDS), then Phase 4 (ECR, ECS, ALB), Phase 5 (S3, CloudFront, WAF).
+- 🟡 Phase 3 (applying 2026-10-30): `database.tf` (RDS PostgreSQL 17 `db.t4g.micro`, zone a, gp3 20 GB, private,
+  `rds.force_ssl`, 1-day backups, deletion protection, final snapshot) and `secrets.tf` (`random_password` →
+  SSM `SecureString` under `/movie/demo/...`: db master / migrator / app_user passwords, `api/database-url`,
+  `api/migration-database-url`, JWT / pepper / QR secrets). The database is **empty** until Phase 4 runs the
+  db-bootstrap task (roles + `movie_ticketing`; moved from Phase 3 because it needs ECS).
+- 🟡 Phase 4 in 3 steps: (1) `ecr.tf` + `infra/scripts/push-images.sh` (ARM64 images tagged with the git commit;
+  the API Dockerfile now bundles the RDS CA at `/app/certs/rds-global-bundle.pem`), (2) `ecs.tf`: cluster, logs,
+  IAM roles, task definitions api / migrate / seed / db-bootstrap, run bootstrap → migrate → seed, (3) `alb.tf` +
+  service + daily seed schedule + sleep/wake scripts.
+- TLS in the URLs: node-postgres (API, seed) uses `sslmode=verify-full&sslrootcert=…`; Prisma Migrate's engine
+  doesn't know `verify-full`, so the migration URL uses `sslmode=require&sslcert=…&sslaccept=strict`.
+- Payments: `PAYMENTS_PROVIDER=fake` until Stripe test keys exist. Must be `stripe` before Phase 5 makes the API
+  public (`/__demo/pay` must never be public, D5).
 
 ## On a new machine
 

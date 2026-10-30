@@ -3,18 +3,18 @@
 Terraform and scripts for the layout in [`plan-infra.md`](../plan-infra.md). Each phase is written and committed by
 the lead; **the product owner applies it** and reports back the output asked for at the end of the phase.
 
-| Phase | What                                   | Applied by you | Status  |
-| ----- | -------------------------------------- | -------------- | ------- |
-| 0     | Prerequisites (region, budget, CLI)    | ☑              | done    |
-| 1     | Terraform skeleton on the remote state | ☑              | applied |
-| 2     | Network (VPC)                          | ☑              | applied |
-| 3     | Database (RDS)                         | ☐              | –       |
-| 4     | Container platform (ECR, ECS, ALB)     | ☐              | –       |
-| 5     | Edge (S3, OAC, CloudFront, WAF)        | ☐              | –       |
-| 6     | CI/CD (GitHub OIDC)                    | ☐              | –       |
-| 7     | Payments and go-live checks            | ☐              | –       |
-| 8     | Observability (light)                  | ☐              | –       |
-| 9     | NAT (fck-nat), later                   | ☐              | –       |
+| Phase | What                                   | Applied by you | Status   |
+| ----- | -------------------------------------- | -------------- | -------- |
+| 0     | Prerequisites (region, budget, CLI)    | ☑              | done     |
+| 1     | Terraform skeleton on the remote state | ☑              | applied  |
+| 2     | Network (VPC)                          | ☑              | applied  |
+| 3     | Database (RDS)                         | ☑              | applying |
+| 4     | Container platform (ECR, ECS, ALB)     | ☐              | –        |
+| 5     | Edge (S3, OAC, CloudFront, WAF)        | ☐              | –        |
+| 6     | CI/CD (GitHub OIDC)                    | ☐              | –        |
+| 7     | Payments and go-live checks            | ☐              | –        |
+| 8     | Observability (light)                  | ☐              | –        |
+| 9     | NAT (fck-nat), later                   | ☐              | –        |
 
 Conventions: region `ap-southeast-7`, edge resources (WAF, ACM) in `us-east-1`, every resource tagged
 `project=movie-ticketing`, `env=demo`, `managed-by=terraform`. State lives in your **existing** state bucket (the one

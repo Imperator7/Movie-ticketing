@@ -7,6 +7,10 @@ ARG NODE_IMAGE=node:24.11-alpine3.22
 FROM ${NODE_IMAGE} AS base
 # openssl: Prisma detects it to pick its engines (generate / migrate).
 RUN apk add --no-cache openssl
+# AWS RDS root certificates, so connections to RDS verify the server (sslmode=verify-full). The checksum pins the
+# file: if AWS publishes a new bundle the build fails here, and we update the hash on purpose.
+ADD --checksum=sha256:90a6f1a7978a1b1b096dca6c57511ca48d3b8cf052f8e704baf358f34ea2f21b --chmod=644 \
+  https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem /app/certs/rds-global-bundle.pem
 WORKDIR /repo
 ENV HUSKY=0 NEXT_TELEMETRY_DISABLED=1
 COPY package.json package-lock.json ./
@@ -34,6 +38,7 @@ ENV NODE_ENV=production
 # openssl: Prisma's schema engine (used by the one-off `prisma migrate deploy`).
 RUN apk add --no-cache openssl
 WORKDIR /repo/apps/api
+COPY --from=base /app/certs /app/certs
 COPY --from=prod-deps --chown=node:node /repo/node_modules /repo/node_modules
 COPY --from=prod-deps --chown=node:node /repo/apps/api/node_modules ./node_modules
 COPY --from=build --chown=node:node /repo/apps/api/dist ./dist
