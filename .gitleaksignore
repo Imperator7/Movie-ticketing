@@ -1,0 +1,12 @@
+# Fake test fixtures (spec secrets, sk_test_ stub, README badge). Reviewed 2026-10-30: no real secrets.
+b96824081c15c474cc098f386db542e760501e1d:apps/api/test/conformance.int-spec.ts:stripe-access-token:259
+519b6579ad45d31225b5a7bd0a7cf7ace0959bb0:apps/api/src/config/env.schema.spec.ts:generic-api-key:161
+519b6579ad45d31225b5a7bd0a7cf7ace0959bb0:apps/api/src/config/env.schema.spec.ts:generic-api-key:162
+519b6579ad45d31225b5a7bd0a7cf7ace0959bb0:apps/api/src/config/env.schema.spec.ts:generic-api-key:163
+e0ebffa569376e905ce03c4acf7b78f804ffb8ac:apps/api/src/auth/refresh-rotation.spec.ts:generic-api-key:53
+e0ebffa569376e905ce03c4acf7b78f804ffb8ac:apps/api/src/auth/refresh-rotation.spec.ts:generic-api-key:56
+937fcbfa0224061dc36ed3eee5a0ad6e4e2e4091:apps/api/prisma/seed/tmdb.spec.ts:generic-api-key:230
+e973c66e27b968991391675e4959a68bdb72cb6b:apps/api/src/config/env.schema.spec.ts:generic-api-key:4
+e973c66e27b968991391675e4959a68bdb72cb6b:apps/api/src/config/env.schema.spec.ts:generic-api-key:5
+e973c66e27b968991391675e4959a68bdb72cb6b:apps/api/src/config/env.schema.spec.ts:generic-api-key:6
+38e3474b90f2f73c2594bc59ef48e86c99a0c961:apps/api/README.md:generic-api-key:5
