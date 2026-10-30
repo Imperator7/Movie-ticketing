@@ -13,6 +13,9 @@ ADD --checksum=sha256:90a6f1a7978a1b1b096dca6c57511ca48d3b8cf052f8e704baf358f34e
   https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem /app/certs/rds-global-bundle.pem
 WORKDIR /repo
 ENV HUSKY=0 NEXT_TELEMETRY_DISABLED=1
+# Patient downloads: emulated ARM64 builds (on an x86 PC) are slow, and npm's defaults gave up on one package.
+ENV NPM_CONFIG_FETCH_RETRIES=5 NPM_CONFIG_FETCH_RETRY_MINTIMEOUT=20000 NPM_CONFIG_FETCH_RETRY_MAXTIMEOUT=120000 \
+  NPM_CONFIG_FETCH_TIMEOUT=600000
 COPY package.json package-lock.json ./
 COPY apps/api/package.json apps/api/
 COPY apps/web/package.json apps/web/
