@@ -1,0 +1,9 @@
+# Terraform working dirs and any local state.
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+*.tfplan
+# Never commit secrets in variable files.
+*.secret.tfvars

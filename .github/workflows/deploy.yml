@@ -1,0 +1,134 @@
+# Deploys the demo to AWS after CI passes on main (or by hand: Actions → Deploy → Run workflow).
+#   1. build the ARM64 images and push them to ECR (tag = commit)
+#   2. register task definitions with the new images
+#   3. run the migrate task (database first, then code)
+#   4. roll the api service (new task starts, old one stops when the new one is healthy; auto-rollback)
+#   5. build the website and upload it to S3, clear the CloudFront cache
+# AWS access: OIDC, no stored keys (infra/envs/demo/github.tf). Ids come from repo variables (see that file's
+# `github_actions_variables` output). Infrastructure changes stay manual: `terraform apply` by the owner.
+name: Deploy
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+# One deploy at a time, never cancel one halfway (a migration might be running).
+concurrency:
+  group: deploy-demo
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write # lets the job ask GitHub for the OIDC token AWS checks
+
+env:
+  AWS_REGION: ap-southeast-7
+  ECS_CLUSTER: movie-ticketing-demo
+
+jobs:
+  deploy:
+    # After CI only if CI succeeded.
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    # Native ARM64 runner: the images build without emulation. Set the repo variable BUILD_RUNNER=ubuntu-latest if
+    # ARM runners aren't available for this repo (the build is then emulated and slower).
+    runs-on: ${{ vars.BUILD_RUNNER || 'ubuntu-24.04-arm' }}
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - id: tag
+        name: Image tag and whether it already exists
+        run: |
+          TAG=$(git rev-parse --short=12 HEAD)
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          # Tags can't be overwritten: re-running a deploy for the same commit reuses the images.
+          if aws ecr describe-images --repository-name movie-api --image-ids imageTag="$TAG" >/dev/null 2>&1 &&
+             aws ecr describe-images --repository-name movie-api-seed --image-ids imageTag="$TAG" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: docker/setup-qemu-action@v3
+        if: steps.tag.outputs.exists != 'true'
+      - uses: docker/setup-buildx-action@v3
+        if: steps.tag.outputs.exists != 'true'
+
+      - name: Build and push movie-api
+        if: steps.tag.outputs.exists != 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/api/Dockerfile
+          target: runtime
+          platforms: linux/arm64
+          push: true
+          provenance: false
+          sbom: false
+          tags: ${{ steps.ecr.outputs.registry }}/movie-api:${{ steps.tag.outputs.tag }}
+          cache-from: type=gha,scope=api
+          cache-to: type=gha,mode=max,scope=api
+
+      - name: Build and push movie-api-seed
+        if: steps.tag.outputs.exists != 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/api/Dockerfile
+          target: build
+          platforms: linux/arm64
+          push: true
+          provenance: false
+          sbom: false
+          tags: ${{ steps.ecr.outputs.registry }}/movie-api-seed:${{ steps.tag.outputs.tag }}
+          cache-from: type=gha,scope=api
+          cache-to: type=gha,mode=max,scope=seed
+
+      - name: Register task definitions with the new images
+        run: |
+          API="${{ steps.ecr.outputs.registry }}/movie-api:${{ steps.tag.outputs.tag }}"
+          SEED="${{ steps.ecr.outputs.registry }}/movie-api-seed:${{ steps.tag.outputs.tag }}"
+          bash infra/scripts/register-image.sh "$ECS_CLUSTER-migrate" "$API"
+          bash infra/scripts/register-image.sh "$ECS_CLUSTER-api" "$API"
+          bash infra/scripts/register-image.sh "$ECS_CLUSTER-seed" "$SEED"
+
+      - name: Migrate the database
+        env:
+          ECS_SUBNET: ${{ vars.ECS_SUBNET }}
+          ECS_SECURITY_GROUP: ${{ vars.ECS_SECURITY_GROUP }}
+        run: bash infra/scripts/run-task.sh migrate
+
+      - name: Roll out the API
+        run: |
+          aws ecs update-service --cluster "$ECS_CLUSTER" --service api \
+            --task-definition "$ECS_CLUSTER-api" --query 'service.taskDefinition' --output text
+          echo "Waiting until the new task is healthy (the circuit breaker rolls back if it never is)..."
+          aws ecs wait services-stable --cluster "$ECS_CLUSTER" --services api
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      - name: Deploy the website
+        env:
+          WEB_BUCKET: ${{ vars.WEB_BUCKET }}
+          CLOUDFRONT_DISTRIBUTION_ID: ${{ vars.CLOUDFRONT_DISTRIBUTION_ID }}
+          SITE_URL: ${{ vars.SITE_URL }}
+        run: bash infra/scripts/deploy-web.sh
+
+      - name: Summary
+        run: echo "Deployed ${{ steps.tag.outputs.tag }} to ${{ vars.SITE_URL }}" >> "$GITHUB_STEP_SUMMARY"

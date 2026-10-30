@@ -42,7 +42,8 @@ not built in the session that wrote them (no Docker Hub there): the first `npm r
 
 **Phase 4 done (2026-10-28).** Dev map of screens, pipeline and live operations: `/flow`.
 
-**Next:** deploy (`docs/deploy-aws.md`), Stripe test keys, Sentry, then the AWS production layout (plan.md).
+**Next:** AWS demo environment, phase by phase (`plan-infra.md`, Terraform in `infra/`, the product owner applies
+each phase). Phase 0 (account guardrails) written. Then Stripe test keys, Sentry.
 
 **Open questions for the product owner:** when to push to a private GitHub repo (so CI runs). Seed data: movie
 `status` doesn't match showtimes (a COMING_SOON movie has showtimes today). "Can't reach the server" message

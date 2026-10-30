@@ -7,8 +7,15 @@ ARG NODE_IMAGE=node:24.11-alpine3.22
 FROM ${NODE_IMAGE} AS base
 # openssl: Prisma detects it to pick its engines (generate / migrate).
 RUN apk add --no-cache openssl
+# AWS RDS root certificates, so connections to RDS verify the server (sslmode=verify-full). The checksum pins the
+# file: if AWS publishes a new bundle the build fails here, and we update the hash on purpose.
+ADD --checksum=sha256:90a6f1a7978a1b1b096dca6c57511ca48d3b8cf052f8e704baf358f34ea2f21b --chmod=644 \
+  https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem /app/certs/rds-global-bundle.pem
 WORKDIR /repo
 ENV HUSKY=0 NEXT_TELEMETRY_DISABLED=1
+# Patient downloads: emulated ARM64 builds (on an x86 PC) are slow, and npm's defaults gave up on one package.
+ENV NPM_CONFIG_FETCH_RETRIES=5 NPM_CONFIG_FETCH_RETRY_MINTIMEOUT=20000 NPM_CONFIG_FETCH_RETRY_MAXTIMEOUT=120000 \
+  NPM_CONFIG_FETCH_TIMEOUT=600000
 COPY package.json package-lock.json ./
 COPY apps/api/package.json apps/api/
 COPY apps/web/package.json apps/web/
@@ -34,6 +41,18 @@ ENV NODE_ENV=production
 # openssl: Prisma's schema engine (used by the one-off `prisma migrate deploy`).
 RUN apk add --no-cache openssl
 WORKDIR /repo/apps/api
+COPY --from=base /app/certs /app/certs
+# Prisma Migrate reads only the FIRST certificate of a file, and the bundle starts with another region's CA. Give it
+# a file with just the CA our RDS instance uses (database.tf: default rds-ca-rsa2048-g1, Bangkok).
+ARG RDS_PRISMA_CA="Amazon RDS ap-southeast-7 Root CA RSA2048 G1"
+RUN cd /app/certs \
+  && awk '/BEGIN CERT/{n++} {print > ("part" n ".pem")}' rds-global-bundle.pem \
+  && for f in part*.pem; do \
+       if openssl x509 -in "$f" -noout -subject | grep -qE "CN ?= ?$RDS_PRISMA_CA(,|\$)"; then \
+         mv "$f" rds-prisma-ca.pem; \
+       fi; \
+     done \
+  && rm -f part*.pem && test -s rds-prisma-ca.pem
 COPY --from=prod-deps --chown=node:node /repo/node_modules /repo/node_modules
 COPY --from=prod-deps --chown=node:node /repo/apps/api/node_modules ./node_modules
 COPY --from=build --chown=node:node /repo/apps/api/dist ./dist
