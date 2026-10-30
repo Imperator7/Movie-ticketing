@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Phase 0: checks that the region supports what plan-infra.md uses. Read-only API calls, creates nothing, free.
-# Usage: AWS_PROFILE=movie-demo bash infra/scripts/check-region.sh [region]
+# Usage: [AWS_PROFILE=<profile>] bash infra/scripts/check-region.sh [region]
 set -uo pipefail
 
 REGION="${1:-ap-southeast-7}"

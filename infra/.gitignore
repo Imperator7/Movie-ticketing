@@ -1,0 +1,11 @@
+# Terraform working dirs and local state (bootstrap keeps its state locally, on your Mac only).
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+*.tfplan
+# Holds the account-specific state bucket name; copy from backend.hcl.example.
+backend.hcl
+# Never commit secrets in variable files.
+*.secret.tfvars

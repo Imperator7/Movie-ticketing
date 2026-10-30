@@ -109,8 +109,8 @@ the Bangkok prices in the pricing calculator in Phase 0).
 
 ### Phase 1 — Terraform skeleton and remote state
 
-- `infra/bootstrap/`: state bucket (versioned, SSE-S3, public access blocked, TLS-only policy). Applied once with
-  local state, then left alone.
+- Remote state: the product owner's **existing** state bucket (shared with the portfolio), key
+  `movie-ticketing/demo/terraform.tfstate`. No new bucket.
 - `infra/envs/demo/`: providers (`ap-southeast-7` + `us-east-1` alias), backend `s3` with `use_lockfile = true`,
   `default_tags` (`project`, `env`, `managed-by=terraform`). Cost-relevant knobs are variables (`nat_type`,
   `task_count`, `use_spot`, `rds_multi_az`, `waf_enabled`, …) so production is a second `envs/` folder.
@@ -250,7 +250,6 @@ the Bangkok prices in the pricing calculator in Phase 0).
 
 ```
 infra/
-  bootstrap/            state bucket (local state, applied once)
   envs/demo/            main.tf, variables.tf, terraform.tfvars (no secrets), backend.tf
   modules/network/      VPC, subnets, NAT (none | fck-nat | gateway), S3 endpoint, SGs
   modules/database/     RDS, parameter group, SSM parameters
@@ -278,4 +277,5 @@ Each line is a variable or a small module change in a new `envs/prod/`:
 | --- | ---------- | -------------------------------------------------------------------------------------------------------------- |
 | I1  | 2026-10-30 | Plan written. D1 Terraform, D2 Bangkok, D3 cloudfront.net, D4 no demo user, D5 Stripe test.                    |
 | I2  | 2026-10-30 | D6 demo-cheap profile (no NAT, 1 Spot task in public subnets, internal ALB, SSM, no WAF), D7 sleep / destroy.  |
+| I4  | 2026-10-30 | State goes in the existing portfolio state bucket under its own key; no bootstrap bucket.                      |
 | I3  | 2026-10-30 | WAF kept (Phase 5). NAT deferred to Phase 9, fck-nat first, managed NAT gateway only if needed. Budget USD 50. |

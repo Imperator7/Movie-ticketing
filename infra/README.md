@@ -3,101 +3,88 @@
 Terraform and scripts for the layout in [`plan-infra.md`](../plan-infra.md). Each phase is written and committed by
 the lead; **the product owner applies it** and reports back the output asked for at the end of the phase.
 
-| Phase | What                                | Applied by you | Status  |
-| ----- | ----------------------------------- | -------------- | ------- |
-| 0     | Account and guardrails (console)    | ☐              | written |
-| 1     | Terraform skeleton and remote state | ☐              | –       |
-| 2     | Network (VPC)                       | ☐              | –       |
-| 3     | Database (RDS)                      | ☐              | –       |
-| 4     | Container platform (ECR, ECS, ALB)  | ☐              | –       |
-| 5     | Edge (S3, OAC, CloudFront, WAF)     | ☐              | –       |
-| 6     | CI/CD (GitHub OIDC)                 | ☐              | –       |
-| 7     | Payments and go-live checks         | ☐              | –       |
-| 8     | Observability (light)               | ☐              | –       |
-| 9     | NAT (fck-nat), later                | ☐              | –       |
+| Phase | What                                   | Applied by you | Status  |
+| ----- | -------------------------------------- | -------------- | ------- |
+| 0     | Prerequisites (region, budget, CLI)    | ☐              | written |
+| 1     | Terraform skeleton on the remote state | ☐              | written |
+| 2     | Network (VPC)                          | ☐              | –       |
+| 3     | Database (RDS)                         | ☐              | –       |
+| 4     | Container platform (ECR, ECS, ALB)     | ☐              | –       |
+| 5     | Edge (S3, OAC, CloudFront, WAF)        | ☐              | –       |
+| 6     | CI/CD (GitHub OIDC)                    | ☐              | –       |
+| 7     | Payments and go-live checks            | ☐              | –       |
+| 8     | Observability (light)                  | ☐              | –       |
+| 9     | NAT (fck-nat), later                   | ☐              | –       |
 
-Conventions: region `ap-southeast-7`, edge resources (WAF, ACM) in `us-east-1`, AWS CLI profile `movie-demo`,
-every resource tagged `project=movie-ticketing`, `env=demo`, `managed-by=terraform`.
+Conventions: region `ap-southeast-7`, edge resources (WAF, ACM) in `us-east-1`, every resource tagged
+`project=movie-ticketing`, `env=demo`, `managed-by=terraform`. State lives in your **existing** state bucket (the one
+with the portfolio state) under the key `movie-ticketing/demo/terraform.tfstate`. Credentials come from your AWS CLI
+profile (`AWS_PROFILE`), never from the code.
 
 ---
 
-## Phase 0 — Account and guardrails (you, console, ~1 hour)
+## Phase 0 — Prerequisites (console, ~10 minutes)
 
-Nothing here costs money. Do the steps in order. Sign in as the **root user** only for steps 1–3.
+Only what Terraform needs to run. Account hardening (root MFA, SSO instead of IAM user keys, CloudTrail, Access
+Analyzer) is recommended but can wait.
 
-### 1. Lock down the root user
-
-1. Console (top right) → **Security credentials**.
-2. **Multi-factor authentication** → Assign MFA device (passkey or authenticator app).
-3. **Access keys**: there should be none for root. If one exists, deactivate it, then delete it.
-
-### 2. Turn on the Bangkok region (opt-in region)
-
-1. Account menu → **Account** → **AWS Regions**.
-2. Find **Asia Pacific (Thailand) `ap-southeast-7`** → **Enable**. It can take a few minutes up to a few hours.
-
-### 3. Budget and billing alerts
-
-1. **Billing and Cost Management** → **Budgets** → Create budget → **Cost budget**, monthly, **USD 50**.
-2. Alerts: actual cost at **50 %, 80 %, 100 %**, and forecasted cost at **100 %**, to your email.
-3. **Billing preferences**: turn on **Free Tier usage alerts** and **CloudWatch billing alerts**.
-4. **Credits** and **Free Tier** pages: note what the account has (new-account credits can cover most of the demo).
-5. **Cost Explorer**: open it once so it starts collecting (free).
-
-### 4. Admin user through IAM Identity Center (no long-lived keys)
-
-1. **IAM Identity Center** → Enable (pick `ap-southeast-7` if offered, otherwise `ap-southeast-1`; note which).
-2. **Users** → Add user (your name and email) → accept the invite email, set a password and MFA.
-3. **Permission sets** → Create → predefined **AdministratorAccess**, session duration **4 hours**.
-4. **AWS accounts** → select this account → Assign users → your user + `AdministratorAccess`.
-5. Note the **AWS access portal URL** (`https://d-xxxxxxxxxx.awsapps.com/start`).
-6. On your Mac:
+1. **Enable Bangkok.** Account menu → **Account** → **AWS Regions** → **Asia Pacific (Thailand) `ap-southeast-7`**
+   → Enable. It's an opt-in region: nothing works there until this finishes (minutes, sometimes hours).
+2. **Budget.** Billing and Cost Management → **Budgets** → Cost budget, monthly **USD 50**, email alerts at actual
+   50 / 80 / 100 % and forecasted 100 %.
+3. **Permissions for your CLI user.** The `default` profile is the IAM user `tf-learning`. The coming phases create
+   VPC, EC2, RDS, ECS, ECR, ELB, IAM roles, SSM parameters, S3, CloudFront and WAF resources, so that user needs
+   broad rights (for a demo account: attach `AdministratorAccess`) or use an SSO admin profile instead. Today it
+   can't even run `s3:ListAllMyBuckets`.
+4. **Check Bangkok supports the plan** (read-only, creates nothing):
 
    ```bash
-   aws configure sso --profile movie-demo
+   bash infra/scripts/check-region.sh
    ```
 
-   SSO session name `movie`, start URL = the portal URL, SSO region = the region from step 1, scopes default,
-   default region **`ap-southeast-7`**, output `json`.
+   Every line should say `OK`.
 
-7. Test it:
+## Phase 1 — Terraform skeleton on the remote state
+
+Creates **nothing** in AWS. It connects `infra/envs/demo` to your state bucket and proves both providers
+(`ap-southeast-7` and `us-east-1`) can authenticate.
+
+1. Point the backend at your bucket:
 
    ```bash
-   aws sso login --profile movie-demo
+   cd infra/envs/demo && cp backend.hcl.example backend.hcl
+   ```
+
+   Edit `backend.hcl`: `bucket` = your existing state bucket, `region` = the region that bucket is in (it can be
+   any region; it doesn't have to be Bangkok).
+
+2. Initialise (downloads the AWS provider pinned in `.terraform.lock.hcl`, creates no state yet):
+
+   ```bash
+   terraform init -backend-config=backend.hcl
+   ```
+
+3. Plan and apply (no resources, only reads your account id and the Bangkok AZs, and writes the first state file):
+
+   ```bash
+   terraform plan
    ```
 
    ```bash
-   aws sts get-caller-identity --profile movie-demo
+   terraform apply
    ```
 
-   The `Arn` should contain `AWSReservedSSO_AdministratorAccess`.
+4. Check the state file landed next to the portfolio one, under its own key:
 
-8. `~/.aws/credentials` already exists on this Mac. If it holds access keys for an IAM user in this account, the plan
-   doesn't need them any more. Deactivate them in IAM (not delete, until you're sure nothing else uses them).
+   ```bash
+   aws s3 ls s3://<your-bucket>/movie-ticketing/demo/
+   ```
 
-From now on, sign in through the access portal, not as root.
+   (Needs `s3:ListBucket` on that bucket; skip if the user can't list.)
 
-### 5. Account-wide safety switches
+**Phase 1 is done when** `terraform apply` prints `account_id` and three Bangkok AZs, and the portfolio state is
+untouched. Send me the `apply` output (no secrets in it).
 
-1. **CloudTrail** → Create trail `movie-account-trail`, management events only, new S3 bucket, SSE-S3 (the
-   first trail with management events is free; S3 storage costs cents).
-2. **IAM** → **Access analyzer** → Create analyzer, type **external access**, zone of trust = this account (free).
-3. **S3** → **Block Public Access settings for this account** → turn **all four** on. (The web bucket uses OAC, so it
-   never needs public access.)
-
-### 6. Check Bangkok supports what the plan uses
-
-```bash
-AWS_PROFILE=movie-demo bash infra/scripts/check-region.sh
-```
-
-Every line should say `OK`. Send me the output (it has no secrets).
-
-### Phase 0 is done when
-
-- [ ] Root has MFA and no access keys.
-- [ ] `ap-southeast-7` is enabled.
-- [ ] Budget alert email arrived (AWS sends a confirmation).
-- [ ] `aws sts get-caller-identity --profile movie-demo` shows the SSO admin role.
-- [ ] CloudTrail, Access Analyzer and S3 account Block Public Access are on.
-- [ ] `check-region.sh` output sent to the lead.
+Lock file note: the S3 backend writes `movie-ticketing/demo/terraform.tfstate.tflock` while a command runs
+(`use_lockfile = true`). If the portfolio still uses a DynamoDB lock table, that's fine: the two projects have
+separate keys and don't share locks.

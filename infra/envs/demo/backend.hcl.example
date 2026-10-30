@@ -1,0 +1,5 @@
+# Copy to backend.hcl (git-ignored) and put in your existing state bucket (the one that holds the portfolio state).
+# This project's state goes under its own key (movie-ticketing/demo/terraform.tfstate), so it never touches the
+# portfolio's state file.
+bucket = "<your-existing-state-bucket>"
+region = "<that bucket's region>"
