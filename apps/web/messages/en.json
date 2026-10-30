@@ -222,7 +222,7 @@
     "announceSeconds": "{seconds} seconds left to pay",
     "notPending": "This booking is no longer waiting for payment.",
     "viewResult": "View booking",
-    "paymentUnavailable": "Payment is not connected to the real API yet (coming in Phase 5). Cancel the booking, or use the mock demo."
+    "paymentUnavailable": "Demo payments are turned off on this server. Cancel the booking and try again later."
   },
   "complete": {
     "confirming": "Confirming payment…",

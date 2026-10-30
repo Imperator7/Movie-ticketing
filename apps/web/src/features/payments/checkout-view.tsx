@@ -19,8 +19,8 @@ import { useRouter } from "@/i18n/navigation";
 import { ApiError } from "@/lib/api-client";
 import { toLocale } from "@/lib/localized";
 import { CheckoutBody } from "./checkout-body";
-import { DemoPaymentPanel } from "./demo-payment-panel";
 import type { PaymentMethodPanel } from "./payment-method-panel";
+import { PaymentPanel as DefaultPaymentPanel } from "./payment-panel";
 
 function CheckoutContent({ bookingId, Panel }: { bookingId: string; Panel: PaymentMethodPanel }) {
   const t = useTranslations("checkout");
@@ -129,7 +129,7 @@ function CheckoutContent({ bookingId, Panel }: { bookingId: string; Panel: Payme
 
 /** `/checkout?bookingId=`: pay within 5 minutes; leaving cancels the booking (plan §6). */
 export function CheckoutView({
-  PaymentPanel = DemoPaymentPanel,
+  PaymentPanel = DefaultPaymentPanel,
 }: {
   PaymentPanel?: PaymentMethodPanel;
 }) {

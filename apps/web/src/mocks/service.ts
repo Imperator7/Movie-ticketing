@@ -545,7 +545,7 @@ export function createPaymentIntent(
   }
   return ok({
     clientSecret: `pi_demo_${booking.id}_secret_demo`,
-    publishableKey: "pk_test_demo",
+    publishableKey: "demo",
     amountBaht: booking.totalBaht,
     paymentExpiresAt: new Date(booking.paymentExpiresAt).toISOString(),
   });
