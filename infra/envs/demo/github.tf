@@ -10,6 +10,19 @@ variable "github_repository" {
   default     = "Imperator7/Movie-ticketing"
 }
 
+# GitHub's token names the repo with fixed ids: repo:Imperator7@<owner id>/Movie-ticketing@<repo id>:ref:...
+# (seen in CloudTrail). The ids never change, so a deleted-and-recreated repo with the same name can't deploy.
+# Look them up: https://api.github.com/repos/<owner>/<name>  →  owner.id and id.
+variable "github_owner_id" {
+  type    = number
+  default = 140708045
+}
+
+variable "github_repository_id" {
+  type    = number
+  default = 1439669617
+}
+
 # The account already has GitHub's OIDC provider (created for the portfolio). There can be only one per account,
 # so we use it instead of creating another.
 data "aws_iam_openid_connect_provider" "github" {
@@ -32,7 +45,9 @@ data "aws_iam_policy_document" "github_assume" {
     condition {
       test     = "StringEquals"
       variable = "token.actions.githubusercontent.com:sub"
-      values   = ["repo:${var.github_repository}:ref:refs/heads/main"]
+      values = [format("repo:%s@%d/%s@%d:ref:refs/heads/main",
+        split("/", var.github_repository)[0], var.github_owner_id,
+      split("/", var.github_repository)[1], var.github_repository_id)]
     }
   }
 }
