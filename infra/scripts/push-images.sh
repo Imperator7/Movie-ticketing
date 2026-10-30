@@ -20,8 +20,16 @@ TAG=$(git rev-parse --short=12 HEAD)
 ACCOUNT=$(aws sts get-caller-identity --query Account --output text)
 REGISTRY="$ACCOUNT.dkr.ecr.$REGION.amazonaws.com"
 
-echo "Signing Docker in to $REGISTRY"
-aws ecr get-login-password --region "$REGION" | docker login --username AWS --password-stdin "$REGISTRY"
+# Preferred: the AWS login helper (bundled with Docker Desktop) set for this registry in ~/.docker/config.json:
+#   "credHelpers": { "<account>.dkr.ecr.<region>.amazonaws.com": "ecr-login" }
+# Docker then gets a fresh token from your AWS profile each time and stores no password. Without it, fall back to
+# `docker login` (fails on Windows' credential store with "The stub received bad data": the token is too long).
+if grep -q "\"$REGISTRY\": *\"ecr-login\"" "${DOCKER_CONFIG:-$HOME/.docker}/config.json" 2>/dev/null; then
+  echo "Using the ecr-login helper for $REGISTRY"
+else
+  echo "Signing Docker in to $REGISTRY"
+  aws ecr get-login-password --region "$REGION" | docker login --username AWS --password-stdin "$REGISTRY"
+fi
 
 push() { # <repo> <dockerfile target>
   local image="$REGISTRY/$1:$TAG"
