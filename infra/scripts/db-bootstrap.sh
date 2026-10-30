@@ -9,7 +9,9 @@
 set -eu
 
 # AWS RDS root certificates, so psql checks it is talking to the real database (PGSSLMODE=verify-full).
-wget -qO /tmp/rds-ca.pem https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem
+# curl, not the image's busybox wget: its TLS client can't complete the handshake with AWS's certificate site.
+apk add --no-cache --quiet curl
+curl -fsS --retry 3 -o /tmp/rds-ca.pem https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem
 echo "90a6f1a7978a1b1b096dca6c57511ca48d3b8cf052f8e704baf358f34ea2f21b  /tmp/rds-ca.pem" | sha256sum -c -
 export PGSSLMODE=verify-full PGSSLROOTCERT=/tmp/rds-ca.pem PGDATABASE=postgres
 

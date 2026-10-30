@@ -13,10 +13,12 @@ locals {
   # Where the API image keeps the AWS RDS certificate bundle (apps/api/Dockerfile), so connections check they are
   # talking to the real database. The two tools spell this differently:
   #   the API and the seed (node-postgres): sslmode=verify-full + sslrootcert
-  #   Prisma Migrate (its own engine):      sslmode=require + sslcert + sslaccept=strict
+  #   Prisma Migrate (its own engine):      sslmode=require + sslcert + sslaccept=strict, and it reads only the
+  #                                         first certificate of a file, so it gets the single Bangkok CA
   rds_ca_path     = "/app/certs/rds-global-bundle.pem"
+  prisma_ca_path  = "/app/certs/rds-prisma-ca.pem"
   db_options      = "schema=public&sslmode=verify-full&sslrootcert=${local.rds_ca_path}"
-  migrate_options = "schema=public&sslmode=require&sslcert=${local.rds_ca_path}&sslaccept=strict"
+  migrate_options = "schema=public&sslmode=require&sslcert=${local.prisma_ca_path}&sslaccept=strict"
   db_host         = "${aws_db_instance.main.address}:${aws_db_instance.main.port}"
 }
 

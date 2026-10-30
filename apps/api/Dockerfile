@@ -42,6 +42,15 @@ ENV NODE_ENV=production
 RUN apk add --no-cache openssl
 WORKDIR /repo/apps/api
 COPY --from=base /app/certs /app/certs
+# Prisma Migrate reads only the FIRST certificate of a file, and the bundle starts with another region's CA. Give it
+# a file with just the CA our RDS instance uses (database.tf: default rds-ca-rsa2048-g1, Bangkok).
+ARG RDS_PRISMA_CA="Amazon RDS ap-southeast-7 Root CA RSA2048 G1"
+RUN cd /app/certs \
+  && awk '/BEGIN CERT/{n++} {print > ("part" n ".pem")}' rds-global-bundle.pem \
+  && for f in part*.pem; do \
+       if openssl x509 -in "$f" -noout -subject | grep -q "CN = $RDS_PRISMA_CA,"; then mv "$f" rds-prisma-ca.pem; fi; \
+     done \
+  && rm -f part*.pem && test -s rds-prisma-ca.pem
 COPY --from=prod-deps --chown=node:node /repo/node_modules /repo/node_modules
 COPY --from=prod-deps --chown=node:node /repo/apps/api/node_modules ./node_modules
 COPY --from=build --chown=node:node /repo/apps/api/dist ./dist

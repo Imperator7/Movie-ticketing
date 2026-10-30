@@ -26,7 +26,7 @@ echo "Waiting for it to finish (usually 1-3 minutes)..."
 aws ecs wait tasks-stopped --region "$REGION" --cluster "$CLUSTER" --tasks "$ARN"
 
 read -r EXIT REASON < <(aws ecs describe-tasks --region "$REGION" --cluster "$CLUSTER" --tasks "$ARN" \
-  --query 'tasks[0].[containers[0].exitCode, stoppedReason]' --output text)
+  --query 'tasks[0].[containers[0].exitCode, stoppedReason]' --output text | tr -d '\r')
 
 echo "---- logs ----"
 aws logs tail "/ecs/$CLUSTER/ops" --region "$REGION" --since 15m \
