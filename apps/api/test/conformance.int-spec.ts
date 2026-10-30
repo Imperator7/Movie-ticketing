@@ -7,7 +7,9 @@ import addFormatsPackage from "ajv-formats";
 import type { NestExpressApplication } from "@nestjs/platform-express";
 import request, { type Response } from "supertest";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import Stripe from "stripe";
 import { parse } from "yaml";
+import { testPrisma } from "./db.js";
 import { IMPLEMENTED_OPERATIONS } from "../src/contract/implemented-operations.js";
 import { addDays, bangkokDateOf, bangkokDayRange } from "../src/common/time/bangkok.js";
 import { HealthService } from "../src/health/health.service.js";
@@ -221,8 +223,11 @@ describe("OpenAPI conformance (what the running API returns vs docs/openapi.yaml
   let shuttingDownApp: NestExpressApplication;
   let authLimitedApp: NestExpressApplication;
   let loginLimitedApp: NestExpressApplication;
+  /** Configured for Stripe with test-only keys: signatures are checked offline, nothing calls Stripe. */
+  let stripeApp: NestExpressApplication;
 
   const ORIGIN = "http://localhost:3000";
+  const WEBHOOK_SECRET = "whsec_conformance_secret";
   const PASSWORD = "correct-horse-battery";
   const email = `conf-${token()}@example.com`;
   let accessToken = "";
@@ -249,6 +254,12 @@ describe("OpenAPI conformance (what the running API returns vs docs/openapi.yaml
     shuttingDownApp = await createTestApp();
     authLimitedApp = await createTestApp({ RATE_LIMIT_AUTH_PER_MIN: "2" });
     loginLimitedApp = await createTestApp({ RATE_LIMIT_LOGIN_PER_EMAIL_PER_MIN: "1" });
+    stripeApp = await createTestApp({
+      PAYMENTS_PROVIDER: "stripe",
+      STRIPE_SECRET_KEY: "sk_test_conformance",
+      STRIPE_PUBLISHABLE_KEY: "pk_test_conformance",
+      STRIPE_WEBHOOK_SECRET: WEBHOOK_SECRET,
+    });
 
     // Minimal catalog fixtures: a movie with a genre, and two showtimes tomorrow in one hall.
     const genre = await createGenre();
@@ -295,7 +306,7 @@ describe("OpenAPI conformance (what the running API returns vs docs/openapi.yaml
 
   afterAll(async () => {
     await Promise.all(
-      [app, shuttingDownApp, authLimitedApp, loginLimitedApp].map((a) => a.close()),
+      [app, shuttingDownApp, authLimitedApp, loginLimitedApp, stripeApp].map((a) => a.close()),
     );
 
     const dir = process.env.TEST_REPORT_DIR;
@@ -881,6 +892,104 @@ describe("OpenAPI conformance (what the running API returns vs docs/openapi.yaml
       run: () => bookAuth("get", "/bookings/me?scope=future"),
     },
     {
+      operationId: "createPaymentIntent",
+      name: "200 creates the intent (fake provider)",
+      label: () => `POST ${PREFIX}/bookings/${bookingId}/payment-intent`,
+      expected: 200,
+      run: () => bookAuth("post", `/bookings/${bookingId}/payment-intent`),
+    },
+    {
+      operationId: "createPaymentIntent",
+      name: "200 reuses the same intent",
+      label: () => `POST ${PREFIX}/bookings/${bookingId}/payment-intent`,
+      expected: 200,
+      run: () => bookAuth("post", `/bookings/${bookingId}/payment-intent`),
+    },
+    {
+      operationId: "createPaymentIntent",
+      name: "401 without a token",
+      label: () => `POST ${PREFIX}/bookings/${bookingId}/payment-intent`,
+      expected: 401,
+      run: () => api().post(`${PREFIX}/bookings/${bookingId}/payment-intent`),
+    },
+    {
+      operationId: "createPaymentIntent",
+      name: "404 unknown id",
+      label: () => `POST ${PREFIX}/bookings/${NIL_UUID}/payment-intent`,
+      expected: 404,
+      run: () => bookAuth("post", `/bookings/${NIL_UUID}/payment-intent`),
+    },
+    {
+      operationId: "createPaymentIntent",
+      name: "422 payment window closed",
+      label: () => `POST ${PREFIX}/bookings/${bookingId}/payment-intent`,
+      expected: 422,
+      run: async () => {
+        const booking = await testPrisma().booking.findUniqueOrThrow({ where: { id: bookingId } });
+        await testPrisma().booking.update({
+          where: { id: bookingId },
+          data: { paymentExpiresAt: new Date(Date.now() - 1000) },
+        });
+        try {
+          return await bookAuth("post", `/bookings/${bookingId}/payment-intent`);
+        } finally {
+          await testPrisma().booking.update({
+            where: { id: bookingId },
+            data: { paymentExpiresAt: booking.paymentExpiresAt },
+          });
+        }
+      },
+      extra: (res) =>
+        (res.body as { code?: string }).code === "PAYMENT_WINDOW_CLOSED"
+          ? []
+          : ["code is not PAYMENT_WINDOW_CLOSED"],
+    },
+    {
+      operationId: "stripeWebhook",
+      name: "200 signed event (ignored type)",
+      label: () => `POST ${PREFIX}/payments/webhook`,
+      expected: 200,
+      run: () => {
+        const payload = JSON.stringify({
+          id: `evt_conf_${token()}`,
+          object: "event",
+          type: "customer.created",
+          data: { object: { object: "customer", id: "cus_x" } },
+        });
+        const signature = Stripe.webhooks.generateTestHeaderString({
+          payload,
+          secret: WEBHOOK_SECRET,
+        });
+        return api(stripeApp)
+          .post(`${PREFIX}/payments/webhook`)
+          .set("Stripe-Signature", signature)
+          .set("Content-Type", "application/json")
+          .send(payload);
+      },
+    },
+    {
+      operationId: "stripeWebhook",
+      name: "400 bad signature",
+      label: () => `POST ${PREFIX}/payments/webhook`,
+      expected: 400,
+      run: () =>
+        api()
+          .post(`${PREFIX}/payments/webhook`)
+          .set("Stripe-Signature", "t=1,v1=deadbeef")
+          .send({ id: "evt_x", type: "payment_intent.succeeded" }),
+      extra: (res) =>
+        (res.body as { code?: string }).code === "WEBHOOK_SIGNATURE_INVALID"
+          ? []
+          : ["code is not WEBHOOK_SIGNATURE_INVALID"],
+    },
+    {
+      operationId: "stripeWebhook",
+      name: "400 missing signature",
+      label: () => `POST ${PREFIX}/payments/webhook`,
+      expected: 400,
+      run: () => api().post(`${PREFIX}/payments/webhook`).send({}),
+    },
+    {
       operationId: "cancelBooking",
       name: "401 without a token",
       label: () => `POST ${PREFIX}/bookings/${bookingId}/cancel`,
@@ -915,6 +1024,13 @@ describe("OpenAPI conformance (what the running API returns vs docs/openapi.yaml
         (res.body as { code?: string }).code === "BOOKING_NOT_PENDING"
           ? []
           : ["code is not BOOKING_NOT_PENDING"],
+    },
+    {
+      operationId: "createPaymentIntent",
+      name: "409 booking no longer pending",
+      label: () => `POST ${PREFIX}/bookings/${bookingId}/payment-intent`,
+      expected: 409,
+      run: () => bookAuth("post", `/bookings/${bookingId}/payment-intent`),
     },
   ];
 

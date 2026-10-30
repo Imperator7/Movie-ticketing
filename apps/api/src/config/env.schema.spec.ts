@@ -10,6 +10,7 @@ const base = {
   JWT_SECRET: REAL_SECRET_A,
   REFRESH_TOKEN_PEPPER: REAL_SECRET_B,
   TICKET_QR_SECRET: REAL_SECRET_C,
+  PAYMENTS_PROVIDER: "fake",
 };
 
 function messageOf(raw: Record<string, string | undefined>): string {
@@ -173,5 +174,35 @@ describe("background job settings", () => {
 
   it("rejects an absurdly small interval", () => {
     expect(() => validateEnv({ ...raw, JOB_INTERVAL_MS: "5" })).toThrow(/JOB_INTERVAL_MS/);
+  });
+
+  describe("payments", () => {
+    it("production must choose a provider explicitly", () => {
+      const { PAYMENTS_PROVIDER: _omit, ...withoutProvider } = base;
+      expect(messageOf({ ...withoutProvider, NODE_ENV: "production" })).toContain(
+        "PAYMENTS_PROVIDER",
+      );
+      expect(
+        validateEnv({ ...withoutProvider, NODE_ENV: "development" }).PAYMENTS_PROVIDER,
+      ).toBeUndefined();
+    });
+
+    it("stripe needs all three keys with the right prefixes", () => {
+      const message = messageOf({ ...base, PAYMENTS_PROVIDER: "stripe" });
+      expect(message).toContain("STRIPE_SECRET_KEY");
+      expect(message).toContain("STRIPE_PUBLISHABLE_KEY");
+      expect(message).toContain("STRIPE_WEBHOOK_SECRET");
+      expect(messageOf({ ...base, STRIPE_SECRET_KEY: "pk_test_wrong" })).toContain(
+        "STRIPE_SECRET_KEY",
+      );
+      const env = validateEnv({
+        ...base,
+        PAYMENTS_PROVIDER: "stripe",
+        STRIPE_SECRET_KEY: "sk_test_abc",
+        STRIPE_PUBLISHABLE_KEY: "pk_test_abc",
+        STRIPE_WEBHOOK_SECRET: "whsec_abc",
+      });
+      expect(env.PAYMENTS_PROVIDER).toBe("stripe");
+    });
   });
 });

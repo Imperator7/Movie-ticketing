@@ -79,11 +79,43 @@ export const envSchema = z
     RATE_LIMIT_LOGIN_PER_EMAIL_PER_MIN: z.coerce.number().int().min(1).default(5),
 
     /** Time to keep serving (readiness 503) after SIGTERM before closing, so the ALB stops routing first. */
+    // --- Payments (Phase 5) ---
+    /**
+     * `stripe`: real Stripe (test or live keys). `fake`: an in-process stand-in with a demo "pay" endpoint, for local
+     * work and demos without a Stripe account. Production must choose explicitly.
+     */
+    PAYMENTS_PROVIDER: z.enum(["stripe", "fake"]).optional(),
+    STRIPE_SECRET_KEY: z.string().startsWith("sk_").optional(),
+    STRIPE_PUBLISHABLE_KEY: z.string().startsWith("pk_").optional(),
+    STRIPE_WEBHOOK_SECRET: z.string().startsWith("whsec_").optional(),
+
     SHUTDOWN_DRAIN_MS: z.coerce.number().int().min(0).max(120_000).default(5000),
     HEALTH_DB_TIMEOUT_MS: z.coerce.number().int().min(50).max(30_000).default(2000),
   })
   .superRefine((env, ctx) => {
+    if (env.PAYMENTS_PROVIDER === "stripe") {
+      for (const key of [
+        "STRIPE_SECRET_KEY",
+        "STRIPE_PUBLISHABLE_KEY",
+        "STRIPE_WEBHOOK_SECRET",
+      ] as const) {
+        if (!env[key]) {
+          ctx.addIssue({
+            code: "custom",
+            path: [key],
+            message: "is required when PAYMENTS_PROVIDER=stripe",
+          });
+        }
+      }
+    }
     if (RELAXED_ENVS.has(env.NODE_ENV)) return;
+    if (env.PAYMENTS_PROVIDER === undefined) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["PAYMENTS_PROVIDER"],
+        message: `must be set (stripe or fake) when NODE_ENV=${env.NODE_ENV}`,
+      });
+    }
     for (const key of SECRET_KEYS) {
       if (PLACEHOLDER_PATTERN.test(env[key])) {
         ctx.addIssue({

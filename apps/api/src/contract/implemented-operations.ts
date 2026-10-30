@@ -32,4 +32,7 @@ export const IMPLEMENTED_OPERATIONS = [
   "listMyBookings",
   "getBooking",
   "cancelBooking",
+  // Payments (Phase 5)
+  "createPaymentIntent",
+  "stripeWebhook",
 ] as const;

@@ -1,4 +1,4 @@
-import { HttpStatus, Injectable } from "@nestjs/common";
+import { HttpStatus, Injectable, Logger } from "@nestjs/common";
 import { AppException } from "../common/errors/app.exception.js";
 import { ErrorCode } from "../common/errors/error-code.js";
 import { ConfigService } from "../config/config.service.js";
@@ -44,6 +44,7 @@ const unprocessable = (
 
 @Injectable()
 export class BookingService {
+  private readonly logger = new Logger(BookingService.name);
   private readonly ticketSecret: string;
 
   constructor(
@@ -137,6 +138,7 @@ export class BookingService {
 
     for (let attempt = 1; ; attempt++) {
       try {
+        const staleCancelled: string[] = [];
         const outcome = await this.createInTransaction({
           userId,
           idempotencyKey,
@@ -144,7 +146,9 @@ export class BookingService {
           showtimeId: showtime.id,
           lines,
           now,
+          staleCancelled,
         });
+        await this.cancelIntentsAfterCommit(staleCancelled);
         return outcome.kind === "created"
           ? { booking: outcome.booking, replayed: false }
           : this.replay(outcome.row, requestHash);
@@ -179,8 +183,10 @@ export class BookingService {
     showtimeId: string;
     lines: { seatId: string; priceBaht: number }[];
     now: Date;
+    /** Filled with the bookings cancelled here, so their PaymentIntents are cancelled AFTER commit. */
+    staleCancelled: string[];
   }): Promise<CreateOutcome> {
-    const { userId, idempotencyKey, requestHash, showtimeId, now } = input;
+    const { userId, idempotencyKey, requestHash, showtimeId, now, staleCancelled } = input;
     // Lock seats (and stale bookings) in one global order: two requests for overlapping seats sent in different
     // orders would otherwise each lock one seat and wait for the other, and Postgres would kill one as a deadlock.
     const lines = [...input.lines].sort((a, b) =>
@@ -221,7 +227,7 @@ export class BookingService {
             { bookingId: own.id },
           );
         }
-        await this.cancelStale(tx, own.id, now);
+        if (await this.cancelStale(tx, own.id, now)) staleCancelled.push(own.id);
       }
 
       // 2. Stale holds (hold over, expiry job not yet run) on the requested seats are unlocked, whoever owns them.
@@ -237,7 +243,7 @@ export class BookingService {
          ORDER BY b.id
          FOR UPDATE OF b`;
       for (const id of new Set(stale.map((booking) => booking.id))) {
-        await this.cancelStale(tx, id, now);
+        if (await this.cancelStale(tx, id, now)) staleCancelled.push(id);
       }
 
       // 3. The booking, then its seat locks.
@@ -295,14 +301,27 @@ export class BookingService {
     });
   }
 
-  /** A pending booking whose hold is over: ask the gateway (no-op until Phase 5), then cancel as PAYMENT_TIMEOUT. */
+  /**
+   * A pending booking whose hold is over is cancelled as PAYMENT_TIMEOUT. No network call here (we hold row locks):
+   * its PaymentIntent is cancelled after commit, and a payment that still succeeds is refunded by the webhook.
+   */
   private async cancelStale(
     tx: Prisma.TransactionClient,
     bookingId: string,
     now: Date,
-  ): Promise<void> {
-    await this.gateway.cancelPaymentIntent(bookingId);
-    await cancelPendingBooking(tx, { bookingId, reason: "PAYMENT_TIMEOUT", actor: "SYSTEM", now });
+  ): Promise<boolean> {
+    return cancelPendingBooking(tx, { bookingId, reason: "PAYMENT_TIMEOUT", actor: "SYSTEM", now });
+  }
+
+  /** Best effort: the hold is already over, so a failure here only means the webhook refunds a late payment. */
+  private async cancelIntentsAfterCommit(bookingIds: readonly string[]): Promise<void> {
+    for (const bookingId of bookingIds) {
+      try {
+        await this.gateway.cancelPaymentIntent(bookingId);
+      } catch (error) {
+        this.logger.warn({ event: "stale_intent_cancel_failed", bookingId, error: String(error) });
+      }
+    }
   }
 
   private replay(row: IdempotencyKey, requestHash: string): CreateResult {
@@ -390,7 +409,7 @@ export class BookingService {
     if (!current) throw notFound();
     if (current.status !== "PENDING_PAYMENT") throw this.notPending();
 
-    // Stripe first (Phase 5): if the payment is already processing or succeeded the cancel is refused.
+    // Stripe first: if the payment is already processing or succeeded the cancel is refused.
     const outcome = await this.gateway.cancelPaymentIntent(bookingId);
     if (outcome === "in_progress") {
       throw new AppException(
