@@ -32,3 +32,13 @@ output "public_subnet_id" {
 output "ops_security_group_id" {
   value = aws_security_group.ops.id
 }
+
+# Phase 5 connects CloudFront to this load balancer.
+output "alb_arn" {
+  value = aws_lb.api.arn
+}
+
+output "alb_dns_name" {
+  description = "Private address, only reachable inside the VPC (CloudFront reaches it from Phase 5)."
+  value       = aws_lb.api.dns_name
+}
