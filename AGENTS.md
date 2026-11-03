@@ -16,7 +16,7 @@ improvements inside a task are applied without asking, but **summarize and ask b
 | Area               | State                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Phase 0: Design    | ✅ ER diagram, DB design, OpenAPI contract, security doc, decisions log                                                                                                                                                                                                                                                                                                                                                        |
-| Repo / DevOps      | ✅ Turborepo, shared TS + ESLint configs, Prettier, Husky, commitlint, CI workflow + Dependabot (**written, never run: repo not on GitHub yet**)                                                                                                                                                                                                                                                                               |
+| Repo / DevOps      | ✅ Turborepo, shared TS + ESLint configs, Prettier, Husky, commitlint, CI workflow + Dependabot on GitHub, Deploy workflow (OIDC → AWS) after CI on `main`                                                                                                                                                                                                                                                                     |
 | Design system      | ✅ "Marquee" theme + cinema components, **approved** (`/design-system`)                                                                                                                                                                                                                                                                                                                                                        |
 | Database           | ✅ Prisma schema, hand-written constraints, roles (`migrator` / `app_user`) with **grants in a migration**, 26/26 constraint checks. ✅ Seeded with **18 real TMDB movies** (`movies.json`), 2 cinemas, 6 halls, 992 seats, 913 showtimes (31 days), demo user                                                                                                                                                                 |
 | API foundation     | ✅ Validated env, PrismaService (app_user, pool), pino + request id + redaction, contract error filter, strict nestjs-zod validation, Swagger (dev), helmet/CORS/limits, health live/ready + graceful drain, Testcontainers harness                                                                                                                                                                                            |
@@ -42,10 +42,19 @@ not built in the session that wrote them (no Docker Hub there): the first `npm r
 
 **Phase 4 done (2026-10-28).** Dev map of screens, pipeline and live operations: `/flow`.
 
-**Next:** AWS demo environment, phase by phase (`plan-infra.md`, Terraform in `infra/`, the product owner applies
-each phase). Phase 0 (account guardrails) written. Then Stripe test keys, Sentry.
+**AWS demo live (2026-10-30):** https://d2d95bxlk5dsty.cloudfront.net, Terraform in `infra/` (status:
+`infra/HANDOFF.md`), deployed by GitHub Actions after CI on `main`. Payments run the `fake` provider there.
 
-**Open questions for the product owner:** when to push to a private GitHub repo (so CI runs). Seed data: movie
+**Phase 7 tests (2026-11-03)** on branch `test/phase-7-coverage`: Stripe path over HTTP (fake Stripe server), IDOR
+matrix, payment rules as pure functions, two reliability fixes (D11), Windows fixes for `test:report`.
+
+**Next (product owner's order, 2026-11-03):** (1) UI fixes, from the product owner's walk-through list;
+(2) Stripe test mode end to end with real test keys (Phase 5 open item); (3) payment reliability: a daily
+reconciliation job (Stripe vs database) and CloudWatch alarms; (4) Sentry; (5) email via SES with an outbox table
+(verification, password reset, e-ticket); then LINE / Google login. Infra upgrades (alarms, `terraform plan` on PRs,
+path-filtered deploys, custom domain) go alongside, done by the product owner as Terraform practice.
+
+**Open questions for the product owner:** which UI screens to fix first. Seed data: movie
 `status` doesn't match showtimes (a COMING_SOON movie has showtimes today). "Can't reach the server" message
 instead of the generic error? Storybook was
 dropped (S9).
