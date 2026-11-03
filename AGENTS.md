@@ -234,5 +234,7 @@ reset` drops the `public` schema and its grants. Any new role/privilege must be 
 - **Windows machine:** npm runs scripts with `cmd`, so the web dev scripts (`INCLUDE_DEV_PAGES=1 next dev`) fail
   there; use the `web-windows` launch config (Git Bash). `core.autocrlf=true` checks files out with CRLF: run
   Prettier with `--end-of-line auto`, and tests that parse repo files must normalise `\r\n` (see
-  `error-code.spec.ts`). The project's dev Postgres was never set up on that machine (no `.env`, and port 5433 is
-  another project's container), so `db:verify` can't run there; integration tests don't need it (Testcontainers).
+  `error-code.spec.ts`). `.gitattributes` forces LF for `*.sh` (a CRLF Postgres init script crashes and never
+  creates the roles). The dev Postgres there runs on **port 5435** (`POSTGRES_HOST_PORT`; 5433 is another project's
+  container). `npm run stack:secrets` calls `bash` (WSL there): run `bash scripts/stack-secrets.sh` from Git Bash.
+  Git Bash rewrites `/paths` in `docker exec` / AWS CLI arguments: prefix `MSYS_NO_PATHCONV=1`.
