@@ -14,6 +14,8 @@ const forbiddenPaths = [
   "design-system",
   "test-report",
   "flow",
+  "api-flow",
+  "critical-flows",
   "mockServiceWorker.js",
 ];
 const problems = forbiddenPaths.filter(
