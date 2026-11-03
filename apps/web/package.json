@@ -65,7 +65,7 @@
     "msw": "^2.15.0",
     "orval": "^8.45.0",
     "tailwindcss": "^4",
-    "typescript": "^5",
+    "typescript": "^7",
     "vite-tsconfig-paths": "^5.1.4",
     "vitest": "^4.1.12"
   },
