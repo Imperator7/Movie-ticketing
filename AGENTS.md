@@ -76,15 +76,15 @@ dropped (S9).
 
 Claude loads a skill when its description matches the task; the lead also names them in every brief.
 
-| Skill                 | Load when                                                                             |
-| --------------------- | ------------------------------------------------------------------------------------- |
-| `agent-onboarding`    | a subagent starts a brief or is about to report (setup, ports, done, report format)   |
-| `lead-review`         | the lead briefs, reviews or merges                                                    |
-| `design-system`       | any UI change in apps/web (Marquee rules, when to use impeccable)                     |
-| `impeccable`          | deliberate design review/polish: `/impeccable critique`, `audit`, `harden`, `polish`  |
-| `database-workflow`   | schema, migrations, grants, seed, resets                                              |
-| `api-contract-change` | adding/changing an endpoint or field                                                  |
-| `codebase-graph`      | finding code across packages / tracing relationships (`npm run graph:build`, offline) |
+| Skill                 | Load when                                                                                                                                             |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `agent-onboarding`    | a subagent starts a brief or is about to report (setup, ports, done, report format)                                                                   |
+| `lead-review`         | the lead briefs, reviews or merges                                                                                                                    |
+| `design-system`       | any UI change in apps/web (Marquee rules, when to use impeccable)                                                                                     |
+| `impeccable`          | deliberate design review/polish: `/impeccable critique`, `audit`, `harden`, `polish`                                                                  |
+| `database-workflow`   | schema, migrations, grants, seed, resets                                                                                                              |
+| `api-contract-change` | adding/changing an endpoint or field                                                                                                                  |
+| `codebase-graph`      | finding code across packages and `infra/`, tracing relationships, blast radius (`npm run graph:build`, offline; MCP server `graphify` in `.mcp.json`) |
 
 No always-on hooks: graphify and impeccable hooks were removed on purpose (product owner: "only when needed").
 
@@ -156,7 +156,9 @@ npm run test:int -w api        # integration tests (Docker; not part of check)
 npm run api:generate -w web    # regenerate the orval client after docs/openapi.yaml changes
 npm run lint:openapi           # lint the contract
 npm run test:report            # every suite → reports/test-report.json → /test-report (-- --quick: unit only)
-npm run graph:build            # offline code graph for the codebase-graph skill
+npm run graph:install          # once per machine: pinned graphify (offline code graph)
+npm run graph:build            # build the graph (also used by the graphify MCP tools)
+npm run graph -- search "…"     # or explain / path / affected, see the codebase-graph skill
 ```
 
 Ports: web 3000 (lead preview) / 3100 (agents), api 4000, Postgres 5433, Prisma Studio 5555.
