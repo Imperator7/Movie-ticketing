@@ -11,7 +11,14 @@ It's a learning project for backend, AWS and DevOps, so we choose the production
 work, as long as it genuinely helps. The product owner (the user) owns product/UX decisions; engineering quality
 improvements inside a task are applied without asking, but **summarize and ask before starting a new phase**.
 
-## 2. Current status (update when an item is merged)
+**Docs are updated only when the product owner says so** (rule from the product owner, 2026-11-03: doc updates
+are costly). This covers `AGENTS.md`, `plan.md`, `README.md`, `docs/*.md`, `docs/er-diagram.mmd`,
+`infra/HANDOFF.md` and the skills. Don't update them as part of a task. When a change makes them out of date, end
+your turn by **asking** whether to update them, with a one-line list of what is stale. On a yes, follow the
+`update-docs` skill. Exception: `docs/openapi.yaml` changes together with the code when an endpoint changes,
+because the contract tests and the generated client read it.
+
+## 2. Current status (updated only when the product owner asks, see §1)
 
 | Area               | State                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -84,6 +91,7 @@ Claude loads a skill when its description matches the task; the lead also names 
 | `impeccable`          | deliberate design review/polish: `/impeccable critique`, `audit`, `harden`, `polish`                                                                  |
 | `database-workflow`   | schema, migrations, grants, seed, resets                                                                                                              |
 | `api-contract-change` | adding/changing an endpoint or field                                                                                                                  |
+| `update-docs`         | only when the product owner says to update the docs: what each doc holds, how to find what's stale, how to edit them cheaply                          |
 | `codebase-graph`      | finding code across packages and `infra/`, tracing relationships, blast radius (`npm run graph:build`, offline; MCP server `graphify` in `.mcp.json`) |
 
 No always-on hooks: graphify and impeccable hooks were removed on purpose (product owner: "only when needed").
@@ -136,7 +144,8 @@ touched · what to look at closely.
 
 **Lead review checklist:** read the risky code (not just the report) · merge with `chore: merge …` · after a merge run
 `npm install`, `npm run db:generate -w api`, `npm run check`, and `npm run test:int -w api` when api changed ·
-look at UI in the browser pane · fix small issues on `main`, send bigger ones back · update §2 and `plan.md`.
+look at UI in the browser pane · fix small issues on `main`, send bigger ones back · ask the product owner whether
+to update §2 and `plan.md` (never unasked, see §1).
 
 ## 6. Commands
 

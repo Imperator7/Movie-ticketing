@@ -16,12 +16,12 @@ Run agents in parallel only when their files don't overlap. If a later item depe
 ## Reviewing a report
 
 1. Read the risky code yourself (`git show <branch>:<file>`), not just the report: raw SQL, auth, money, time zones, cache keys, anything touching shared state.
-2. Check deviations: accept engineering calls with a reason, but **product decisions go to the product owner**. Record accepted decisions in the docs (contract notes, `plan.md` decisions log).
+2. Check deviations: accept engineering calls with a reason, but **product decisions go to the product owner**. Note accepted decisions for the docs (`plan.md` decisions log), but write them only when the product owner says to update the docs (`update-docs` skill).
 3. Merge: `git merge --no-ff <branch> -m "chore: merge <what>"` + co-author trailer.
 4. After merging: `npm install`, `npm run db:generate -w api`, `npm run check`, and `npm run test:int -w api` when api changed. Dependencies removed → stop the dev server, `rm -rf apps/web/.next`, restart.
 5. Look at UI in the browser pane yourself (the agents miss things: stale dev servers, missing messages, posters). Real-API checks: launch configs `api` (4000) + `web-real-api` (3000); afterwards put the preview back on `web` (mock).
 6. Fix small issues on main as separate commits; send bigger ones back to the agent.
-7. Update `AGENTS.md` §2 and `plan.md`; refresh `npm run test:report` when tests changed.
+7. Refresh `npm run test:report` when tests changed. **Ask** the product owner whether to update `AGENTS.md` §2 and `plan.md` (list what's stale in one line); never update them unasked (AGENTS.md §1).
 
 ## Commits the product owner can review
 
