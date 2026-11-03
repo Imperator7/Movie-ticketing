@@ -253,7 +253,8 @@
     "pagination": "เลือกหน้า",
     "previous": "ก่อนหน้า",
     "next": "ถัดไป",
-    "pageOf": "หน้า {page} จาก {pages}"
+    "pageOf": "หน้า {page} จาก {pages}",
+    "stampShown": "ฉายแล้ว"
   },
   "ticket": {
     "title": "ตั๋วภาพยนตร์",
@@ -270,7 +271,14 @@
     "continuePayment": "ไปชำระเงิน",
     "notFound": "ไม่พบการจองนี้",
     "loadError": "โหลดตั๋วไม่สำเร็จ",
-    "back": "การจองของฉัน"
+    "back": "การจองของฉัน",
+    "date": "วันที่",
+    "time": "เวลา",
+    "hallLabel": "โรง",
+    "admit": "{count} ที่นั่ง",
+    "stampCancelled": "ยกเลิก",
+    "stampPending": "รอชำระเงิน",
+    "showAtEntrance": "แสดง QR นี้ที่ทางเข้าโรงภาพยนตร์"
   },
   "banner": {
     "title": "กำลังจองอยู่",

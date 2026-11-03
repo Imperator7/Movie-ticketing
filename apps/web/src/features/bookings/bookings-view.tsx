@@ -7,39 +7,125 @@ import { useListMyBookings } from "@/api/generated/endpoints/bookings/bookings";
 import type { Booking } from "@/api/generated/model";
 import { dataOf } from "@/api/unwrap";
 import { PageContainer, QueryError } from "@/components/page-states";
-import { Badge } from "@/components/ui/badge";
+import { PosterImage } from "@/components/cinema/movie-poster-card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RequireAuth } from "@/features/auth/require-auth";
 import { Link } from "@/i18n/navigation";
-import { formatBaht, formatShowDateTime } from "@/lib/format";
+import {
+  bangkokMonth,
+  formatBaht,
+  formatMonthYear,
+  formatShowtime,
+  formatTicketDate,
+  type Locale,
+} from "@/lib/format";
 import { pickText, toLocale } from "@/lib/localized";
+import { cn } from "@/lib/utils";
+import { FORMAT_LABEL, Perforation, SeatChips, TicketStamp, ticketState } from "./ticket-parts";
 
-function BookingRow({ booking }: { booking: Booking }) {
+export interface MonthGroup {
+  /** "YYYY-MM" in Bangkok. */
+  key: string;
+  label: string;
+  bookings: Booking[];
+}
+
+/** Consecutive bookings of the same Bangkok month (the list is already sorted), for the history headings. */
+export function groupByMonth(bookings: readonly Booking[], locale: Locale): MonthGroup[] {
+  const groups: MonthGroup[] = [];
+  for (const booking of bookings) {
+    const key = bangkokMonth(booking.showtime.startsAt);
+    const last = groups.at(-1);
+    if (last?.key === key) last.bookings.push(booking);
+    else
+      groups.push({
+        key,
+        label: formatMonthYear(booking.showtime.startsAt, locale),
+        bookings: [booking],
+      });
+  }
+  return groups;
+}
+
+/** One booking as a ticket stub: poster | details | tear line | time stub. The whole stub opens the ticket. */
+export function TicketStub({ booking, now }: { booking: Booking; now: number }) {
   const t = useTranslations("bookings");
+  const tt = useTranslations("ticket");
   const locale = toLocale(useLocale());
-  const confirmed = booking.status === "CONFIRMED";
+  const { showtime } = booking;
+  const title = pickText(showtime.movie.title, locale);
+  const state = ticketState(booking, now);
+  const used = state !== "valid";
+  const stamp =
+    state === "cancelled"
+      ? tt("stampCancelled")
+      : state === "pending"
+        ? tt("stampPending")
+        : state === "screened"
+          ? t("stampShown")
+          : null;
+
   return (
-    <li className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border border-border bg-card p-4">
-      <div className="min-w-0 flex-1 basis-56">
-        <p className="truncate font-semibold">{pickText(booking.showtime.movie.title, locale)}</p>
-        <p className="text-sm text-muted-foreground">
-          {formatShowDateTime(booking.showtime.startsAt, locale)} ·{" "}
-          {pickText(booking.showtime.cinema.name, locale)}
-        </p>
-        <p className="font-mono text-xs text-muted-foreground">
-          {booking.bookingCode} ·{" "}
-          {t("seats", { seats: booking.seats.map((s) => s.label).join(", ") })} ·{" "}
-          {formatBaht(booking.totalBaht, locale)}
-        </p>
-      </div>
-      <Badge variant={confirmed ? "default" : "secondary"}>
-        {confirmed ? t("statusConfirmed") : t("statusCancelled")}
-      </Badge>
-      <Button asChild size="sm" variant="outline">
-        <Link href={`/booking?id=${booking.id}`}>{t("view")}</Link>
-      </Button>
+    <li>
+      <Link
+        href={`/booking?id=${booking.id}`}
+        className="group relative flex min-h-36 rounded-2xl border border-border bg-card text-card-foreground shadow-sm outline-none motion-safe:transition-colors hover:border-primary/60 focus-visible:ring-3 focus-visible:ring-ring"
+      >
+        <div
+          className={cn(
+            "w-20 shrink-0 overflow-hidden rounded-l-2xl sm:w-24",
+            used && "opacity-70 grayscale",
+          )}
+        >
+          <PosterImage url={showtime.movie.posterUrl} title={title} placeholderShowsTitle={false} />
+        </div>
+
+        <div className="flex min-w-0 flex-1 flex-col gap-1.5 p-3 sm:p-4">
+          <p className="font-mono text-xs tracking-wider text-muted-foreground">
+            {booking.bookingCode}
+          </p>
+          <h3 className="line-clamp-2 font-heading leading-snug font-semibold group-hover:text-primary">
+            {title}
+          </h3>
+          <p className="line-clamp-2 text-sm text-muted-foreground">
+            {formatTicketDate(showtime.startsAt, locale)} · {pickText(showtime.cinema.name, locale)}{" "}
+            · {tt("hall", { number: showtime.hallNumber })}
+          </p>
+          <SeatChips labels={booking.seats.map((seat) => seat.label)} className="mt-auto" />
+          {state === "valid" ? <span className="sr-only">{t("statusConfirmed")}</span> : null}
+        </div>
+
+        <Perforation orientation="vertical" />
+
+        <div className="flex w-20 shrink-0 flex-col items-center justify-center gap-1 p-2 text-center sm:w-28 sm:p-3">
+          <span
+            className={cn(
+              "font-mono text-xl font-bold tabular sm:text-2xl",
+              used && "text-muted-foreground",
+            )}
+          >
+            {formatShowtime(showtime.startsAt)}
+          </span>
+          <span className="rounded-md border border-border px-1.5 font-mono text-xs font-semibold">
+            {FORMAT_LABEL[showtime.format]}
+          </span>
+          <span className="font-mono text-xs text-muted-foreground tabular">
+            {formatBaht(booking.totalBaht, locale)}
+          </span>
+        </div>
+
+        {stamp && state !== "valid" ? (
+          // Phones: over the (greyed) poster so it never covers the title; wider screens: top right of the details.
+          <TicketStamp
+            state={state}
+            className="absolute top-1/2 left-1 -translate-y-1/2 px-1.5 text-xs sm:top-3 sm:right-32 sm:left-auto sm:translate-y-0 sm:px-2.5 sm:text-sm"
+          >
+            {stamp}
+          </TicketStamp>
+        ) : null}
+      </Link>
     </li>
   );
 }
@@ -48,6 +134,8 @@ export const BOOKINGS_PAGE_SIZE = 10;
 
 function BookingList({ scope }: { scope: "upcoming" | "past" }) {
   const t = useTranslations("bookings");
+  const locale = toLocale(useLocale());
+  const [now] = useState(() => Date.now());
   const [page, setPage] = useState(1);
   const query = useListMyBookings(
     { scope, page, pageSize: BOOKINGS_PAGE_SIZE },
@@ -60,8 +148,8 @@ function BookingList({ scope }: { scope: "upcoming" | "past" }) {
   if (query.isPending) {
     return (
       <div aria-busy="true" className="flex flex-col gap-3">
-        <Skeleton className="h-20 w-full" />
-        <Skeleton className="h-20 w-full" />
+        <Skeleton className="h-36 w-full rounded-2xl" />
+        <Skeleton className="h-36 w-full rounded-2xl" />
       </div>
     );
   }
@@ -83,12 +171,26 @@ function BookingList({ scope }: { scope: "upcoming" | "past" }) {
     );
   }
   return (
-    <div className="flex flex-col gap-4">
-      <ul className="flex flex-col gap-3">
-        {items.map((booking) => (
-          <BookingRow key={booking.id} booking={booking} />
-        ))}
-      </ul>
+    <div className="flex flex-col gap-6">
+      {groupByMonth(items, locale).map((group) => (
+        <section
+          key={group.key}
+          aria-labelledby={`month-${group.key}`}
+          className="flex flex-col gap-3"
+        >
+          <h2
+            id={`month-${group.key}`}
+            className="font-heading text-sm font-semibold tracking-wide text-muted-foreground"
+          >
+            {group.label}
+          </h2>
+          <ul className="flex flex-col gap-3">
+            {group.bookings.map((booking) => (
+              <TicketStub key={booking.id} booking={booking} now={now} />
+            ))}
+          </ul>
+        </section>
+      ))}
       {pages > 1 ? (
         <nav aria-label={t("pagination")} className="flex items-center justify-center gap-3">
           <Button
