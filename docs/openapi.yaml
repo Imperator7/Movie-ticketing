@@ -459,7 +459,7 @@ paths:
     get:
       tags: [Bookings]
       operationId: listMyBookings
-      summary: My bookings (confirmed and cancelled; a pending one is `getActiveBooking`)
+      summary: My tickets (paid = CONFIRMED only; a pending one is `getActiveBooking`, a cancelled one is still readable with `getBooking`)
       parameters:
         - name: scope
           in: query

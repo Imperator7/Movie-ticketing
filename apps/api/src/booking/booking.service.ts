@@ -377,7 +377,8 @@ export class BookingService {
   ): Promise<BookingPageBody> {
     const where: Prisma.BookingWhereInput = {
       userId,
-      status: { in: ["CONFIRMED", "CANCELLED"] },
+      // Ticket history = paid tickets only (product owner, 2026-11-03).
+      status: "CONFIRMED",
       showtime: query.scope === "upcoming" ? { endsAt: { gt: now } } : { endsAt: { lte: now } },
     };
     const [rows, total] = await Promise.all([

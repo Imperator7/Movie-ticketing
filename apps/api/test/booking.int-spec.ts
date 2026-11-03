@@ -629,7 +629,7 @@ describe("bookings (real database)", () => {
   });
 
   describe("GET /bookings/me", () => {
-    it("lists confirmed and cancelled bookings by scope, newest first, paged; pending ones are not listed", async () => {
+    it("lists only paid (confirmed) bookings by scope, newest first, paged; pending and cancelled ones are not listed", async () => {
       const user = await newUser();
       const future = await newShow();
       const past = await newShow({ startsAt: new Date(Date.now() - 6 * HOUR) });
@@ -651,6 +651,8 @@ describe("bookings (real database)", () => {
         state: "CONFIRMED",
         userId: user.id,
       });
+      const cancelled = (await book(user, future, [pick(future.seatIds, 6)])).body as BookingBody;
+      expect((await authed(user, "post", `/bookings/${cancelled.id}/cancel`)).status).toBe(200); // cancelled: not listed
       await book(user, future, [pick(future.seatIds, 5)]); // pending: not listed
       await testPrisma().booking.update({
         where: { id: upcoming1 },
