@@ -53,9 +53,11 @@ export function CheckoutResult({ booking }: { booking: Booking | undefined }) {
   const message =
     booking.cancelReason === "LATE_PAYMENT_REFUNDED"
       ? t("cancelledLate")
-      : booking.cancelReason === "PAYMENT_TIMEOUT"
-        ? t("cancelledTimeout")
-        : t("cancelledUser");
+      : booking.cancelReason === "AMOUNT_MISMATCH_REFUNDED"
+        ? t("cancelledAmountMismatch")
+        : booking.cancelReason === "PAYMENT_TIMEOUT"
+          ? t("cancelledTimeout")
+          : t("cancelledUser");
   const seatsHref = showtimePath(
     booking.showtime.id,
     booking.seats.map((s) => s.label),

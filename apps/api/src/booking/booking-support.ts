@@ -70,8 +70,8 @@ export async function cancelPendingBooking(
   tx: Prisma.TransactionClient,
   input: {
     bookingId: string;
-    reason: "PAYMENT_TIMEOUT" | "USER_CANCELLED";
-    actor: "USER" | "SYSTEM";
+    reason: "PAYMENT_TIMEOUT" | "USER_CANCELLED" | "AMOUNT_MISMATCH_REFUNDED";
+    actor: "USER" | "SYSTEM" | "STRIPE";
     now: Date;
   },
 ): Promise<boolean> {

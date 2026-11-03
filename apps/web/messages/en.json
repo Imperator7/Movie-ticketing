@@ -233,6 +233,7 @@
     "myBookings": "My bookings",
     "cancelledTimeout": "The payment time ran out. The booking was cancelled and the seats were released.",
     "cancelledLate": "Payment arrived after the time limit and has been refunded.",
+    "cancelledAmountMismatch": "Something went wrong with your payment amount, so we cancelled the booking and refunded you in full.",
     "cancelledUser": "This booking was cancelled.",
     "backToSeats": "Back to seat selection",
     "goHome": "Back to home",

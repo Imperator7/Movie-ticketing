@@ -1,4 +1,5 @@
 import { HttpStatus, Injectable, Logger } from "@nestjs/common";
+import { cancelPendingBooking } from "../booking/booking-support.js";
 import { AppException } from "../common/errors/app.exception.js";
 import { ErrorCode } from "../common/errors/error-code.js";
 import type { Prisma } from "../generated/prisma/client.js";
@@ -210,7 +211,11 @@ export class PaymentsService {
       select: { id: true, status: true, totalBaht: true },
     });
 
-    // Never trust the amount blindly: a mismatch is an alert, not a confirmation.
+    const details = await this.provider.paymentDetails(intent.id);
+    const paid = { ...details, paidAt: now };
+
+    // Never trust the amount blindly: a mismatch is never confirmed, and the money is never kept. The booking is
+    // cancelled (seats released) if it was still waiting, the payment is refunded, and the log line is the alert.
     if (!amountMatches(intent, booking.totalBaht)) {
       this.logger.error({
         event: "payment_amount_mismatch",
@@ -220,11 +225,22 @@ export class PaymentsService {
         currency: intent.currency,
         expected: toStripeAmount(booking.totalBaht),
       });
+      await cancelPendingBooking(tx, {
+        bookingId: booking.id,
+        reason: "AMOUNT_MISMATCH_REFUNDED",
+        actor: "STRIPE",
+        now,
+      });
+      await this.refundPayment(tx, {
+        bookingId: booking.id,
+        paymentId: payment.id,
+        intentId: intent.id,
+        paid,
+        now,
+        reason: "AMOUNT_MISMATCH",
+      });
       return;
     }
-
-    const details = await this.provider.paymentDetails(intent.id);
-    const paid = { ...details, paidAt: now };
 
     const confirmed = await tx.booking.updateMany({
       where: { id: booking.id, status: "PENDING_PAYMENT" },
@@ -266,36 +282,64 @@ export class PaymentsService {
       return;
     }
 
-    // Paid too late (booking CANCELLED) or paid twice: give the money back (rule 3d). The guarded update comes
-    // first, so another event for the same payment finds it REFUNDED and does nothing. If the refund call fails,
-    // the transaction rolls back and Stripe retries the webhook (the refund's idempotency key makes that safe).
+    // Paid too late (booking CANCELLED) or paid twice: give the money back (rule 3d).
+    await this.refundPayment(tx, {
+      bookingId: booking.id,
+      paymentId: payment.id,
+      intentId: intent.id,
+      paid,
+      now,
+      reason: action === "refund_late" ? "LATE_PAYMENT" : "DUPLICATE_PAYMENT",
+    });
+  }
+
+  /**
+   * Refunds a succeeded payment that did not (and must not) confirm its booking. The guarded update comes first,
+   * so another event for the same payment finds it REFUNDED and does nothing. If the refund call fails, the
+   * transaction rolls back and Stripe retries the webhook (the refund's idempotency key makes that safe).
+   * A cancelled booking gets the cancel reason that tells the customer their money is coming back.
+   */
+  private async refundPayment(
+    tx: Tx,
+    input: {
+      bookingId: string;
+      paymentId: string;
+      intentId: string;
+      paid: Prisma.PaymentUpdateManyMutationInput;
+      now: Date;
+      reason: "LATE_PAYMENT" | "DUPLICATE_PAYMENT" | "AMOUNT_MISMATCH";
+    },
+  ): Promise<void> {
     const marked = await tx.payment.updateMany({
-      where: { id: payment.id, status: { not: "REFUNDED" } },
-      data: { status: "REFUNDED", ...paid, refundedAt: now },
+      where: { id: input.paymentId, status: { not: "REFUNDED" } },
+      data: { ...input.paid, status: "REFUNDED", refundedAt: input.now },
     });
     if (marked.count === 0) return;
-    await this.provider.refund(intent.id);
-    if (action === "refund_late") {
+    await this.provider.refund(input.intentId);
+    if (input.reason !== "DUPLICATE_PAYMENT") {
       await tx.booking.updateMany({
-        where: { id: booking.id, status: "CANCELLED" },
-        data: { cancelReason: "LATE_PAYMENT_REFUNDED" },
+        where: { id: input.bookingId, status: "CANCELLED" },
+        data: {
+          cancelReason:
+            input.reason === "AMOUNT_MISMATCH"
+              ? "AMOUNT_MISMATCH_REFUNDED"
+              : "LATE_PAYMENT_REFUNDED",
+        },
       });
     }
     await tx.bookingEvent.create({
       data: {
-        bookingId: booking.id,
+        bookingId: input.bookingId,
         type: "REFUNDED",
         actor: "STRIPE",
-        data: {
-          paymentIntentId: intent.id,
-          reason: action === "refund_late" ? "LATE_PAYMENT" : "DUPLICATE_PAYMENT",
-        },
+        data: { paymentIntentId: input.intentId, reason: input.reason },
       },
     });
     this.logger.warn({
       event: "payment_refunded",
-      bookingId: booking.id,
-      paymentIntentId: intent.id,
+      bookingId: input.bookingId,
+      paymentIntentId: input.intentId,
+      reason: input.reason,
     });
   }
 

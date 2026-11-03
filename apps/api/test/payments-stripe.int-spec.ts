@@ -402,7 +402,7 @@ describe("payments over HTTP with the Stripe adapter (fake Stripe server)", () =
       expect((await deliver(stripe.event("payment_intent.canceled", intentId))).status).toBe(200);
     });
 
-    it("an amount that does not match the booking is never confirmed", async () => {
+    it("an amount that does not match the booking is never confirmed: Stripe refunds it once", async () => {
       const user = await newUser();
       const { booking, intentId } = await bookingWithIntent(user);
       stripe.pay(intentId, "card");
@@ -410,8 +410,13 @@ describe("payments over HTTP with the Stripe adapter (fake Stripe server)", () =
 
       expect((await deliver(stripe.event("payment_intent.succeeded", intentId))).status).toBe(200);
 
-      expect((await getBooking(user, booking.id)).status).toBe("PENDING_PAYMENT");
+      expect(await getBooking(user, booking.id)).toMatchObject({
+        status: "CANCELLED",
+        cancelReason: "AMOUNT_MISMATCH_REFUNDED",
+      });
       expect(await eventTypes(booking.id)).not.toContain("CONFIRMED");
+      const refunds = stripe.refunds.filter((r) => r.paymentIntent === intentId);
+      expect(refunds).toEqual([{ paymentIntent: intentId, idempotencyKey: `refund:${intentId}` }]);
     });
   });
 });

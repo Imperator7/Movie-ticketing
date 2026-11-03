@@ -596,10 +596,11 @@ export const CRITICAL_FLOWS: readonly CriticalFlow[] = [
       {
         rule: "Confirm only for exactly the booking total in THB.",
         design: "code comment in onSucceeded (not in database-design)",
-        how: "amountMatches compares intent.amount with toStripeAmount(totalBaht) and the currency. On a mismatch it logs payment_amount_mismatch and returns.",
+        how: "amountMatches compares intent.amount with toStripeAmount(totalBaht) and the currency. On a mismatch it logs payment_amount_mismatch (the alert), cancels a still-pending booking (seats released) and refunds the payment; the booking's cancel reason becomes AMOUNT_MISMATCH_REFUNDED.",
         review: [
-          "What happens to the money on a mismatch?",
-          "The event is marked processed, so Stripe won't retry: who notices?",
+          "Never confirmed, never kept: cancel + refund in the same transaction as the event record?",
+          "A replay of the same payment refunds nothing twice (guarded REFUNDED mark)?",
+          "A mismatch on a booking already CONFIRMED by another payment only refunds, never cancels?",
         ],
         code: [
           { file: PAYMENTS, from: "// Never trust the amount blindly", to: "return;\n    }" },
@@ -608,13 +609,20 @@ export const CRITICAL_FLOWS: readonly CriticalFlow[] = [
         tests: [
           {
             file: `${T}/payments-stripe.int-spec.ts`,
-            name: "an amount that does not match the booking is never confirmed",
+            name: "an amount that does not match the booking is never confirmed: Stripe refunds it once",
           },
-          { file: `${T}/payments.int-spec.ts`, name: "an amount mismatch is not confirmed" },
+          {
+            file: `${T}/payments.int-spec.ts`,
+            name: "an amount mismatch is never confirmed: refunded, booking cancelled, seats released",
+          },
+          {
+            file: `${T}/payments.int-spec.ts`,
+            name: "an amount mismatch on an already cancelled booking is refunded (AMOUNT_MISMATCH_REFUNDED)",
+          },
         ],
-        verdict: "gap",
+        verdict: "matches",
         finding:
-          "The booking is correctly not confirmed, but the captured money is neither refunded nor raised anywhere except one log line. The booking then expires (the job sees a succeeded intent as 'in progress' and waits for the hold), so the customer is charged with no ticket. Decide: refund automatically like a late payment, or alert (planned: reconciliation job + CloudWatch alarm, Next #3).",
+          "Fixed 2026-11-03: the customer is never charged without a ticket. The log line is still the only alert until the reconciliation job and CloudWatch alarm (Next #3).",
       },
       {
         rule: "PENDING_PAYMENT → CONFIRMED exactly once, with the payment marked SUCCEEDED and a CONFIRMED event, in one transaction.",
@@ -627,7 +635,7 @@ export const CRITICAL_FLOWS: readonly CriticalFlow[] = [
         code: [
           {
             file: PAYMENTS,
-            from: "const details = await this.provider.paymentDetails(intent.id);\n    const paid",
+            from: "const confirmed = await tx.booking.updateMany({",
             to: "return;\n    }",
           },
         ],
@@ -657,7 +665,7 @@ export const CRITICAL_FLOWS: readonly CriticalFlow[] = [
         how: "The payment is marked REFUNDED with a guarded update BEFORE calling Stripe, so a second event finds it refunded and stops. If the Stripe call fails, the transaction (including that mark) rolls back and Stripe retries the webhook; the refund's idempotency key `refund:<intent>` makes the retry safe.",
         review: [
           "Mark first, then call Stripe, all inside the transaction?",
-          "Late payment: cancel_reason set to LATE_PAYMENT_REFUNDED; REFUNDED event written?",
+          "Late payment: cancel_reason set to LATE_PAYMENT_REFUNDED (amount mismatch: AMOUNT_MISMATCH_REFUNDED); REFUNDED event written?",
         ],
         code: [
           {
@@ -665,6 +673,7 @@ export const CRITICAL_FLOWS: readonly CriticalFlow[] = [
             from: "// Paid too late (booking CANCELLED) or paid twice",
             to: 'reason: action === "refund_late" ? "LATE_PAYMENT" : "DUPLICATE_PAYMENT",',
           },
+          { file: PAYMENTS, def: "refundPayment" },
           { file: STRIPE, def: "refund" },
         ],
         tests: [
@@ -950,8 +959,8 @@ export const CRITICAL_FLOWS: readonly CriticalFlow[] = [
 export const BOOKING_STATES = `stateDiagram-v2
   [*] --> PENDING_PAYMENT: createBooking · createInTransaction
   PENDING_PAYMENT --> CONFIRMED: webhook · onSucceeded (guarded update)
-  PENDING_PAYMENT --> CANCELLED: cancelPendingBooking (USER_CANCELLED / PAYMENT_TIMEOUT)
-  CANCELLED --> CANCELLED: late success · refund (LATE_PAYMENT_REFUNDED)
+  PENDING_PAYMENT --> CANCELLED: cancelPendingBooking (USER_CANCELLED / PAYMENT_TIMEOUT / AMOUNT_MISMATCH_REFUNDED + refund)
+  CANCELLED --> CANCELLED: late success · refund (LATE_PAYMENT_REFUNDED / AMOUNT_MISMATCH_REFUNDED)
   CONFIRMED --> [*]
   CANCELLED --> [*]`;
 
