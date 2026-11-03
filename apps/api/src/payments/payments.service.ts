@@ -10,6 +10,7 @@ import {
   type ProviderEvent,
   type ProviderIntent,
 } from "./payment-provider.js";
+import { actionForUnconfirmedPayment, amountMatches, canReuseIntent } from "./payment-rules.js";
 
 export interface PaymentIntentBody {
   clientSecret: string;
@@ -19,14 +20,6 @@ export interface PaymentIntentBody {
 }
 
 export type WebhookOutcome = "processed" | "duplicate" | "ignored";
-
-/** Intent statuses that can still be paid, so an existing intent is reused instead of creating another. */
-const REUSABLE = new Set([
-  "requires_payment_method",
-  "requires_confirmation",
-  "requires_action",
-  "processing",
-]);
 
 const notFound = (): AppException =>
   new AppException(ErrorCode.NOT_FOUND, HttpStatus.NOT_FOUND, "Booking not found");
@@ -99,7 +92,7 @@ export class PaymentsService {
     const latest = booking.payments.find((p) => p.status === "PENDING" || p.status === "FAILED");
     if (latest) {
       const intent = await this.provider.retrieveIntent(latest.stripePaymentIntentId);
-      if (REUSABLE.has(intent.status) && intent.clientSecret !== "") return body(intent);
+      if (canReuseIntent(intent)) return body(intent);
     }
 
     const attempt = booking.payments.length + 1;
@@ -218,7 +211,7 @@ export class PaymentsService {
     });
 
     // Never trust the amount blindly: a mismatch is an alert, not a confirmation.
-    if (intent.amount !== toStripeAmount(booking.totalBaht) || intent.currency !== "thb") {
+    if (!amountMatches(intent, booking.totalBaht)) {
       this.logger.error({
         event: "payment_amount_mismatch",
         bookingId: booking.id,
@@ -263,7 +256,8 @@ export class PaymentsService {
         where: { bookingId: booking.id, status: "SUCCEEDED", NOT: { id: payment.id } },
       })) > 0;
 
-    if (current.status === "CONFIRMED" && !otherSucceeded) {
+    const action = actionForUnconfirmedPayment(current.status, otherSucceeded);
+    if (action === "already_confirmed") {
       // Already confirmed by this same payment (a replay with a new event id).
       await tx.payment.updateMany({
         where: { id: payment.id, status: { not: "SUCCEEDED" } },
@@ -272,13 +266,16 @@ export class PaymentsService {
       return;
     }
 
-    // Paid too late (booking CANCELLED) or paid twice: give the money back (rule 3d).
-    await this.provider.refund(intent.id);
-    await tx.payment.update({
-      where: { id: payment.id },
+    // Paid too late (booking CANCELLED) or paid twice: give the money back (rule 3d). The guarded update comes
+    // first, so another event for the same payment finds it REFUNDED and does nothing. If the refund call fails,
+    // the transaction rolls back and Stripe retries the webhook (the refund's idempotency key makes that safe).
+    const marked = await tx.payment.updateMany({
+      where: { id: payment.id, status: { not: "REFUNDED" } },
       data: { status: "REFUNDED", ...paid, refundedAt: now },
     });
-    if (current.status === "CANCELLED") {
+    if (marked.count === 0) return;
+    await this.provider.refund(intent.id);
+    if (action === "refund_late") {
       await tx.booking.updateMany({
         where: { id: booking.id, status: "CANCELLED" },
         data: { cancelReason: "LATE_PAYMENT_REFUNDED" },
@@ -291,7 +288,7 @@ export class PaymentsService {
         actor: "STRIPE",
         data: {
           paymentIntentId: intent.id,
-          reason: current.status === "CANCELLED" ? "LATE_PAYMENT" : "DUPLICATE_PAYMENT",
+          reason: action === "refund_late" ? "LATE_PAYMENT" : "DUPLICATE_PAYMENT",
         },
       },
     });

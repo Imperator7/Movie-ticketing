@@ -5,7 +5,11 @@ import { ErrorCode } from "./error-code.js";
 /** Keeps the enum in lock-step with docs/openapi.yaml (components.schemas.ErrorCode). */
 describe("ErrorCode vs docs/openapi.yaml", () => {
   it("lists exactly the codes of the contract", () => {
-    const yaml = readFileSync(new URL("../../../../../docs/openapi.yaml", import.meta.url), "utf8");
+    // Normalise line endings: a Windows checkout (core.autocrlf) has CRLF.
+    const yaml = readFileSync(
+      new URL("../../../../../docs/openapi.yaml", import.meta.url),
+      "utf8",
+    ).replaceAll("\r\n", "\n");
     const block = /\n {4}ErrorCode:\n([\s\S]*?)\n\n/.exec(yaml)?.[1] ?? "";
     const contractCodes = [...block.matchAll(/^ {8}- ([A-Z_]+)$/gm)].map((match) => match[1]);
 

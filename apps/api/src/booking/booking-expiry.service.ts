@@ -6,8 +6,8 @@ import {
 } from "@nestjs/common";
 import { ConfigService } from "../config/config.service.js";
 import { PrismaService } from "../prisma/prisma.service.js";
-import { cancelPendingBooking } from "./booking-support.js";
-import { PaymentGateway } from "./payment-gateway.js";
+import { cancelPendingBooking, shouldExpireBooking } from "./booking-support.js";
+import { PaymentGateway, type CancelOutcome } from "./payment-gateway.js";
 
 /** Key of `pg_try_advisory_xact_lock` for this job: only one container works per tick (database-design §18). */
 export const EXPIRY_JOB_LOCK_ID = 7_301_001;
@@ -21,6 +21,8 @@ export interface ExpiryRunResult {
   cancelled: number;
   /** Payment window over but the gateway says it is processing and the hold is not over: left for the webhook. */
   skipped: number;
+  /** Bookings whose provider call failed this run; treated as "in progress" so one bad intent never blocks the rest. */
+  gatewayErrors: number;
   idempotencyKeysDeleted: number;
 }
 
@@ -81,7 +83,13 @@ export class BookingExpiryService implements OnApplicationBootstrap, OnModuleDes
         const [lock] = await tx.$queryRaw<{ locked: boolean }[]>`
           SELECT pg_try_advisory_xact_lock(${EXPIRY_JOB_LOCK_ID}::bigint) AS locked`;
         if (!lock?.locked)
-          return { ran: false, cancelled: 0, skipped: 0, idempotencyKeysDeleted: 0 };
+          return {
+            ran: false,
+            cancelled: 0,
+            skipped: 0,
+            gatewayErrors: 0,
+            idempotencyKeysDeleted: 0,
+          };
 
         const due = await tx.booking.findMany({
           where: { status: "PENDING_PAYMENT", paymentExpiresAt: { lte: now } },
@@ -92,10 +100,23 @@ export class BookingExpiryService implements OnApplicationBootstrap, OnModuleDes
 
         let cancelled = 0;
         let skipped = 0;
+        let gatewayErrors = 0;
         for (const booking of due) {
-          const outcome = await this.gateway.cancelPaymentIntent(booking.id);
-          const holdOver = booking.holdExpiresAt.getTime() <= now.getTime();
-          if (outcome === "in_progress" && !holdOver) {
+          let outcome: CancelOutcome;
+          try {
+            outcome = await this.gateway.cancelPaymentIntent(booking.id);
+          } catch (error) {
+            // Stripe down, or an intent it no longer knows: we can't tell whether a payment is in flight, so wait
+            // like for one (the hold still ends it; a late success is refunded). Never let it stop the batch.
+            gatewayErrors++;
+            outcome = "in_progress";
+            this.logger.warn({
+              event: "expiry_gateway_failed",
+              bookingId: booking.id,
+              error: error instanceof Error ? error.message : String(error),
+            });
+          }
+          if (!shouldExpireBooking(outcome, booking.holdExpiresAt, now)) {
             skipped++;
             continue;
           }
@@ -109,7 +130,7 @@ export class BookingExpiryService implements OnApplicationBootstrap, OnModuleDes
         }
 
         const keys = await tx.idempotencyKey.deleteMany({ where: { expiresAt: { lte: now } } });
-        return { ran: true, cancelled, skipped, idempotencyKeysDeleted: keys.count };
+        return { ran: true, cancelled, skipped, gatewayErrors, idempotencyKeysDeleted: keys.count };
       },
       { timeout: TRANSACTION_TIMEOUT_MS },
     );

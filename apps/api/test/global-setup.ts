@@ -62,6 +62,8 @@ export async function setup(project: TestProject): Promise<void> {
     cwd: fileURLToPath(new URL("..", import.meta.url)),
     env: { ...process.env, MIGRATION_DATABASE_URL: url("migrator", MIGRATOR_PASSWORD) },
     stdio: "inherit",
+    // Windows starts `npx` through `npx.cmd`, which Node only runs via a shell.
+    shell: process.platform === "win32",
   });
 
   project.provide("databaseUrl", url("app_user", APP_USER_PASSWORD));

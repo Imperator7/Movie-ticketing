@@ -80,6 +80,9 @@ rmSync(conformancePath, { force: true });
 /** @param {string} file */
 const rel = (file) => path.relative(root, file);
 
+/** Windows runs `npm` through `npm.cmd`, which Node only starts via a shell. No argument here needs quoting. */
+const npmShell = process.platform === "win32";
+
 /** @param {string} status @returns {Status} */
 function toStatus(status) {
   if (status === "passed") return "passed";
@@ -123,6 +126,7 @@ function vitestSuite({ id, label, workspace, script, env = {} }) {
       env: { ...process.env, ...env },
       encoding: "utf8",
       stdio: ["ignore", "pipe", "pipe"],
+      shell: npmShell,
     },
   );
   const durationMs = Date.now() - started;
@@ -185,6 +189,7 @@ function dbVerifySuite() {
     cwd: root,
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],
+    shell: npmShell,
   });
   const durationMs = Date.now() - started;
   const output = `${run.stdout}\n${run.stderr}`;
@@ -225,9 +230,14 @@ function skipped({ id, label, command }) {
   };
 }
 
-/** @param {{ stdout: string, stderr: string }} run */
+/** @param {{ stdout: string, stderr: string, error?: Error }} run */
 function tail(run) {
-  return `${run.stdout ?? ""}\n${run.stderr ?? ""}`.trim().split("\n").slice(-40).join("\n");
+  const spawnError = run.error ? `${run.error.message}\n` : "";
+  return `${spawnError}${run.stdout ?? ""}\n${run.stderr ?? ""}`
+    .trim()
+    .split("\n")
+    .slice(-40)
+    .join("\n");
 }
 
 function git(...args) {

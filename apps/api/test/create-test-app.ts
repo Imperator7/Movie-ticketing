@@ -1,5 +1,5 @@
 import type { NestExpressApplication } from "@nestjs/platform-express";
-import { Test } from "@nestjs/testing";
+import { Test, type TestingModuleBuilder } from "@nestjs/testing";
 import { inject } from "vitest";
 import { AppModule } from "../src/app.module.js";
 import { APP_CREATE_OPTIONS, configureApp } from "../src/app.setup.js";
@@ -24,14 +24,18 @@ export function testEnv(overrides: Record<string, string> = {}): Record<string, 
   };
 }
 
-/** Boots the real AppModule (real Prisma, real DB) configured exactly like main.ts. */
+/**
+ * Boots the real AppModule (real Prisma, real DB) configured exactly like main.ts. `configure` may swap a provider
+ * at a port (e.g. the PaymentProvider pointed at a local fake Stripe server); nothing else is mocked.
+ */
 export async function createTestApp(
   overrides: Record<string, string> = {},
+  configure: (builder: TestingModuleBuilder) => TestingModuleBuilder = (builder) => builder,
 ): Promise<NestExpressApplication> {
   const previous = { ...process.env };
   Object.assign(process.env, testEnv(overrides));
   try {
-    const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
+    const moduleRef = await configure(Test.createTestingModule({ imports: [AppModule] })).compile();
     const app = moduleRef.createNestApplication<NestExpressApplication>(APP_CREATE_OPTIONS);
     configureApp(app);
     await app.init();

@@ -141,6 +141,29 @@ describe("booking expiry job (real database)", () => {
     expect(processing.calls).toContain(betweenWindows.bookingId);
   });
 
+  it("one booking whose provider call fails never blocks the batch (Stripe down, unknown intent)", async () => {
+    const brokenBetween = await pendingBooking(5.5);
+    const brokenHoldOver = await pendingBooking(7);
+    const healthy = await pendingBooking(5.5);
+    const broken = new Set([brokenBetween.bookingId, brokenHoldOver.bookingId]);
+    const gateway = new (class extends PaymentGateway {
+      cancelPaymentIntent(bookingId: string): Promise<CancelOutcome> {
+        return broken.has(bookingId)
+          ? Promise.reject(new Error("No such payment_intent"))
+          : Promise.resolve("cancelled");
+      }
+    })();
+
+    const result = await job(gateway).runOnce();
+
+    expect(result.ran).toBe(true);
+    expect(result.gatewayErrors).toBeGreaterThanOrEqual(2);
+    // Unknown state is treated like a payment in flight: wait while the hold lasts, cancel once it is over.
+    expect((await load(brokenBetween.bookingId)).status).toBe("PENDING_PAYMENT");
+    expect((await load(brokenHoldOver.bookingId)).status).toBe("CANCELLED");
+    expect((await load(healthy.bookingId)).status).toBe("CANCELLED");
+  });
+
   it("cancels a booking between the windows when the gateway has nothing in flight", async () => {
     const { bookingId } = await pendingBooking(5.5);
 
@@ -177,7 +200,13 @@ describe("booking expiry job (real database)", () => {
       result = await job().runOnce();
     });
 
-    expect(result).toEqual({ ran: false, cancelled: 0, skipped: 0, idempotencyKeysDeleted: 0 });
+    expect(result).toEqual({
+      ran: false,
+      cancelled: 0,
+      skipped: 0,
+      gatewayErrors: 0,
+      idempotencyKeysDeleted: 0,
+    });
     expect((await load(bookingId)).status).toBe("PENDING_PAYMENT");
     expect((await job().runOnce()).ran).toBe(true); // lock released: the next tick works
   });

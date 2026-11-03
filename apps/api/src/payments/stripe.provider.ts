@@ -24,18 +24,27 @@ const IN_PROGRESS = new Set<Stripe.PaymentIntent.Status>([
   "requires_capture",
 ]);
 
+/**
+ * The parts of the Stripe SDK the adapter uses. The real client satisfies it; unit tests pass a stub, and
+ * integration tests pass a real client pointed at a local fake Stripe server (`createStripeClient` options).
+ */
+export type StripeClient = Pick<Stripe, "paymentIntents" | "refunds" | "webhooks">;
+
+/** The production client: 2 retries, 10 s timeout. `options` can point it elsewhere (tests: host/port/protocol). */
+export function createStripeClient(secretKey: string, options: Stripe.StripeConfig = {}): Stripe {
+  return new Stripe(secretKey, { maxNetworkRetries: 2, timeout: 10_000, ...options });
+}
+
 /** Stripe adapter (API-10). Card + PromptPay in THB, metadata.bookingId on every PaymentIntent. */
 export class StripePaymentProvider extends PaymentProvider {
   readonly kind = "stripe" as const;
-  private readonly stripe: Stripe;
 
   constructor(
-    secretKey: string,
+    private readonly stripe: StripeClient,
     readonly publishableKey: string,
     private readonly webhookSecret: string,
   ) {
     super();
-    this.stripe = new Stripe(secretKey, { maxNetworkRetries: 2, timeout: 10_000 });
   }
 
   async createIntent(input: {
