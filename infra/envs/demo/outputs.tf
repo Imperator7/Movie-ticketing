@@ -57,3 +57,15 @@ output "web_bucket" {
 output "cloudfront_distribution_id" {
   value = aws_cloudfront_distribution.main.id
 }
+
+
+
+output "sns_topic_arn" {
+  description = "SNS topic for ECS alerts"
+  value       = aws_sns_topic.ecs_alerts.arn
+}
+
+output "cpu_alarm_name" {
+  description = "CloudWatch CPU alarm name"
+  value       = aws_cloudwatch_metric_alarm.ecs_cpu.alarm_name
+}

@@ -43,7 +43,7 @@ resource "aws_ecs_service" "api" {
 
   # sleep.sh / wake.sh change the task count (0 or 1); Terraform must not undo that.
   lifecycle {
-    ignore_changes = [desired_count]
+    ignore_changes = [desired_count, task_definition]
   }
 
   depends_on = [aws_lb_listener.http, aws_ecs_cluster_capacity_providers.main]

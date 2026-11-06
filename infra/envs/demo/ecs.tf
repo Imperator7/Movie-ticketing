@@ -26,12 +26,12 @@ locals {
 
 data "aws_ecr_image" "api" {
   repository_name = aws_ecr_repository.repo["api"].name
-  most_recent     = true
+  image_tag       = var.api_image_tag
 }
 
 data "aws_ecr_image" "seed" {
   repository_name = aws_ecr_repository.repo["seed"].name
-  most_recent     = true
+  image_tag       = var.seed_image_tag
 }
 
 # ---- Cluster -----------------------------------------------------------------------------------------------------
@@ -279,4 +279,47 @@ resource "aws_ecs_task_definition" "api" {
     stopTimeout      = 30
     logConfiguration = local.log_options.api
   }])
+}
+
+resource "aws_cloudwatch_metric_alarm" "ecs_cpu" {
+  alarm_name = "ecs-high-cpu"
+
+  namespace   = "AWS/ECS"
+  metric_name = "CPUUtilization"
+
+  dimensions = {
+    ClusterName = aws_ecs_cluster.main.name
+    ServiceName = aws_ecs_service.api.name
+  }
+
+  statistic           = "Average"
+  period              = 60
+  evaluation_periods  = 5
+  datapoints_to_alarm = 5
+
+  threshold           = 80
+  comparison_operator = "GreaterThanThreshold"
+
+  treat_missing_data = "missing"
+
+  # THIS CONNECTS CLOUDWATCH TO SNS
+  alarm_actions = [
+    aws_sns_topic.ecs_alerts.arn
+  ]
+
+  # Send a second notification on recovery
+  ok_actions = [
+    aws_sns_topic.ecs_alerts.arn
+  ]
+
+}
+// create sns topic for alerting from cloudwatch alert
+resource "aws_sns_topic" "ecs_alerts" {
+  name = "ecs-monitoring-alerts"
+}
+// sns subscription
+resource "aws_sns_topic_subscription" "email" {
+  topic_arn = aws_sns_topic.ecs_alerts.arn
+  protocol  = "email"
+  endpoint  = "rungrojr.ball@gmail.com"
 }
