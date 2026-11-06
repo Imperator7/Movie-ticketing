@@ -26,12 +26,12 @@ locals {
 
 data "aws_ecr_image" "api" {
   repository_name = aws_ecr_repository.repo["api"].name
-  most_recent     = true
+  image_tag       = var.api_image_tag
 }
 
 data "aws_ecr_image" "seed" {
   repository_name = aws_ecr_repository.repo["seed"].name
-  most_recent     = true
+  image_tag       = var.seed_image_tag
 }
 
 # ---- Cluster -----------------------------------------------------------------------------------------------------

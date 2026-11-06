@@ -23,3 +23,16 @@ variable "payments_provider" {
     error_message = "payments_provider must be fake or stripe."
   }
 }
+
+
+variable "api_image_tag" {
+  description = "api image tag for deploying into production"
+  type        = string
+  default     = "d540b49db8a6"
+}
+
+variable "seed_image_tag" {
+  description = "seed image tag for deploying into production"
+  type        = string
+  default     = "d540b49db8a6"
+}
