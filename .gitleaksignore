@@ -10,3 +10,6 @@ e973c66e27b968991391675e4959a68bdb72cb6b:apps/api/src/config/env.schema.spec.ts:
 e973c66e27b968991391675e4959a68bdb72cb6b:apps/api/src/config/env.schema.spec.ts:generic-api-key:5
 e973c66e27b968991391675e4959a68bdb72cb6b:apps/api/src/config/env.schema.spec.ts:generic-api-key:6
 38e3474b90f2f73c2594bc59ef48e86c99a0c961:apps/api/README.md:generic-api-key:5
+# Fake Stripe key of the local fake Stripe server (sk_test_integration). Reviewed 2026-11-11: not a real secret.
+e005c222e54af044f562d6c1267ec1f381278261:apps/api/test/payments-stripe.int-spec.ts:stripe-access-token:110
+e005c222e54af044f562d6c1267ec1f381278261:apps/api/test/fake-stripe.ts:stripe-access-token:63
