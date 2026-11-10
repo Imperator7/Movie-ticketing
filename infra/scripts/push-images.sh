@@ -5,7 +5,7 @@
 # The tag is the current git commit, so commit first: the script refuses uncommitted changes, because a tag can
 # never be overwritten and must always mean the same code.
 # Needs Docker Desktop running. On an x86 PC the ARM64 build is emulated and slow (5-15 minutes the first time).
-# Usage: AWS_PROFILE=movie-demo bash infra/scripts/push-images.sh
+# Usage: AWS_PROFILE=<your-sso-profile> bash infra/scripts/push-images.sh
 set -euo pipefail
 
 REGION="${AWS_REGION:-ap-southeast-7}"

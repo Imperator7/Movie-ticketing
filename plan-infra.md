@@ -1,8 +1,9 @@
 # plan-infra.md — AWS layout (demo-cheap profile)
 
-Status: **planned, Phase 0 next**. Owner: lead + product owner. Each phase is one reviewed commit (or PR) and we stop
-after each one to check it together before the next. `docs/deploy-aws.md` (one EC2 + CloudFront) stays as the
-throwaway fast path; this file replaces it once Phase 6 is live.
+Status: **parked (2026-11-10)**. Phases 0–6 were applied in the first AWS account (live 2026-10-30); the product
+owner then moved to a new account with SSO and that demo is gone. The app is finished on the local Docker stack
+first; the move to the new account comes after and will need changes here (see `infra/README.md`). Owner: product
+owner. Each phase is one reviewed commit (or PR) and we stop after each one to check it together before the next.
 
 **Profile: demo.** Same shape as production (S3 + OAC + CloudFront, ECS Fargate, RDS, VPC with public and private
 subnets), but every always-on cost is cut to the minimum, and the stack can **sleep** between demos. §8 lists what
@@ -199,7 +200,7 @@ the Bangkok prices in the pricing calculator in Phase 0).
 
 ### Phase 7 — Payments and go-live checks
 
-- Stripe test webhook → `https://<origin>/api/v1/payments/webhook` (three events, as in `deploy-aws.md` §6); keys in
+- Stripe test webhook → `https://<origin>/api/v1/payments/webhook` (`payment_intent.succeeded`, `.payment_failed`, `.canceled`); keys in
   SSM; `PAYMENTS_PROVIDER=stripe`.
 - Run the Playwright smoke subset against the public URL, plus manual: register → book → card + PromptPay test →
   ticket → cancel; two-tab refresh; seat race from two browsers. A Spot interruption during the demo = ~1 minute
@@ -273,9 +274,10 @@ Each line is a variable or a small module change in a new `envs/prod/`:
 
 ## 9. Decisions log (infra)
 
-| #   | Date       | Decision                                                                                                       |
-| --- | ---------- | -------------------------------------------------------------------------------------------------------------- |
-| I1  | 2026-10-30 | Plan written. D1 Terraform, D2 Bangkok, D3 cloudfront.net, D4 no demo user, D5 Stripe test.                    |
-| I2  | 2026-10-30 | D6 demo-cheap profile (no NAT, 1 Spot task in public subnets, internal ALB, SSM, no WAF), D7 sleep / destroy.  |
-| I4  | 2026-10-30 | State goes in the existing portfolio state bucket under its own key; no bootstrap bucket.                      |
-| I3  | 2026-10-30 | WAF kept (Phase 5). NAT deferred to Phase 9, fck-nat first, managed NAT gateway only if needed. Budget USD 50. |
+| #   | Date       | Decision                                                                                                         |
+| --- | ---------- | ---------------------------------------------------------------------------------------------------------------- |
+| I1  | 2026-10-30 | Plan written. D1 Terraform, D2 Bangkok, D3 cloudfront.net, D4 no demo user, D5 Stripe test.                      |
+| I2  | 2026-10-30 | D6 demo-cheap profile (no NAT, 1 Spot task in public subnets, internal ALB, SSM, no WAF), D7 sleep / destroy.    |
+| I4  | 2026-10-30 | State goes in the existing portfolio state bucket under its own key; no bootstrap bucket.                        |
+| I3  | 2026-10-30 | WAF kept (Phase 5). NAT deferred to Phase 9, fck-nat first, managed NAT gateway only if needed. Budget USD 50.   |
+| I5  | 2026-11-10 | Parked. New AWS account, SSO only (no IAM user keys). Local Docker first; needs a new state bucket (I4 is void). |

@@ -3,7 +3,7 @@
 #   _next/static/*  hashed file names, never change → cached for a year
 #   everything else  (HTML, ...) → "no-cache": browsers and CloudFront check for a new version every time
 # Then tells CloudFront to drop what it cached, so the new version shows right away.
-# Needs `npm ci` done once in the repo. Usage: AWS_PROFILE=movie-demo bash infra/scripts/deploy-web.sh
+# Needs `npm ci` done once in the repo. Usage: AWS_PROFILE=<your-sso-profile> bash infra/scripts/deploy-web.sh
 set -euo pipefail
 export MSYS_NO_PATHCONV=1 # Git Bash: don't turn "/*" into a Windows path
 

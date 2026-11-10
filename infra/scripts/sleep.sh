@@ -2,7 +2,7 @@
 # Puts the demo to sleep to save money: API tasks to 0, database stopped.
 # Still billed while asleep: the load balancer (~USD 0.6/day), database storage, ECR images. `terraform destroy`
 # removes everything.
-# Usage: AWS_PROFILE=movie-demo bash infra/scripts/sleep.sh
+# Usage: AWS_PROFILE=<your-sso-profile> bash infra/scripts/sleep.sh
 set -euo pipefail
 
 REGION="${AWS_REGION:-ap-southeast-7}"

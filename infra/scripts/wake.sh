@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Wakes the demo: starts the database (if stopped), then 1 API task, and waits until the load balancer says the
 # API is healthy. Also used the first time, after db-bootstrap, migrate and seed.
-# Usage: AWS_PROFILE=movie-demo bash infra/scripts/wake.sh
+# Usage: AWS_PROFILE=<your-sso-profile> bash infra/scripts/wake.sh
 set -euo pipefail
 
 REGION="${AWS_REGION:-ap-southeast-7}"

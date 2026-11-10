@@ -6,7 +6,7 @@ locals {
   }
 }
 
-# Credentials come from the environment (AWS_PROFILE=movie-demo locally, OIDC in CI), never from code.
+# Credentials come from the environment (AWS_PROFILE=<your-sso-profile> locally, OIDC in CI), never from code.
 provider "aws" {
   region = var.region
   default_tags {

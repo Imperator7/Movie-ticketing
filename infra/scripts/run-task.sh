@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Phase 4: runs a one-off ECS task, waits for it to finish, prints its logs and exits with its exit code.
-# Usage: AWS_PROFILE=movie-demo bash infra/scripts/run-task.sh <db-bootstrap|migrate|seed>
+# Usage: AWS_PROFILE=<your-sso-profile> bash infra/scripts/run-task.sh <db-bootstrap|migrate|seed>
 # First time, in this order: db-bootstrap, migrate, seed.
 set -euo pipefail
 export MSYS_NO_PATHCONV=1 # Git Bash: don't turn /ecs/... into a Windows path

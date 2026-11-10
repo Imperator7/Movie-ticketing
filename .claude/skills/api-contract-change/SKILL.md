@@ -9,7 +9,7 @@ description: Use when adding or changing an API endpoint, request/response field
 
 ## Order of work
 
-1. **Spec** (lead, or proposed in a subagent's report): edit `docs/openapi.yaml`; `npm run lint:openapi`. Every error uses the `Error` schema with an `ErrorCode` enum value; add new codes to the enum and translate them in `apps/web/messages/{th,en}.json` (`errors.<CODE>`).
+1. **Spec** (first): edit `docs/openapi.yaml`; `npm run lint:openapi`. Every error uses the `Error` schema with an `ErrorCode` enum value; add new codes to the enum and translate them in `apps/web/messages/{th,en}.json` (`errors.<CODE>`).
 2. **API** (`apps/api/src/<module>/`): strict nestjs-zod DTOs, `@Public()` only for public routes, `ApiErrors(...)` listing exactly the spec's error statuses, authorization inside the query (another user's resource → 404), server-computed prices/totals/statuses. Cache headers: public catalog GETs use `@CacheControl(...)`; everything else stays `no-store`.
 3. **Contract allowlist**: add the operationId to `apps/api/src/contract/implemented-operations.ts`. The contract test (in `npm run check`) then compares the Nest document to the spec for that operation, and fails if you implement an endpoint without listing it.
 4. **Conformance**: `apps/api/test/conformance.int-spec.ts` calls the real endpoint and validates the response against the spec. Add success and error cases for the new operation. `npm run test:int -w api`.

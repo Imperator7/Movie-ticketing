@@ -190,7 +190,7 @@ Phase 4 notes: seat locks are taken in sorted seat order (no deadlocks between o
 - [ ] **LINE Login** (`startLineLogin`, `lineLoginCallback`), then Google
 - [ ] Email (AWS SES): verification, password reset, e-ticket email
 - [x] Contract check in CI: NestJS-generated spec vs `docs/openapi.yaml` (done in Phase 3, plus runtime conformance)
-- [x] AWS demo in Terraform + GitHub OIDC deploys (OPS-5, DB-7): VPC, RDS, ECR, ECS Fargate, internal ALB, S3 + CloudFront + OAC + VPC origin, WAF, budget, live since 2026-10-30 (`infra/`, `infra/HANDOFF.md`)
+- [x] AWS demo in Terraform + GitHub OIDC deploys (OPS-5, DB-7): VPC, RDS, ECR, ECS Fargate, internal ALB, S3 + CloudFront + OAC + VPC origin, WAF, budget, live 2026-10-30 to 2026-11-06 in the first account; parked since, to be rebuilt in the new account (`infra/README.md`)
 - [ ] Custom domain: Route 53 + ACM
 - [ ] OpenTelemetry tracing, CloudWatch dashboards and alarms
 - [ ] Account deletion (PDPA), active-sessions page
@@ -253,3 +253,4 @@ Buy is disabled if nothing is left. The rest of the selection is kept.
 | D10   | Payments run on `stripe` or a `fake` provider (env). Fake keeps the demo pay flow so the app can be shown without a Stripe account; production must choose explicitly. Lead, 2026-10-30                                                     |
 | D11   | Payment provider calls are isolated per booking: a failing call never stops the expiry batch, and an unknown provider state is treated like a payment in flight (the seat hold still ends it; a late success is refunded). Lead, 2026-11-03 |
 | S9    | **Storybook dropped.** `/design-system` (dev-only page) already renders every token and cinema component state. Product owner, 2026-10-28                                                                                                   |
+| S10   | **No subagents for now**: one session does one plan item at a time (replaces S6). **AWS parked**: finish the app on the local Docker stack, then move to the new AWS account (SSO only). Product owner, 2026-11-10                          |

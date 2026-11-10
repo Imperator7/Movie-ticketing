@@ -21,17 +21,17 @@ a few lines of change. Update only what they asked for.
 
 ## 2. Which doc holds what
 
-| Doc                                                         | Holds                                                      | Update when                                     |
-| ----------------------------------------------------------- | ---------------------------------------------------------- | ----------------------------------------------- |
-| `AGENTS.md` §2                                              | Status table, test counts, "Next", open questions          | Something merged or the priorities changed      |
-| `AGENTS.md` §4, §6, §8                                      | Repo map, commands, gotchas                                | New folder/script/command, or a new pitfall hit |
-| `plan.md`                                                   | Phase checklists, decisions log (D1…)                      | An item finished, or a decision was made        |
-| `docs/database-design.md`                                   | Seat locks, booking lifecycle, constraints, token families | Schema/constraint/lifecycle change              |
-| `docs/er-diagram.mmd`                                       | ER diagram (`/er-diagram`)                                 | Tables or relations changed                     |
-| `docs/security.md`                                          | WEB-/API-/DB-/OPS- controls                                | A control was added or changed                  |
-| `docs/deploy-aws.md`, `infra/HANDOFF.md`, `infra/README.md` | AWS setup and status                                       | Infra changed                                   |
-| `README.md`                                                 | Quick start                                                | Setup steps changed                             |
-| `.claude/skills/*`                                          | Procedures                                                 | A procedure changed                             |
+| Doc                                | Holds                                                      | Update when                                     |
+| ---------------------------------- | ---------------------------------------------------------- | ----------------------------------------------- |
+| `AGENTS.md` §2                     | Status table, test counts, "Next", open questions          | Something merged or the priorities changed      |
+| `AGENTS.md` §4, §6, §8             | Repo map, commands, gotchas                                | New folder/script/command, or a new pitfall hit |
+| `plan.md`                          | Phase checklists, decisions log (D1…)                      | An item finished, or a decision was made        |
+| `docs/database-design.md`          | Seat locks, booking lifecycle, constraints, token families | Schema/constraint/lifecycle change              |
+| `docs/er-diagram.mmd`              | ER diagram (`/er-diagram`)                                 | Tables or relations changed                     |
+| `docs/security.md`                 | WEB-/API-/DB-/OPS- controls                                | A control was added or changed                  |
+| `infra/README.md`, `plan-infra.md` | AWS setup and status                                       | Infra changed                                   |
+| `README.md`                        | Quick start                                                | Setup steps changed                             |
+| `.claude/skills/*`                 | Procedures                                                 | A procedure changed                             |
 
 `docs/openapi.yaml` is not part of this: it changes with the code (contract first, `api-contract-change` skill).
 
