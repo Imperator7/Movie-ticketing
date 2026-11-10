@@ -1,4 +1,5 @@
-# Deploys the demo to AWS after CI passes on main (or by hand: Actions → Deploy → Run workflow).
+# Deploys the demo to AWS. By hand only for now (Actions → Deploy → Run workflow): the AWS demo is being moved to a
+# new account, so there is nothing to deploy to. Put the `workflow_run` trigger back (after CI on main) once it is up.
 #   1. build the ARM64 images and push them to ECR (tag = commit)
 #   2. register task definitions with the new images
 #   3. run the migrate task (database first, then code)
@@ -9,10 +10,10 @@
 name: Deploy
 
 on:
-  workflow_run:
-    workflows: [CI]
-    types: [completed]
-    branches: [main]
+  # workflow_run:
+  #   workflows: [CI]
+  #   types: [completed]
+  #   branches: [main]
   workflow_dispatch:
 
 # One deploy at a time, never cancel one halfway (a migration might be running).
