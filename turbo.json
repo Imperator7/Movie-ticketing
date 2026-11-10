@@ -11,10 +11,11 @@
       "outputs": ["dist/**", "out/**", ".next/**", "!.next/cache/**"]
     },
     "lint": {
-      "dependsOn": ["db:generate"]
+      "dependsOn": ["db:generate", "typecheck"]
     },
     "typecheck": {
-      "dependsOn": ["db:generate"]
+      "dependsOn": ["db:generate"],
+      "outputs": [".next/types/**"]
     },
     "test": {
       "dependsOn": ["db:generate"],

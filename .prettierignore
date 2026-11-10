@@ -10,3 +10,6 @@ apps/web/src/api/generated
 .claude/worktrees
 apps/api/src/generated
 apps/web/public/mockServiceWorker.js
+
+# Terraform provider cache and local state copy
+**/.terraform
