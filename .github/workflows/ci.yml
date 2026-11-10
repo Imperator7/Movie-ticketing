@@ -4,6 +4,8 @@ on:
   pull_request:
   push:
     branches: [main]
+  # By hand, on any branch: Actions → CI → Run workflow. The only way to run the e2e job before a merge.
+  workflow_dispatch:
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -46,6 +48,46 @@ jobs:
         run: npm run db:generate -w api
       - name: API integration tests
         run: npm run test:int -w api
+
+  # The real images (Dockerfiles, nginx, migrate, seed) and the Playwright journey against them.
+  # The slowest job (it builds the whole stack), so it does NOT run on pull requests: only on main and on manual
+  # runs. A failure here means main is broken: fix it before the next merge.
+  e2e:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Start the stack
+        # The suite logs in many times from one IP, so the auth rate limit is raised for this run.
+        run: RATE_LIMIT_AUTH_PER_MIN=100 npm run stack:up
+      - name: Wait until the API answers through nginx
+        run: |
+          for i in $(seq 1 60); do
+            if curl -fsS http://localhost:8080/api/v1/health/ready; then exit 0; fi
+            sleep 5
+          done
+          echo "The stack did not become ready in 5 minutes"
+          exit 1
+      - run: npx -w e2e playwright install --with-deps chromium
+      - run: npm run e2e
+        env:
+          CI: "true"
+      - name: Stack logs
+        if: failure()
+        run: docker compose --profile stack logs --no-color --tail 300
+      - name: Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: reports/e2e
+          retention-days: 7
 
   secrets:
     runs-on: ubuntu-latest
