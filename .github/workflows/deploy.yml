@@ -38,11 +38,11 @@ jobs:
     runs-on: ${{ vars.BUILD_RUNNER || 'ubuntu-24.04-arm' }}
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
-      - uses: aws-actions/configure-aws-credentials@v4
+      - uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
@@ -61,14 +61,14 @@ jobs:
             echo "exists=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-qemu-action@v4
         if: steps.tag.outputs.exists != 'true'
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@v4
         if: steps.tag.outputs.exists != 'true'
 
       - name: Build and push movie-api
         if: steps.tag.outputs.exists != 'true'
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: apps/api/Dockerfile
@@ -83,7 +83,7 @@ jobs:
 
       - name: Build and push movie-api-seed
         if: steps.tag.outputs.exists != 'true'
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: apps/api/Dockerfile
@@ -117,7 +117,7 @@ jobs:
           echo "Waiting until the new task is healthy (the circuit breaker rolls back if it never is)..."
           aws ecs wait services-stable --cluster "$ECS_CLUSTER" --services api
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
           cache: npm
