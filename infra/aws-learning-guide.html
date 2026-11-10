@@ -1,0 +1,324 @@
+<title>AWS Launch Guide</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:wght@600&display=swap">
+<style>
+/* Layout: one reading column, a stage strip at top, each stage = header + steps + "done when" */
+:root{
+  --bg:#f6f7f8; --surface:#ffffff; --fg:#1b2127; --muted:#5b6672; --line:#dde2e7;
+  --accent:#0f6e74; --accent-soft:#e2f1f1; --warn:#9a4a00; --warn-soft:#fdf0e2; --ok:#2d6a3a; --ok-soft:#e6f3e8;
+  --code-bg:#eef1f4;
+  --f-display:"IBM Plex Serif", Georgia, serif;
+  --f-body:"IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono:"IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#13171b; --surface:#1a1f24; --fg:#e4e8ec; --muted:#97a3ae; --line:#2b333b;
+  --accent:#5cc2c7; --accent-soft:#16302f; --warn:#f0a35c; --warn-soft:#33240f; --ok:#7fcb8e; --ok-soft:#15291a;
+  --code-bg:#0f1316; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#13171b; --surface:#1a1f24; --fg:#e4e8ec; --muted:#97a3ae; --line:#2b333b;
+  --accent:#5cc2c7; --accent-soft:#16302f; --warn:#f0a35c; --warn-soft:#33240f; --ok:#7fcb8e; --ok-soft:#15291a;
+  --code-bg:#0f1316; color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:16px;line-height:1.6}
+.wrap{max-width:46rem;margin:0 auto;padding-block:40px 80px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2,h3{text-wrap:balance;line-height:1.25}
+h1{font-family:var(--f-display);font-size:2.1rem;margin:0 0 .4rem}
+h2{font-family:var(--f-display);font-size:1.5rem;margin:0}
+h3{font-size:1.05rem;margin:1.6rem 0 .4rem}
+p{margin:.6rem 0}
+.lede{color:var(--muted);font-size:1.08rem;max-width:40rem}
+.eyebrow{font-family:var(--f-mono);font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+code{font-family:var(--f-mono);font-size:.88em;background:var(--code-bg);padding:.08em .35em;border-radius:4px}
+a{color:var(--accent)}
+.strip{display:flex;flex-wrap:wrap;gap:6px;margin:28px 0 8px;padding:0;list-style:none}
+.strip a{display:block;text-decoration:none;font-size:.82rem;padding:5px 10px;border:1px solid var(--line);border-radius:999px;color:var(--fg);background:var(--surface)}
+.strip a:hover,.strip a:focus-visible{border-color:var(--accent);outline:none}
+.strip a span{font-family:var(--f-mono);color:var(--accent);margin-right:4px}
+section.stage{margin-top:56px;padding-top:24px;border-top:1px solid var(--line)}
+.stage-head{display:flex;gap:14px;align-items:baseline}
+.stage-num{font-family:var(--f-mono);font-size:.9rem;color:var(--accent);min-width:2.2rem}
+.where{display:inline-block;font-family:var(--f-mono);font-size:.78rem;color:var(--muted);margin:.4rem 0 0 3.2rem}
+.stage-body{margin-left:3.2rem}
+@media (max-width:560px){.stage-body,.where{margin-left:0}.stage-num{min-width:auto}}
+ol.steps{padding-left:1.3rem;margin:.6rem 0}
+ol.steps>li{margin:.45rem 0;padding-left:.2rem}
+ol.steps>li::marker{font-family:var(--f-mono);color:var(--muted);font-size:.9em}
+.cmd{position:relative;margin:.6rem 0;background:var(--code-bg);border:1px solid var(--line);border-radius:6px;min-width:0}
+.cmd pre{margin:0;padding:10px 44px 10px 12px;overflow-x:auto;font-family:var(--f-mono);font-size:.85rem;line-height:1.5}
+.cmd button{position:absolute;top:6px;right:6px;font:500 .72rem var(--f-body);padding:3px 7px;border-radius:4px;border:1px solid var(--line);background:var(--surface);color:var(--muted);cursor:pointer}
+.cmd button:focus-visible{outline:2px solid var(--accent)}
+.note{border-left:3px solid var(--accent);background:var(--accent-soft);padding:10px 14px;margin:1rem 0;border-radius:0 6px 6px 0}
+.warn{border-left:3px solid var(--warn);background:var(--warn-soft);padding:10px 14px;margin:1rem 0;border-radius:0 6px 6px 0}
+.note strong,.warn strong{display:block;font-size:.8rem;letter-spacing:.04em;text-transform:uppercase;margin-bottom:2px}
+.warn strong{color:var(--warn)} .note strong{color:var(--accent)}
+.done{display:flex;gap:10px;align-items:flex-start;background:var(--ok-soft);border:1px solid var(--line);border-radius:6px;padding:10px 14px;margin:1.2rem 0 0}
+.done input{margin-top:5px;accent-color:var(--ok);width:16px;height:16px;flex:none}
+.done label{cursor:pointer} .done b{color:var(--ok)}
+.tablewrap{overflow-x:auto;margin:1rem 0;border:1px solid var(--line);border-radius:6px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:.9rem;min-width:520px}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:.75rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+tr:last-child td{border-bottom:none}
+.tree{font-family:var(--f-mono);font-size:.85rem;line-height:1.7;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:14px 16px;overflow-x:auto;white-space:pre;margin:1rem 0}
+.tree .c{color:var(--muted)} .tree .y{color:var(--accent);font-weight:500}
+.rules{list-style:none;padding:0;margin:1rem 0;display:grid;gap:8px}
+.rules li{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:10px 14px}
+.rules b{display:block}
+.progress{font-family:var(--f-mono);font-size:.8rem;color:var(--muted);margin-top:4px}
+@media (prefers-reduced-motion:no-preference){.strip a{transition:border-color .15s}}
+</style>
+
+<div class="wrap">
+  <div class="eyebrow">Movie ticketing · portfolio account · ap-southeast-7</div>
+  <h1>AWS Launch Guide</h1>
+  <p class="lede">How to get from your laptop and GitHub to a live app in your <b>portfolio</b> AWS account, safely. Do the stages in order. Each one ends with a check, so you always know it worked before moving on.</p>
+  <p class="progress" id="progress">0 of 9 stages checked</p>
+
+  <ul class="strip" aria-label="Stages">
+    <li><a href="#learn"><span>0</span>The picture</a></li>
+    <li><a href="#s1"><span>1</span>Lock the doors</a></li>
+    <li><a href="#s2"><span>2</span>Your login</a></li>
+    <li><a href="#s3"><span>3</span>Laptop</a></li>
+    <li><a href="#s4"><span>4</span>Portfolio basics</a></li>
+    <li><a href="#s5"><span>5</span>Terraform</a></li>
+    <li><a href="#s6"><span>6</span>Build AWS</a></li>
+    <li><a href="#s7"><span>7</span>GitHub</a></li>
+    <li><a href="#s8"><span>8</span>Go live</a></li>
+    <li><a href="#s9"><span>9</span>Daily life</a></li>
+    <li><a href="#rules"><span>!</span>Safety rules</a></li>
+  </ul>
+
+  <!-- 0 -->
+  <section class="stage" id="learn">
+    <div class="stage-head"><span class="stage-num">0</span><h2>The picture in your head</h2></div>
+    <div class="stage-body">
+      <p>An <b>AWS account</b> is a sealed box. Everything you build (servers, databases, buckets) lives inside one box, and the bill is counted per box. Your organization is a few boxes grouped together.</p>
+      <div class="tree"><span class="c">Organization</span>
+└─ <span class="y">Root</span>              <span class="c">top folder, not a person. Rules here hit every account</span>
+   ├─ Management      <span class="c">created the org, pays all bills. Keep it empty</span>
+   ├─ Identity        <span class="c">delegated admin for IAM Identity Center: your logins live here</span>
+   └─ <span class="y">Portfolio</span>       <span class="c">where your apps run. The movie app goes here</span></div>
+
+      <h3>Four kinds of "who"</h3>
+      <div class="tablewrap"><table>
+        <thead><tr><th>Identity</th><th>What it is</th><th>When you use it</th></tr></thead>
+        <tbody>
+          <tr><td><b>Root user</b></td><td>The email + password of one account. Can do anything, can't be limited.</td><td>Almost never. Billing, emergencies.</td></tr>
+          <tr><td><b>IAM user</b></td><td>A login that lives inside one account, often with a permanent access key.</td><td>Avoid. A leaked key = someone else's servers on your bill. (<code>tf-learning</code> was one.)</td></tr>
+          <tr><td><b>Identity Center user</b></td><td>Your person, created once in the identity account. Can open any account you assign.</td><td><b>Every day.</b> Console and CLI.</td></tr>
+          <tr><td><b>IAM role</b></td><td>A set of permissions anyone allowed can "put on" for a while. Keys expire by themselves.</td><td>Used under the hood: by your SSO login, by GitHub Actions, by the running app.</td></tr>
+        </tbody>
+      </table></div>
+
+      <h3>Where your code meets AWS</h3>
+      <p>AWS doesn't "import" a GitHub repo. Two separate things happen:</p>
+      <ol class="steps">
+        <li><b>Terraform builds the empty house</b> (network, database, servers, CDN) in the portfolio account. You run it from your laptop.</li>
+        <li><b>GitHub Actions moves the furniture in.</b> On every push to <code>main</code> it builds the API image and the website and ships them into that house, using a role (no keys stored in GitHub).</li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- 1 -->
+  <section class="stage" id="s1">
+    <div class="stage-head"><span class="stage-num">1</span><h2>Lock the doors</h2></div>
+    <span class="where">Sign in: management account, as root</span>
+    <div class="stage-body">
+      <ol class="steps">
+        <li>Go to <code>https://signin.aws.amazon.com</code> → <b>Root user</b> → your main email.</li>
+        <li>Top right, your name → <b>Security credentials</b> → <b>Assign MFA device</b>. Use an authenticator app (or a passkey).</li>
+        <li>On the same page, under <b>Access keys</b>: there should be none. If there are, delete them.</li>
+        <li>Billing and Cost Management → <b>Billing preferences</b> → turn on <b>Free Tier usage alerts</b> and <b>CloudWatch billing alerts</b>.</li>
+        <li>Optional but good: do steps 1–3 for the root user of the identity and portfolio accounts too. They have no password yet: use <b>Forgot password</b> on the root sign-in page with that account's email.</li>
+      </ol>
+      <div class="note"><strong>Why</strong>The root user can close accounts and change billing. MFA means a stolen password alone isn't enough.</div>
+      <div class="done"><input type="checkbox" id="c1"><label for="c1"><b>Done when</b> root sign-in asks for your MFA code, and root has no access keys.</label></div>
+    </div>
+  </section>
+
+  <!-- 2 -->
+  <section class="stage" id="s2">
+    <div class="stage-head"><span class="stage-num">2</span><h2>Create your daily login</h2></div>
+    <span class="where">Sign in: identity account (from management: your name → Switch role)</span>
+    <div class="stage-body">
+      <p>To reach the identity account: in the management account, open <b>AWS Organizations</b> and copy the identity account's 12-digit ID. Then click your name → <b>Switch role</b> → that ID → role <code>OrganizationAccountAccessRole</code>.</p>
+      <ol class="steps">
+        <li>Open <b>IAM Identity Center</b>. If it says it's managed elsewhere, do these steps from the management account instead.</li>
+        <li><b>Users → Add user</b>: your username, your email. Open the invite email, set a password, register MFA.</li>
+        <li><b>Permission sets → Create permission set</b> → Predefined → <code>AdministratorAccess</code>. Set session duration to 8 hours.</li>
+        <li><b>AWS accounts</b> → tick <b>Portfolio</b> → <b>Assign users or groups</b> → your user → <code>AdministratorAccess</code> → Submit.</li>
+        <li><b>Dashboard</b> → copy the <b>AWS access portal URL</b> (<code>https://d-xxxxxxxxxx.awsapps.com/start</code>). Bookmark it.</li>
+      </ol>
+      <div class="note"><strong>How you'll sign in from now on</strong>Open the portal URL → log in → click <b>Portfolio</b> → <b>AdministratorAccess</b> → <b>Management console</b>. No more root, no more switch role.</div>
+      <div class="done"><input type="checkbox" id="c2"><label for="c2"><b>Done when</b> the portal shows the Portfolio account and opening it lands you in its console.</label></div>
+    </div>
+  </section>
+
+  <!-- 3 -->
+  <section class="stage" id="s3">
+    <div class="stage-head"><span class="stage-num">3</span><h2>Connect your laptop</h2></div>
+    <span class="where">Terminal on your Mac</span>
+    <div class="stage-body">
+      <ol class="steps">
+        <li>Set up the profile once. Answers: session name <code>me</code>, start URL = your portal URL, region <code>ap-southeast-7</code>, pick Portfolio + AdministratorAccess, profile name <code>portfolio</code>.
+          <div class="cmd"><pre>aws configure sso</pre><button type="button">Copy</button></div></li>
+        <li>Each working day (opens the browser to confirm):
+          <div class="cmd"><pre>aws sso login --profile portfolio</pre><button type="button">Copy</button></div></li>
+        <li>Make it the default for this terminal tab:
+          <div class="cmd"><pre>export AWS_PROFILE=portfolio</pre><button type="button">Copy</button></div></li>
+        <li>Check who you are:
+          <div class="cmd"><pre>aws sts get-caller-identity</pre><button type="button">Copy</button></div>
+          You should see the <b>portfolio account number</b> and an <code>assumed-role/AWSReservedSSO_AdministratorAccess…</code> ARN.</li>
+        <li>Remove the old key from your Mac: open <code>~/.aws/credentials</code> and delete the <code>[default]</code> block. Then, in whichever account <code>tf-learning</code> lives, IAM → Users → <code>tf-learning</code> → delete it.</li>
+      </ol>
+      <div class="done"><input type="checkbox" id="c3"><label for="c3"><b>Done when</b> <code>get-caller-identity</code> shows the portfolio account, and <code>~/.aws/credentials</code> holds no keys.</label></div>
+    </div>
+  </section>
+
+  <!-- 4 -->
+  <section class="stage" id="s4">
+    <div class="stage-head"><span class="stage-num">4</span><h2>Prepare the portfolio account</h2></div>
+    <span class="where">Sign in: portfolio account via the portal</span>
+    <div class="stage-body">
+      <p>Settings like regions and budgets belong to each account separately. What you did in the old account doesn't carry over.</p>
+      <ol class="steps">
+        <li><b>Enable Bangkok.</b> Your name → <b>Account</b> → <b>AWS Regions</b> → Asia Pacific (Thailand) → Enable. Wait until it says Enabled.</li>
+        <li><b>Budget.</b> Billing and Cost Management → <b>Budgets</b> → Cost budget, monthly USD 50, email at 50 / 80 / 100 % actual and 100 % forecast. (If the console says only the management account can see billing, create it there and filter by the portfolio account.)</li>
+        <li><b>Block public S3.</b> S3 → <b>Block Public Access settings for this account</b> → all four on.</li>
+        <li><b>Check the region has what we need</b> (read-only):
+          <div class="cmd"><pre>bash infra/scripts/check-region.sh</pre><button type="button">Copy</button></div></li>
+      </ol>
+      <div class="done"><input type="checkbox" id="c4"><label for="c4"><b>Done when</b> Bangkok is Enabled, the budget exists, and every line of <code>check-region.sh</code> says OK.</label></div>
+    </div>
+  </section>
+
+  <!-- 5 -->
+  <section class="stage" id="s5">
+    <div class="stage-head"><span class="stage-num">5</span><h2>Point Terraform at the portfolio account</h2></div>
+    <span class="where">Terminal, repo folder <code>infra/envs/demo</code></span>
+    <div class="stage-body">
+      <p><b>Terraform state</b> is Terraform's notebook: a file listing everything it created. It lives in an S3 bucket so it isn't lost with your laptop. The old account used <code>state-bucket-portfolio-project</code>; the portfolio account has <code>state-bucket-rungroj-portfolio-project</code>, so <code>versions.tf</code> must name that one.</p>
+      <ol class="steps">
+        <li>See whether that bucket is in the portfolio account:
+          <div class="cmd"><pre>aws s3 ls | grep state-bucket</pre><button type="button">Copy</button></div>
+          It should list <code>state-bucket-rungroj-portfolio-project</code>. Put that name in the <code>backend "s3"</code> block of <code>versions.tf</code>.</li>
+        <li>Connect Terraform to it (safe, creates nothing):
+          <div class="cmd"><pre>terraform init -reconfigure</pre><button type="button">Copy</button></div></li>
+        <li>Preview. The output must show the <b>portfolio</b> account ID:
+          <div class="cmd"><pre>terraform plan</pre><button type="button">Copy</button></div></li>
+      </ol>
+      <div class="warn"><strong>Read every plan</strong>Look at the last line: <code>Plan: X to add, Y to change, Z to destroy</code>. If Z is not 0 and you didn't expect it, stop and ask.</div>
+      <div class="done"><input type="checkbox" id="c5"><label for="c5"><b>Done when</b> <code>terraform plan</code> runs clean and shows the portfolio account ID.</label></div>
+    </div>
+  </section>
+
+  <!-- 6 -->
+  <section class="stage" id="s6">
+    <div class="stage-head"><span class="stage-num">6</span><h2>Build the AWS side, one phase at a time</h2></div>
+    <span class="where">Claude writes one file → you read it → you run plan + apply</span>
+    <div class="stage-body">
+      <p>Each phase is one small step. Claude explains each file in plain words. You run:</p>
+      <div class="cmd"><pre>terraform plan</pre><button type="button">Copy</button></div>
+      <div class="cmd"><pre>terraform apply</pre><button type="button">Copy</button></div>
+      <div class="tablewrap"><table>
+        <thead><tr><th>Phase</th><th>What it builds</th><th>Monthly cost</th></tr></thead>
+        <tbody>
+          <tr><td>2 Network</td><td>Private network (VPC), subnets, internet gateway, security groups (who may talk to whom)</td><td>~0</td></tr>
+          <tr><td>3 Database</td><td>PostgreSQL on RDS, no internet access, passwords in SSM Parameter Store</td><td>~USD 15</td></tr>
+          <tr><td>4 Containers</td><td>ECR (image storage), ECS Fargate (runs the API), internal load balancer</td><td>~USD 25</td></tr>
+          <tr><td>5 Edge</td><td>S3 for the website, CloudFront (the public URL), WAF (blocks attacks)</td><td>~USD 9</td></tr>
+        </tbody>
+      </table></div>
+      <div class="note"><strong>Why this order</strong>Each layer needs the one before it: the database sits in the network, the API needs the database, the public URL needs the API.</div>
+      <div class="done"><input type="checkbox" id="c6"><label for="c6"><b>Done when</b> phases 2–5 are applied and the CloudFront URL opens (empty or "coming soon" is fine).</label></div>
+    </div>
+  </section>
+
+  <!-- 7 -->
+  <section class="stage" id="s7">
+    <div class="stage-head"><span class="stage-num">7</span><h2>Put the code on GitHub and let it deploy</h2></div>
+    <span class="where">github.com + terminal</span>
+    <div class="stage-body">
+      <ol class="steps">
+        <li>The repo already exists: <code>Imperator7/Movie-ticketing</code>. It is <b>public</b> today; decide whether to make it private (Settings → General → Danger zone).</li>
+        <li>Before pushing, make sure no secrets go up. <code>.env</code> files must be git-ignored:
+          <div class="cmd"><pre>git check-ignore .env apps/api/.env</pre><button type="button">Copy</button></div>
+          Both paths should print back. If one doesn't, stop and ask.</li>
+        <li>Push your work:
+          <div class="cmd"><pre>git push origin main</pre><button type="button">Copy</button></div></li>
+        <li>Watch the <b>Actions</b> tab. The existing CI must turn green before anything deploys.</li>
+        <li>Phase 6 (Claude writes it): a <b>GitHub OIDC provider</b> (the portfolio account has none yet) and an <b>OIDC role</b> in the portfolio account. GitHub proves "I am this repo, on main" and AWS gives it short keys. No AWS key is ever pasted into GitHub.</li>
+        <li>On GitHub: Settings → <b>Branches</b> → protect <code>main</code> (require CI to pass). Settings → <b>Environments</b> → <code>demo</code> → require your approval before deploys.</li>
+      </ol>
+      <div class="warn"><strong>Never</strong>paste an AWS access key into GitHub Secrets. If a guide tells you to, it's the old way.</div>
+      <div class="done"><input type="checkbox" id="c7"><label for="c7"><b>Done when</b> a push to <code>main</code> passes CI and the deploy workflow ships the app without your laptop.</label></div>
+    </div>
+  </section>
+
+  <!-- 8 -->
+  <section class="stage" id="s8">
+    <div class="stage-head"><span class="stage-num">8</span><h2>Go live</h2></div>
+    <span class="where">Stripe dashboard + portfolio console</span>
+    <div class="stage-body">
+      <ol class="steps">
+        <li>Stripe → turn on <b>Test mode</b> → Developers → API keys. Put the secret key into SSM Parameter Store as a <b>SecureString</b> (Claude gives you the exact name). Never in a file, never in chat.</li>
+        <li>Stripe → Webhooks → add <code>https://YOUR-ID.cloudfront.net/api/v1/payments/webhook</code>, then store its signing secret the same way.</li>
+        <li>Walk the app on the public URL: register, pick seats, pay with test card <code>4242 4242 4242 4242</code>, see the ticket.</li>
+      </ol>
+      <div class="done"><input type="checkbox" id="c8"><label for="c8"><b>Done when</b> a test booking on the public URL ends with a ticket QR.</label></div>
+    </div>
+  </section>
+
+  <!-- 9 -->
+  <section class="stage" id="s9">
+    <div class="stage-head"><span class="stage-num">9</span><h2>Daily life with it</h2></div>
+    <span class="where">Terminal</span>
+    <div class="stage-body">
+      <div class="tablewrap"><table>
+        <thead><tr><th>You want to</th><th>Do this</th></tr></thead>
+        <tbody>
+          <tr><td>Work on AWS today</td><td><code>aws sso login --profile portfolio</code></td></tr>
+          <tr><td>Ship a code change</td><td>Push to <code>main</code>, approve the <code>demo</code> deploy</td></tr>
+          <tr><td>Save money between demos</td><td><code>infra/scripts/sleep.sh</code> (later <code>wake.sh</code>)</td></tr>
+          <tr><td>Check what it costs</td><td>Billing → Cost Explorer, filter tag <code>project = movie-ticketing</code></td></tr>
+          <tr><td>Stop paying completely</td><td>Ask Claude for the destroy checklist (snapshot first)</td></tr>
+        </tbody>
+      </table></div>
+      <div class="done"><input type="checkbox" id="c9"><label for="c9"><b>Done when</b> you've slept and woken the stack once and seen the cost drop the next day.</label></div>
+    </div>
+  </section>
+
+  <section class="stage" id="rules">
+    <div class="stage-head"><span class="stage-num">!</span><h2>Safety rules to keep forever</h2></div>
+    <div class="stage-body">
+      <ul class="rules">
+        <li><b>No permanent AWS keys anywhere.</b> SSO on the laptop, OIDC in GitHub, roles inside AWS.</li>
+        <li><b>Root only for billing and emergencies</b>, always with MFA.</li>
+        <li><b>Nothing runs in the management account.</b> Apps go in portfolio.</li>
+        <li><b>Read the plan before apply.</b> Unexpected "destroy" = stop.</li>
+        <li><b>Secrets live in SSM Parameter Store.</b> Never in git, chat, screenshots or GitHub Secrets as AWS keys.</li>
+        <li><b>Repo stays private.</b> Branch protection on <code>main</code>.</li>
+        <li><b>Budget alarm on.</b> A surprise email beats a surprise bill.</li>
+      </ul>
+    </div>
+  </section>
+</div>
+
+<script>
+(function(){
+  document.querySelectorAll('.cmd button').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      var pre=btn.parentElement.querySelector('pre'); var text=pre.textContent;
+      function sel(){var r=document.createRange();r.selectNodeContents(pre);var s=getSelection();s.removeAllRanges();s.addRange(r);btn.textContent='Selected';}
+      try{navigator.clipboard.writeText(text).then(function(){btn.textContent='Copied';setTimeout(function(){btn.textContent='Copy'},1500)},sel)}catch(e){sel()}
+    });
+  });
+  var boxes=[].slice.call(document.querySelectorAll('.done input'));
+  var KEY='aws-launch-guide-checks';
+  var saved={}; try{saved=JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){}
+  function update(){var n=boxes.filter(function(b){return b.checked}).length;document.getElementById('progress').textContent=n+' of '+boxes.length+' stages checked';}
+  boxes.forEach(function(b){b.checked=!!saved[b.id];b.addEventListener('change',function(){saved[b.id]=b.checked;try{localStorage.setItem(KEY,JSON.stringify(saved))}catch(e){}update();});});
+  update();
+})();
+</script>

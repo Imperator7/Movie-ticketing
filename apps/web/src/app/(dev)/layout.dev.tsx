@@ -10,6 +10,7 @@ const DEV_PAGES = [
   { href: "/api-flow", label: "API flow" },
   { href: "/critical-flows", label: "Critical flows" },
   { href: "/test-report", label: "Test report" },
+  { href: "/aws-guide", label: "AWS guide" },
 ] as const;
 
 /** Document shell for the dev-only pages (/design-system, /openapi, /er-diagram, /test-report, /flow). Not part of production builds. */

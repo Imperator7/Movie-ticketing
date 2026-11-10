@@ -13,3 +13,6 @@ apps/web/public/mockServiceWorker.js
 
 # Terraform provider cache and local state copy
 **/.terraform
+
+# Hand-laid-out HTML guide (whitespace-sensitive tree diagram)
+infra/aws-learning-guide.html
