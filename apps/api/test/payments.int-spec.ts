@@ -188,14 +188,54 @@ describe("payments (real database, fake provider)", () => {
     expect(await events(booking.id)).toEqual(["CREATED", "PAYMENT_STARTED", "CONFIRMED"]);
   });
 
-  it("an amount mismatch is not confirmed", async () => {
+  it("an amount mismatch is never confirmed: refunded, booking cancelled, seats released", async () => {
     const user = await newUser();
     const booking = await newBooking(user);
     await intentFor(user, booking.id);
     const payment = await paymentRow(booking.id);
+    const wrong = succeeded(payment.stripePaymentIntentId, 100);
+
+    expect(await payments.handleEvent(wrong)).toBe("processed");
+
+    const after = await getBooking(user, booking.id);
+    expect(after).toMatchObject({
+      status: "CANCELLED",
+      cancelReason: "AMOUNT_MISMATCH_REFUNDED",
+      ticketQr: null,
+    });
+    expect(after.latestPayment?.status).toBe("REFUNDED");
+    expect(fake.isRefunded(payment.stripePaymentIntentId)).toBe(true);
+    const seats = await testPrisma().bookingSeat.findMany({ where: { bookingId: booking.id } });
+    expect(seats.every((s) => s.releasedAt !== null)).toBe(true);
+    // CANCELLED and REFUNDED are written in one transaction, so they can share a timestamp: compare sorted.
+    expect((await events(booking.id)).sort()).toEqual([
+      "CANCELLED",
+      "CREATED",
+      "PAYMENT_STARTED",
+      "REFUNDED",
+    ]);
+
+    // The same payment again (Stripe retry under a new event id) changes nothing and refunds nothing twice.
+    await payments.handleEvent({ ...wrong, id: `${wrong.id}_retry` });
+    expect(await events(booking.id)).toHaveLength(4);
+  });
+
+  it("an amount mismatch on an already cancelled booking is refunded (AMOUNT_MISMATCH_REFUNDED)", async () => {
+    const user = await newUser();
+    const booking = await newBooking(user);
+    await intentFor(user, booking.id);
+    const payment = await paymentRow(booking.id);
+    await testPrisma().booking.update({
+      where: { id: booking.id },
+      data: { status: "CANCELLED", cancelReason: "PAYMENT_TIMEOUT", cancelledAt: new Date() },
+    });
 
     await payments.handleEvent(succeeded(payment.stripePaymentIntentId, 100));
-    expect((await getBooking(user, booking.id)).status).toBe("PENDING_PAYMENT");
+
+    const after = await getBooking(user, booking.id);
+    expect(after).toMatchObject({ status: "CANCELLED", cancelReason: "AMOUNT_MISMATCH_REFUNDED" });
+    expect(after.latestPayment?.status).toBe("REFUNDED");
+    expect(fake.isRefunded(payment.stripePaymentIntentId)).toBe(true);
   });
 
   it("a payment that arrives after the booking was cancelled is refunded (LATE_PAYMENT_REFUNDED)", async () => {

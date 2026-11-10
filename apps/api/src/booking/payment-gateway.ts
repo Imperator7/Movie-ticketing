@@ -8,6 +8,19 @@ import { Injectable } from "@nestjs/common";
 export type CancelOutcome = "cancelled" | "nothing_to_cancel" | "in_progress";
 
 /**
+ * One outcome for a booking with several intents: `in_progress` wins (the webhook decides), then `cancelled` if
+ * anything was cancelled, else `nothing_to_cancel`.
+ */
+export function combineCancelOutcomes(outcomes: Iterable<CancelOutcome>): CancelOutcome {
+  let result: CancelOutcome = "nothing_to_cancel";
+  for (const outcome of outcomes) {
+    if (outcome === "in_progress") return "in_progress";
+    if (outcome === "cancelled") result = "cancelled";
+  }
+  return result;
+}
+
+/**
  * Port to the payment provider. Booking code only knows this contract; Phase 5 swaps the adapter for Stripe
  * (`stripe.paymentIntents.cancel`) without touching the booking logic.
  */

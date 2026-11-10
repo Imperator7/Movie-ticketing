@@ -284,6 +284,13 @@ describe("mock server: expiry, cancel and payment", () => {
     };
     expect(upcoming.total).toBe(1);
     expect(past.total).toBe(0);
+    // A cancelled booking is not a ticket: not in the history.
+    const cancelled = bookingOf(book(db, demo, freeSeatIds(2).slice(1)));
+    service.cancelBooking(db, demo, cancelled.id, T0 + 11_000);
+    expect(
+      (service.listMyBookings(db, demo, "upcoming", 1, 20, T0 + 12_000).body as { total: number })
+        .total,
+    ).toBe(1);
     const later = showtime.endMs + 1;
     expect(
       (service.listMyBookings(db, demo, "past", 1, 20, later).body as { total: number }).total,

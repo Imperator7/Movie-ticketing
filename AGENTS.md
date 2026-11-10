@@ -11,12 +11,19 @@ It's a learning project for backend, AWS and DevOps, so we choose the production
 work, as long as it genuinely helps. The product owner (the user) owns product/UX decisions; engineering quality
 improvements inside a task are applied without asking, but **summarize and ask before starting a new phase**.
 
-## 2. Current status (update when an item is merged)
+**Docs are updated only when the product owner says so** (rule from the product owner, 2026-11-03: doc updates
+are costly). This covers `AGENTS.md`, `plan.md`, `README.md`, `docs/*.md`, `docs/er-diagram.mmd`,
+`infra/HANDOFF.md` and the skills. Don't update them as part of a task. When a change makes them out of date, end
+your turn by **asking** whether to update them, with a one-line list of what is stale. On a yes, follow the
+`update-docs` skill. Exception: `docs/openapi.yaml` changes together with the code when an endpoint changes,
+because the contract tests and the generated client read it.
+
+## 2. Current status (updated only when the product owner asks, see §1)
 
 | Area               | State                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Phase 0: Design    | ✅ ER diagram, DB design, OpenAPI contract, security doc, decisions log                                                                                                                                                                                                                                                                                                                                                        |
-| Repo / DevOps      | ✅ Turborepo, shared TS + ESLint configs, Prettier, Husky, commitlint, CI workflow + Dependabot (**written, never run: repo not on GitHub yet**)                                                                                                                                                                                                                                                                               |
+| Repo / DevOps      | ✅ Turborepo, shared TS + ESLint configs, Prettier, Husky, commitlint, CI workflow + Dependabot on GitHub, Deploy workflow (OIDC → AWS) after CI on `main`                                                                                                                                                                                                                                                                     |
 | Design system      | ✅ "Marquee" theme + cinema components, **approved** (`/design-system`)                                                                                                                                                                                                                                                                                                                                                        |
 | Database           | ✅ Prisma schema, hand-written constraints, roles (`migrator` / `app_user`) with **grants in a migration**, 26/26 constraint checks. ✅ Seeded with **18 real TMDB movies** (`movies.json`), 2 cinemas, 6 halls, 992 seats, 913 showtimes (31 days), demo user                                                                                                                                                                 |
 | API foundation     | ✅ Validated env, PrismaService (app_user, pool), pino + request id + redaction, contract error filter, strict nestjs-zod validation, Swagger (dev), helmet/CORS/limits, health live/ready + graceful drain, Testcontainers harness                                                                                                                                                                                            |
@@ -27,7 +34,7 @@ improvements inside a task are applied without asking, but **summarize and ask b
 | Payments (Phase 5) | ✅ createPaymentIntent (reused per booking, provider idempotency key), signed webhook (`stripe_events` dedupe, amount check, guarded confirm, late/duplicate payment → refund, failed/canceled), PaymentGateway on the provider. `PAYMENTS_PROVIDER` = `stripe` or `fake`; the fake runs `/__demo/pay` through the same webhook handler. Web: Stripe Payment Element for a `pk_` key, demo panel otherwise                     |
 | Tickets (Phase 6)  | ✅ Ticket QR, `/bookings`, `/booking?id=` on the real API (walked: seats → login → pay → ticket → my bookings)                                                                                                                                                                                                                                                                                                                 |
 | Stack (Phase 7–8)  | ✅ `apps/api/Dockerfile`, `apps/web/Dockerfile` (nginx, CSP, `/api` proxy), compose `stack` profile (`npm run stack:up` → :8080), Playwright `e2e/` (8 passing), README, `docs/deploy-aws.md` (EC2 + CloudFront fast path). Sentry not wired yet                                                                                                                                                                               |
-| Tests              | 305 api unit · 208 api integration · 425 web unit · 8 e2e (api integration incl. **runtime OpenAPI conformance** on the 21 live operations and real concurrency tests) · 26 DB checks. All green. `npm run test:report` → `/test-report`                                                                                                                                                                                       |
+| Tests              | 358 api unit · 239 api integration · 425 web unit · 8 e2e (api integration incl. **runtime OpenAPI conformance** on the 21 live operations, real concurrency tests, an **access-control matrix** and the **Stripe path over HTTP** against a local fake Stripe) · 26 DB checks. All green. `npm run test:report` → `/test-report`                                                                                              |
 
 **Phase 1 + 2 wrapped up (2026-10-28).** Auth was then walked in the browser against the real API (register, reload
 restore, two tabs, logout, wrong password, duplicate email); this added `GuestOnly` on /login and /register. Last merge added real TMDB posters in the demo (one movie source:
@@ -42,10 +49,19 @@ not built in the session that wrote them (no Docker Hub there): the first `npm r
 
 **Phase 4 done (2026-10-28).** Dev map of screens, pipeline and live operations: `/flow`.
 
-**Next:** AWS demo environment, phase by phase (`plan-infra.md`, Terraform in `infra/`, the product owner applies
-each phase). Phase 0 (account guardrails) written. Then Stripe test keys, Sentry.
+**AWS demo live (2026-10-30):** https://d2d95bxlk5dsty.cloudfront.net, Terraform in `infra/` (status:
+`infra/HANDOFF.md`), deployed by GitHub Actions after CI on `main`. Payments run the `fake` provider there.
 
-**Open questions for the product owner:** when to push to a private GitHub repo (so CI runs). Seed data: movie
+**Phase 7 tests (2026-11-03)** on branch `test/phase-7-coverage`: Stripe path over HTTP (fake Stripe server), IDOR
+matrix, payment rules as pure functions, two reliability fixes (D11), Windows fixes for `test:report`.
+
+**Next (product owner's order, 2026-11-03):** (1) UI fixes, from the product owner's walk-through list;
+(2) Stripe test mode end to end with real test keys (Phase 5 open item); (3) payment reliability: a daily
+reconciliation job (Stripe vs database) and CloudWatch alarms; (4) Sentry; (5) email via SES with an outbox table
+(verification, password reset, e-ticket); then LINE / Google login. Infra upgrades (alarms, `terraform plan` on PRs,
+path-filtered deploys, custom domain) go alongside, done by the product owner as Terraform practice.
+
+**Open questions for the product owner:** which UI screens to fix first. Seed data: movie
 `status` doesn't match showtimes (a COMING_SOON movie has showtimes today). "Can't reach the server" message
 instead of the generic error? Storybook was
 dropped (S9).
@@ -67,15 +83,16 @@ dropped (S9).
 
 Claude loads a skill when its description matches the task; the lead also names them in every brief.
 
-| Skill                 | Load when                                                                             |
-| --------------------- | ------------------------------------------------------------------------------------- |
-| `agent-onboarding`    | a subagent starts a brief or is about to report (setup, ports, done, report format)   |
-| `lead-review`         | the lead briefs, reviews or merges                                                    |
-| `design-system`       | any UI change in apps/web (Marquee rules, when to use impeccable)                     |
-| `impeccable`          | deliberate design review/polish: `/impeccable critique`, `audit`, `harden`, `polish`  |
-| `database-workflow`   | schema, migrations, grants, seed, resets                                              |
-| `api-contract-change` | adding/changing an endpoint or field                                                  |
-| `codebase-graph`      | finding code across packages / tracing relationships (`npm run graph:build`, offline) |
+| Skill                 | Load when                                                                                                                                             |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `agent-onboarding`    | a subagent starts a brief or is about to report (setup, ports, done, report format)                                                                   |
+| `lead-review`         | the lead briefs, reviews or merges                                                                                                                    |
+| `design-system`       | any UI change in apps/web (Marquee rules, when to use impeccable)                                                                                     |
+| `impeccable`          | deliberate design review/polish: `/impeccable critique`, `audit`, `harden`, `polish`                                                                  |
+| `database-workflow`   | schema, migrations, grants, seed, resets                                                                                                              |
+| `api-contract-change` | adding/changing an endpoint or field                                                                                                                  |
+| `update-docs`         | only when the product owner says to update the docs: what each doc holds, how to find what's stale, how to edit them cheaply                          |
+| `codebase-graph`      | finding code across packages and `infra/`, tracing relationships, blast radius (`npm run graph:build`, offline; MCP server `graphify` in `.mcp.json`) |
 
 No always-on hooks: graphify and impeccable hooks were removed on purpose (product owner: "only when needed").
 
@@ -127,7 +144,8 @@ touched · what to look at closely.
 
 **Lead review checklist:** read the risky code (not just the report) · merge with `chore: merge …` · after a merge run
 `npm install`, `npm run db:generate -w api`, `npm run check`, and `npm run test:int -w api` when api changed ·
-look at UI in the browser pane · fix small issues on `main`, send bigger ones back · update §2 and `plan.md`.
+look at UI in the browser pane · fix small issues on `main`, send bigger ones back · ask the product owner whether
+to update §2 and `plan.md` (never unasked, see §1).
 
 ## 6. Commands
 
@@ -147,7 +165,9 @@ npm run test:int -w api        # integration tests (Docker; not part of check)
 npm run api:generate -w web    # regenerate the orval client after docs/openapi.yaml changes
 npm run lint:openapi           # lint the contract
 npm run test:report            # every suite → reports/test-report.json → /test-report (-- --quick: unit only)
-npm run graph:build            # offline code graph for the codebase-graph skill
+npm run graph:install          # once per machine: pinned graphify (offline code graph)
+npm run graph:build            # build the graph (also used by the graphify MCP tools)
+npm run graph -- search "…"     # or explain / path / affected, see the codebase-graph skill
 ```
 
 Ports: web 3000 (lead preview) / 3100 (agents), api 4000, Postgres 5433, Prisma Studio 5555.
@@ -220,3 +240,10 @@ reset` drops the `public` schema and its grants. Any new role/privilege must be 
 - Two branches touched `package-lock.json`? Don't hand-merge: `git checkout --ours package-lock.json && npm install`,
   then `npm run check`. Declare peer deps explicitly (e.g. `@testing-library/dom`) or a rebuilt lockfile drops them.
 - commitlint has no `merge:` type; use `chore: merge …`. `gitleaks` may be missing locally (hook warns; CI scans).
+- **Windows machine:** npm runs scripts with `cmd`, so the web dev scripts (`INCLUDE_DEV_PAGES=1 next dev`) fail
+  there; use the `web-windows` launch config (Git Bash). `core.autocrlf=true` checks files out with CRLF: run
+  Prettier with `--end-of-line auto`, and tests that parse repo files must normalise `\r\n` (see
+  `error-code.spec.ts`). `.gitattributes` forces LF for `*.sh` (a CRLF Postgres init script crashes and never
+  creates the roles). The dev Postgres there runs on **port 5435** (`POSTGRES_HOST_PORT`; 5433 is another project's
+  container). `npm run stack:secrets` calls `bash` (WSL there): run `bash scripts/stack-secrets.sh` from Git Bash.
+  Git Bash rewrites `/paths` in `docker exec` / AWS CLI arguments: prefix `MSYS_NO_PATHCONV=1`.

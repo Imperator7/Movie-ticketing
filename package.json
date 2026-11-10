@@ -32,8 +32,9 @@
     "db:seed": "npm run seed -w api",
     "movies:fetch": "npm run seed:fetch-movies -w api && npm run mocks:sync-movies -w web && npm run db:seed",
     "test:report": "node scripts/test-report.mjs",
-    "graph": "bash scripts/graph.sh",
-    "graph:build": "bash scripts/graph.sh build"
+    "graph": "node scripts/graph.mjs",
+    "graph:build": "node scripts/graph.mjs build",
+    "graph:install": "node scripts/graph.mjs install"
   },
   "engines": {
     "node": ">=24"

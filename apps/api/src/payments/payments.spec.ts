@@ -2,7 +2,7 @@ import Stripe from "stripe";
 import { describe, expect, it } from "vitest";
 import { FakePaymentProvider } from "./fake.provider.js";
 import { InvalidSignatureError, toStripeAmount } from "./payment-provider.js";
-import { StripePaymentProvider } from "./stripe.provider.js";
+import { createStripeClient, StripePaymentProvider } from "./stripe.provider.js";
 
 describe("toStripeAmount", () => {
   it("converts whole baht to satang and refuses anything else", () => {
@@ -55,7 +55,11 @@ describe("FakePaymentProvider", () => {
 
 describe("StripePaymentProvider.parseWebhook", () => {
   const secret = "whsec_unit";
-  const provider = new StripePaymentProvider("sk_test_unit", "pk_test_unit", secret);
+  const provider = new StripePaymentProvider(
+    createStripeClient("sk_test_unit"),
+    "pk_test_unit",
+    secret,
+  );
   const payload = JSON.stringify({
     id: "evt_1",
     object: "event",

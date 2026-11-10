@@ -211,7 +211,7 @@ export const getStripeWebhookUrl = () => {
  *
  * | Event | Effect |
  * |---|---|
- * | `payment_intent.succeeded` | Amount and currency must match the booking (mismatch → logged as an alert, not confirmed). Then payment SUCCEEDED, booking CONFIRMED (guarded update). If the booking is already CANCELLED: automatic refund, payment REFUNDED, cancel reason LATE_PAYMENT_REFUNDED |
+ * | `payment_intent.succeeded` | Amount and currency must match the booking; a mismatch is never confirmed: it is logged as an alert, refunded, and a PENDING_PAYMENT or CANCELLED booking gets cancel reason AMOUNT_MISMATCH_REFUNDED (seats released). Then payment SUCCEEDED, booking CONFIRMED (guarded update). If the booking is already CANCELLED: automatic refund, payment REFUNDED, cancel reason LATE_PAYMENT_REFUNDED |
  * | `payment_intent.payment_failed` | payment FAILED, booking stays PENDING_PAYMENT (user may retry inside the window) |
  * | `payment_intent.canceled` | payment CANCELLED |
  * @summary Stripe webhook (called by Stripe, not the web)

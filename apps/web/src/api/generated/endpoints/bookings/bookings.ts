@@ -410,7 +410,7 @@ export const getListMyBookingsUrl = (params?: ListMyBookingsParams) => {
 };
 
 /**
- * @summary My bookings (confirmed and cancelled; a pending one is `getActiveBooking`)
+ * @summary My tickets (paid = CONFIRMED only; a pending one is `getActiveBooking`, a cancelled one is still readable with `getBooking`)
  */
 export const listMyBookings = async (
   params?: ListMyBookingsParams,
@@ -503,7 +503,7 @@ export function useListMyBookings<
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 /**
- * @summary My bookings (confirmed and cancelled; a pending one is `getActiveBooking`)
+ * @summary My tickets (paid = CONFIRMED only; a pending one is `getActiveBooking`, a cancelled one is still readable with `getBooking`)
  */
 
 export function useListMyBookings<

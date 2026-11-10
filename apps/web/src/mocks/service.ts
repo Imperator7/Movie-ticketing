@@ -499,7 +499,8 @@ export function listMyBookings(
   now: number,
 ): MockResult {
   const mine = db.bookings
-    .filter((b) => b.userId === user.id && b.status !== "PENDING_PAYMENT")
+    // Same as the API: the ticket history lists paid (CONFIRMED) bookings only.
+    .filter((b) => b.userId === user.id && b.status === "CONFIRMED")
     .filter((b) => {
       const showtime = getShowtime(b.showtimeId);
       const ended = showtime ? showtime.endMs <= now : true;

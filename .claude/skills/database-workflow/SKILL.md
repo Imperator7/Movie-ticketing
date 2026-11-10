@@ -19,7 +19,7 @@ Design rules live in `docs/database-design.md` and `docs/er-diagram.mmd` (the le
 2. `npm run db:migrate` (prisma migrate dev, as migrator). Name migrations by intent (`booking_hold_index`, not `update`).
 3. `npm run db:generate -w api`, then `npm run db:verify` (constraint + privilege checks, rolled back). Add a check there for every new invariant.
 4. `npm run test:int -w api`: Testcontainers apply all migrations to a fresh DB, which catches ordering and grant mistakes.
-5. Update `docs/er-diagram.mmd` + `docs/database-design.md` (lead) and mention it in the report.
+5. Don't edit `docs/er-diagram.mmd` / `docs/database-design.md`: say in the report which parts are now out of date. The lead asks the product owner, and updates them only on a yes (AGENTS.md §1, `update-docs` skill).
 
 Money is whole baht `integer`; time is `timestamptz`; Bangkok calendar days only via `bangkokDayRange()` / `bangkokDateOf()` (`apps/api/src/common/time/bangkok.ts`).
 

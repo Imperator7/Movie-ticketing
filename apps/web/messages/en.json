@@ -233,6 +233,7 @@
     "myBookings": "My bookings",
     "cancelledTimeout": "The payment time ran out. The booking was cancelled and the seats were released.",
     "cancelledLate": "Payment arrived after the time limit and has been refunded.",
+    "cancelledAmountMismatch": "Something went wrong with your payment amount, so we cancelled the booking and refunded you in full.",
     "cancelledUser": "This booking was cancelled.",
     "backToSeats": "Back to seat selection",
     "goHome": "Back to home",
@@ -253,7 +254,8 @@
     "pagination": "Pagination",
     "previous": "Previous",
     "next": "Next",
-    "pageOf": "Page {page} of {pages}"
+    "pageOf": "Page {page} of {pages}",
+    "stampShown": "Screened"
   },
   "ticket": {
     "title": "Movie ticket",
@@ -270,7 +272,14 @@
     "continuePayment": "Continue to payment",
     "notFound": "We could not find this booking.",
     "loadError": "Could not load the ticket.",
-    "back": "My bookings"
+    "back": "My bookings",
+    "date": "Date",
+    "time": "Time",
+    "hallLabel": "Hall",
+    "admit": "{count, plural, one {# seat} other {# seats}}",
+    "stampCancelled": "Cancelled",
+    "stampPending": "Awaiting payment",
+    "showAtEntrance": "Show this QR at the cinema entrance"
   },
   "banner": {
     "title": "Booking in progress",

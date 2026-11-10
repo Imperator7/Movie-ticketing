@@ -7,6 +7,8 @@ const DEV_PAGES = [
   { href: "/openapi", label: "API contract" },
   { href: "/er-diagram", label: "ER diagram" },
   { href: "/flow", label: "Flow" },
+  { href: "/api-flow", label: "API flow" },
+  { href: "/critical-flows", label: "Critical flows" },
   { href: "/test-report", label: "Test report" },
 ] as const;
 

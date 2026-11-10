@@ -1,14 +1,17 @@
 import { describe, expect, it } from "vitest";
 import {
   bangkokDate,
+  bangkokMonth,
   countdownTone,
   formatBaht,
   formatCountdown,
   formatDuration,
+  formatMonthYear,
   formatReleaseDate,
   formatShowDate,
   formatShowDateTime,
   formatShowtime,
+  formatTicketDate,
 } from "./format";
 
 describe("formatBaht", () => {
@@ -94,5 +97,19 @@ describe("formatReleaseDate", () => {
     expect(formatReleaseDate("2026-11-12", "th")).toMatch(/[\u0E00-\u0E7F]/);
     // 23:00 UTC on the 11th is already the 12th in Bangkok.
     expect(formatReleaseDate("2026-11-11T23:00:00Z", "en")).toBe("12 Nov");
+  });
+});
+
+describe("ticket history dates", () => {
+  it("formatTicketDate has weekday, day, month and year", () => {
+    expect(formatTicketDate("2026-11-03T22:00:00+07:00", "en")).toBe("Tue, 3 Nov 2026");
+    expect(formatTicketDate("2026-11-03T22:00:00+07:00", "th")).toMatch(/2569/);
+  });
+
+  it("groups by the Bangkok month, not the UTC one", () => {
+    // 18:00 UTC on 31 Oct is already 1 Nov in Bangkok.
+    expect(bangkokMonth("2026-10-31T18:00:00Z")).toBe("2026-11");
+    expect(formatMonthYear("2026-10-31T18:00:00Z", "en")).toBe("November 2026");
+    expect(formatMonthYear("2026-11-03T12:00:00Z", "th")).toMatch(/2569/);
   });
 });

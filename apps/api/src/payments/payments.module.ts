@@ -6,7 +6,7 @@ import { PaymentProvider } from "./payment-provider.js";
 import { DemoPaymentsController, PaymentsController } from "./payments.controller.js";
 import { PaymentsService } from "./payments.service.js";
 import { ProviderPaymentGateway } from "./provider-payment-gateway.js";
-import { StripePaymentProvider } from "./stripe.provider.js";
+import { createStripeClient, StripePaymentProvider } from "./stripe.provider.js";
 
 /** Stripe when PAYMENTS_PROVIDER=stripe, otherwise the in-process fake (development, test, explicit demo deploys). */
 export function createPaymentProvider(config: ConfigService): PaymentProvider {
@@ -16,7 +16,7 @@ export function createPaymentProvider(config: ConfigService): PaymentProvider {
   const webhook = config.get("STRIPE_WEBHOOK_SECRET");
   // Env validation already requires all three; this keeps the types honest.
   if (!secret || !publishable || !webhook) throw new Error("Stripe keys are missing");
-  return new StripePaymentProvider(secret, publishable, webhook);
+  return new StripePaymentProvider(createStripeClient(secret), publishable, webhook);
 }
 
 /** The provider and the booking module's PaymentGateway port built on it. */

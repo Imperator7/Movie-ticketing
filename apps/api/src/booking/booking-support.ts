@@ -1,5 +1,6 @@
 import { createHash, createHmac, randomInt } from "node:crypto";
 import type { Prisma } from "../generated/prisma/client.js";
+import type { CancelOutcome } from "./payment-gateway.js";
 
 // ---------------------------------------------------------------- booking code
 
@@ -42,6 +43,22 @@ export function hashCreateBookingRequest(body: {
   return createHash("sha256").update(canonical).digest("hex");
 }
 
+// ---------------------------------------------------------------- expiry
+
+/**
+ * The expiry job's rule for a booking whose payment window (5 min) is over: cancel it, unless the provider says a
+ * payment is already in flight (`in_progress`) and the seat hold (6 min) is not over yet; then the webhook decides.
+ * Once the hold is over it is cancelled regardless (a late success is refunded, rule 3d).
+ */
+export function shouldExpireBooking(
+  gatewayOutcome: CancelOutcome,
+  holdExpiresAt: Date,
+  now: Date,
+): boolean {
+  const holdOver = holdExpiresAt.getTime() <= now.getTime();
+  return gatewayOutcome !== "in_progress" || holdOver;
+}
+
 // ---------------------------------------------------------------- state change
 
 /**
@@ -53,8 +70,8 @@ export async function cancelPendingBooking(
   tx: Prisma.TransactionClient,
   input: {
     bookingId: string;
-    reason: "PAYMENT_TIMEOUT" | "USER_CANCELLED";
-    actor: "USER" | "SYSTEM";
+    reason: "PAYMENT_TIMEOUT" | "USER_CANCELLED" | "AMOUNT_MISMATCH_REFUNDED";
+    actor: "USER" | "SYSTEM" | "STRIPE";
     now: Date;
   },
 ): Promise<boolean> {

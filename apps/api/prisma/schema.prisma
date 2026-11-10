@@ -83,6 +83,7 @@ enum CancelReason {
   PAYMENT_TIMEOUT
   USER_CANCELLED
   LATE_PAYMENT_REFUNDED
+  AMOUNT_MISMATCH_REFUNDED
 
   @@map("cancel_reason")
 }

@@ -32,7 +32,12 @@ export const bookingSchema = z.object({
   bookingCode: z.string(),
   status: z.enum(["PENDING_PAYMENT", "CONFIRMED", "CANCELLED"]),
   cancelReason: z
-    .enum(["PAYMENT_TIMEOUT", "USER_CANCELLED", "LATE_PAYMENT_REFUNDED"])
+    .enum([
+      "PAYMENT_TIMEOUT",
+      "USER_CANCELLED",
+      "LATE_PAYMENT_REFUNDED",
+      "AMOUNT_MISMATCH_REFUNDED",
+    ])
     .nullable()
     .optional(),
   showtime: z.object({

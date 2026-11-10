@@ -85,6 +85,31 @@ export function formatShowDateTime(iso: string, locale: Locale = "th"): string {
   }).format(new Date(iso));
 }
 
+/** Ticket date in Bangkok with weekday and year, e.g. "อ. 3 พ.ย. 2569" / "Tue, 3 Nov 2026". */
+export function formatTicketDate(iso: string, locale: Locale = "th"): string {
+  return new Intl.DateTimeFormat(INTL_LOCALE_FULL[locale], {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    timeZone: "Asia/Bangkok",
+  }).format(new Date(iso));
+}
+
+/** Month heading for the ticket history, e.g. "พฤศจิกายน 2569" / "November 2026" (Bangkok). */
+export function formatMonthYear(iso: string, locale: Locale = "th"): string {
+  return new Intl.DateTimeFormat(INTL_LOCALE_FULL[locale], {
+    month: "long",
+    year: "numeric",
+    timeZone: "Asia/Bangkok",
+  }).format(new Date(iso));
+}
+
+/** Bangkok month of an instant as "YYYY-MM" (a grouping key). */
+export function bangkokMonth(iso: string): string {
+  return bangkokDate(new Date(iso).getTime()).slice(0, 7);
+}
+
 /** Day and short month in Bangkok, e.g. "12 พ.ย." / "12 Nov". Takes "YYYY-MM-DD" or an ISO instant. */
 export function formatReleaseDate(value: string, locale: Locale = "th"): string {
   const iso = /^\d{4}-\d{2}-\d{2}$/.test(value) ? `${value}T12:00:00+07:00` : value;

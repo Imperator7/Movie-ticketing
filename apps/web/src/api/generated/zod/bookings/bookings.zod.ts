@@ -64,7 +64,15 @@ export const CreateBookingResponse = zod.object({
   bookingCode: zod.string(),
   status: zod.enum(["PENDING_PAYMENT", "CONFIRMED", "CANCELLED"]),
   cancelReason: zod
-    .union([zod.enum(["PAYMENT_TIMEOUT", "USER_CANCELLED", "LATE_PAYMENT_REFUNDED"]), zod.null()])
+    .union([
+      zod.enum([
+        "PAYMENT_TIMEOUT",
+        "USER_CANCELLED",
+        "LATE_PAYMENT_REFUNDED",
+        "AMOUNT_MISMATCH_REFUNDED",
+      ]),
+      zod.null(),
+    ])
     .optional(),
   showtime: zod.object({
     id: zod.uuid(),
@@ -141,7 +149,15 @@ export const GetActiveBookingResponse = zod.object({
   bookingCode: zod.string(),
   status: zod.enum(["PENDING_PAYMENT", "CONFIRMED", "CANCELLED"]),
   cancelReason: zod
-    .union([zod.enum(["PAYMENT_TIMEOUT", "USER_CANCELLED", "LATE_PAYMENT_REFUNDED"]), zod.null()])
+    .union([
+      zod.enum([
+        "PAYMENT_TIMEOUT",
+        "USER_CANCELLED",
+        "LATE_PAYMENT_REFUNDED",
+        "AMOUNT_MISMATCH_REFUNDED",
+      ]),
+      zod.null(),
+    ])
     .optional(),
   showtime: zod.object({
     id: zod.uuid(),
@@ -209,7 +225,7 @@ export const GetActiveBookingResponse = zod.object({
 });
 
 /**
- * @summary My bookings (confirmed and cancelled; a pending one is `getActiveBooking`)
+ * @summary My tickets (paid = CONFIRMED only; a pending one is `getActiveBooking`, a cancelled one is still readable with `getBooking`)
  */
 export const listMyBookingsQueryScopeDefault = `upcoming`;
 export const listMyBookingsQueryPageDefault = 1;
@@ -245,7 +261,12 @@ export const ListMyBookingsResponse = zod
           status: zod.enum(["PENDING_PAYMENT", "CONFIRMED", "CANCELLED"]),
           cancelReason: zod
             .union([
-              zod.enum(["PAYMENT_TIMEOUT", "USER_CANCELLED", "LATE_PAYMENT_REFUNDED"]),
+              zod.enum([
+                "PAYMENT_TIMEOUT",
+                "USER_CANCELLED",
+                "LATE_PAYMENT_REFUNDED",
+                "AMOUNT_MISMATCH_REFUNDED",
+              ]),
               zod.null(),
             ])
             .optional(),
@@ -332,7 +353,15 @@ export const GetBookingResponse = zod.object({
   bookingCode: zod.string(),
   status: zod.enum(["PENDING_PAYMENT", "CONFIRMED", "CANCELLED"]),
   cancelReason: zod
-    .union([zod.enum(["PAYMENT_TIMEOUT", "USER_CANCELLED", "LATE_PAYMENT_REFUNDED"]), zod.null()])
+    .union([
+      zod.enum([
+        "PAYMENT_TIMEOUT",
+        "USER_CANCELLED",
+        "LATE_PAYMENT_REFUNDED",
+        "AMOUNT_MISMATCH_REFUNDED",
+      ]),
+      zod.null(),
+    ])
     .optional(),
   showtime: zod.object({
     id: zod.uuid(),
@@ -414,7 +443,15 @@ export const CancelBookingResponse = zod.object({
   bookingCode: zod.string(),
   status: zod.enum(["PENDING_PAYMENT", "CONFIRMED", "CANCELLED"]),
   cancelReason: zod
-    .union([zod.enum(["PAYMENT_TIMEOUT", "USER_CANCELLED", "LATE_PAYMENT_REFUNDED"]), zod.null()])
+    .union([
+      zod.enum([
+        "PAYMENT_TIMEOUT",
+        "USER_CANCELLED",
+        "LATE_PAYMENT_REFUNDED",
+        "AMOUNT_MISMATCH_REFUNDED",
+      ]),
+      zod.null(),
+    ])
     .optional(),
   showtime: zod.object({
     id: zod.uuid(),
