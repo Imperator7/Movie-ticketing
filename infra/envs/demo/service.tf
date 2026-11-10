@@ -15,11 +15,12 @@ resource "aws_ecs_service" "api" {
     weight            = 1
   }
 
-  # Public subnet + public IP for OUTBOUND only (ECR, SSM, logs); the `api` security group lets in only the ALB.
+  # Private subnet, zone a, no public IP: nothing on the internet can address the task. It calls OUT (ECR, SSM,
+  # logs, Stripe) through the NAT instance (nat.tf); the `api` security group lets in only the ALB.
   network_configuration {
-    subnets          = [aws_subnet.public.id]
+    subnets          = [aws_subnet.app[0].id]
     security_groups  = [aws_security_group.api.id]
-    assign_public_ip = true
+    assign_public_ip = false
   }
 
   load_balancer {
@@ -46,5 +47,6 @@ resource "aws_ecs_service" "api" {
     ignore_changes = [desired_count, task_definition]
   }
 
-  depends_on = [aws_lb_listener.http, aws_ecs_cluster_capacity_providers.main]
+  # The route through the NAT must exist first, or a new task can't pull its image.
+  depends_on = [aws_lb_listener.http, aws_ecs_cluster_capacity_providers.main, aws_route.app_internet]
 }

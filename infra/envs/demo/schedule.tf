@@ -58,9 +58,9 @@ resource "aws_scheduler_schedule" "seed" {
       launch_type         = "FARGATE"
 
       network_configuration {
-        subnets          = [aws_subnet.public.id]
+        subnets          = [aws_subnet.app[0].id]
         security_groups  = [aws_security_group.ops.id]
-        assign_public_ip = true
+        assign_public_ip = false
       }
     }
 

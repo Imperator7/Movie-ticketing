@@ -136,7 +136,7 @@ resource "aws_iam_role_policy" "github_deploy" {
 output "github_actions_variables" {
   value = {
     AWS_DEPLOY_ROLE_ARN        = aws_iam_role.github_deploy.arn
-    ECS_SUBNET                 = aws_subnet.public.id
+    ECS_SUBNET                 = aws_subnet.app[0].id
     ECS_SECURITY_GROUP         = aws_security_group.ops.id
     WEB_BUCKET                 = aws_s3_bucket.web.bucket
     CLOUDFRONT_DISTRIBUTION_ID = aws_cloudfront_distribution.main.id

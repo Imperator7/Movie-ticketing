@@ -1,6 +1,7 @@
 # Phase 2: the VPC. Demo = everything RUNS in one zone (zone a).
-#   public  : zone a only. Route to the internet (IGW). The API task runs here (no NAT until Phase 9).
-#   app     : private, no internet route. The internal load balancer (ALB) lives here.
+#   public  : zone a only. Route to the internet (IGW). Only the NAT instance lives here (nat.tf).
+#   app     : private. The internal load balancer (ALB), the API task and the one-off tasks live here. They can
+#             call OUT through the NAT instance; nothing on the internet can call in.
 #   db      : private, no internet route. RDS lives here (single instance in zone a).
 # AWS rule: an ALB and an RDS subnet group each need subnets in 2 zones, so app and db get an extra,
 # empty subnet in zone b. Subnets are free.
@@ -76,7 +77,8 @@ resource "aws_route_table_association" "public" {
   route_table_id = aws_route_table.public.id
 }
 
-# App and db: only the VPC's own "local" route (added by AWS automatically). No internet in or out.
+# App and db: the VPC's own "local" route (added by AWS automatically). nat.tf adds the app subnets' way out
+# through the NAT instance. Db: no internet in or out.
 resource "aws_route_table" "app" {
   vpc_id = aws_vpc.main.id
   tags   = { Name = "${var.project}-${var.env}-app" }

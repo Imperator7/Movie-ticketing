@@ -7,8 +7,8 @@
 #   seed          once now, daily later: movies, cinemas, showtimes (as app_user)
 #   api           the API itself (step 3 runs it as a service)
 #
-# One-off tasks are started with infra/scripts/run-task.sh. They run in the public subnet with the `ops` security
-# group (no inbound) and a public IP for outbound only (pulling images, SSM, logs), like the API.
+# One-off tasks are started with infra/scripts/run-task.sh. They run in the private `app` subnet with the `ops`
+# security group (no inbound) and no public IP; like the API they call out through the NAT instance (nat.tf).
 
 locals {
   name = "${var.project}-${var.env}"

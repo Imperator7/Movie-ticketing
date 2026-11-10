@@ -25,8 +25,14 @@ output "ecs_cluster" {
   value = aws_ecs_cluster.main.name
 }
 
-output "public_subnet_id" {
-  value = aws_subnet.public.id
+output "task_subnet_id" {
+  description = "Private subnet (zone a) where the API and the one-off tasks run."
+  value       = aws_subnet.app[0].id
+}
+
+output "nat_instance_id" {
+  description = "The fck-nat instance (infra/scripts/check-nat.sh, sleep.sh and wake.sh find it by its Name tag)."
+  value       = aws_instance.nat.id
 }
 
 output "ops_security_group_id" {

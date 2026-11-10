@@ -12,15 +12,17 @@ REGION="${AWS_REGION:-ap-southeast-7}"
 # ECS_SECURITY_GROUP), so the workflow needs no access to the Terraform state.
 out() { (cd "$(git rev-parse --show-toplevel)/infra/envs/demo" && terraform output -raw "$1"); }
 CLUSTER="${ECS_CLUSTER:-$(out ecs_cluster)}"
-SUBNET="${ECS_SUBNET:-$(out public_subnet_id)}"
+SUBNET="${ECS_SUBNET:-$(out task_subnet_id)}"
 SG="${ECS_SECURITY_GROUP:-$(out ops_security_group_id)}"
 FAMILY="$CLUSTER-$TASK"
 
 echo "Starting $FAMILY"
 # On-demand FARGATE (not Spot) for one-off tasks: a few cents, and never interrupted halfway through a migration.
+# Private subnet, no public IP: the task reaches ECR, SSM and the logs through the NAT instance, so it must be
+# running (infra/scripts/check-nat.sh).
 ARN=$(aws ecs run-task --region "$REGION" --cluster "$CLUSTER" --task-definition "$FAMILY" \
   --launch-type FARGATE --count 1 \
-  --network-configuration "awsvpcConfiguration={subnets=[$SUBNET],securityGroups=[$SG],assignPublicIp=ENABLED}" \
+  --network-configuration "awsvpcConfiguration={subnets=[$SUBNET],securityGroups=[$SG],assignPublicIp=DISABLED}" \
   --query 'tasks[0].taskArn' --output text)
 echo "Task $ARN"
 echo "Waiting for it to finish (usually 1-3 minutes)..."
