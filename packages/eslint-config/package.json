@@ -12,11 +12,11 @@
     "@eslint/js": "^9.39.5",
     "eslint-config-prettier": "^10.1.8",
     "globals": "^14.0.0",
-    "typescript-eslint": "^8.72.1"
+    "typescript-eslint": "^8.72.2"
   },
   "peerDependencies": {
     "eslint": ">=9",
-    "eslint-config-next": "*"
+    "eslint-config-next": "^16.4.6"
   },
   "peerDependenciesMeta": {
     "eslint-config-next": {
