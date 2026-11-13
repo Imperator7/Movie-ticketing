@@ -42,7 +42,7 @@
   "devDependencies": {
     "@commitlint/cli": "^21.2.4",
     "@commitlint/config-conventional": "^21.2.4",
-    "@redocly/cli": "^2.71.2",
+    "@redocly/cli": "^2.77.0",
     "eslint": "^9.39.5",
     "husky": "^9.1.7",
     "lint-staged": "^17.6.0",
